@@ -1,4 +1,4 @@
-from periode import Periode as periode
+from enum.periode import Periode as periode
 class vacation:
     semaine : int # semaine de l'année (1 à 52)
     jour: int # jour de la semaine sauf samedi et dimanche (0 à 4)

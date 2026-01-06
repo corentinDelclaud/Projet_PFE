@@ -1,5 +1,5 @@
 from jour_preference import jour_pref
-from niveaux import niveau
+from enum.niveaux import niveau
 class eleve:
     id_eleve : int
     nom : str

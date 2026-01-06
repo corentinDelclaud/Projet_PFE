@@ -1,4 +1,4 @@
-from types_binome import type_binome
+from enum.types_binome import type_binome
 class binome : 
     id_binome : int
     type : type_binome
