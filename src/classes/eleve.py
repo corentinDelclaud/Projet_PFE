@@ -12,6 +12,8 @@ class eleve:
     id_binome : int
     jour_preference : jour_pref
     annee : niveau
+    periode_stage : int
+    periode_stage_ext : int
     
     def __init__(self, id_eleve: int, nom: str, id_binome: int, jour_preference: jour_pref, annee: niveau):
         self.id_eleve = id_eleve
