@@ -1,5 +1,11 @@
-from jour_preference import jour_pref
-from enum.niveaux import niveau
+import sys
+import os
+
+# Add the parent directory (project root) to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from classes.jour_preference import jour_pref
+from classes.enum.niveaux import niveau
 class eleve:
     id_eleve : int
     nom : str
