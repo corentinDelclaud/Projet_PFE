@@ -26,18 +26,18 @@ cs_urg : discipline
 sp : discipline
 urg_op : discipline
 
-poly = discipline(1, "Polyclinique", "A101", 1, True, 3)
-paro = discipline(2, "Parodontologie", "A102", 1, True, 8)
-como = discipline(3, "Comodulation", "A103", 1, True, 6)
-pedo = discipline(4, "Pédodontie", "A104", 5, True, 4)
-odf = discipline(5, "Orthodontie", "A105", 8, True, 5)
-occl = discipline(6, "Occlusodontie", "A106", 12, True, 7)
-ra = discipline(7, "Radiologie", "A107", 1, False, 0)
-ste = discipline(8, "Stomatologie", "A108", 18, True, 0)
-pano = discipline(9, "Panoramique", "A109", 1, False, 1)
-cs_urg = discipline(10, "Consultation d'urgence", "A110", 1, False, 1)
-sp = discipline(11, "Soins Prothétiques", "A111", 1, True, 1)
-urg_op = discipline(12, "Urgences Opératoires", "A112", 1, False, 2)
+poly = discipline(1, "Polyclinique", ["A101"] * 10, [20] * 10, True, 100)
+paro = discipline(2, "Parodontologie", ["A102"] * 10, [15] * 10, True, 80)
+como = discipline(3, "Comodulation", ["A103"] * 10, [10] * 10, True, 60)
+pedo = discipline(4, "Pédodontie", ["A104"] * 10, [5] * 10, True, 40)
+odf = discipline(5, "Orthodontie", ["A105"] * 10, [8] * 10, True, 50)
+occl = discipline(6, "Occlusodontie", ["A106"] * 10, [12] * 10, True, 70)
+ra = discipline(7, "Radiologie", ["A107"] * 10, [0] * 10, False, 0)
+ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 90)
+pano = discipline(9, "Panoramique", ["A109"] * 10, [0] * 10, False, 0)
+cs_urg = discipline(10, "Consultation d'urgence", ["A110"] * 10, [0] * 10, False, 0)
+sp = discipline(11, "Soins Prothétiques", ["A111"] * 10, [14] * 10, True, 85)
+urg_op = discipline(12, "Urgences Opératoires", ["A112"] * 10, [2] * 10, False, 0)  
 
 poly.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
 paro.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, True, True, True, True, True, True, True, True])
@@ -76,7 +76,7 @@ eleves_by_niveau = {
     niveau.DFTCC: []
 }
 
-csv_path = os.path.join(os.path.dirname(__file__), '..', 'resultat', 'eleves.csv')
+csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'eleves.csv')
 try:
     with open(csv_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -327,31 +327,6 @@ status = solver.Solve(model)
 if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
     print(f"Solution trouvée! Valeur objectif: {solver.ObjectiveValue()}")
     print("--- PLANNING ---")
-    
-    # Organisation de l'affichage par Semaine / Jour
-    current_semaine = -1
-    current_jour = -1
-    
-    #for v_idx, vac in enumerate(vacations):
-        # Header Semaine
-     #   if vac.semaine != current_semaine:
-      #      print(f"\nSemaine {vac.semaine}")
-       #     current_semaine = vac.semaine
-            
-        # Header Jour simpliste
-        #day_names = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-        #jour_str = day_names[vac.jour]
-        #p_str = "Matin" if vac.period == Periode.matin else "Apres-Midi"
-        
-        #assigned_in_slot = []
-        #for (e_id, d_id, idx), val in assignments.items():
-         #   if idx == v_idx and solver.Value(val) == 1:
-          #      e_name = next(e.nom for e in eleves if e.id_eleve == e_id)
-          #      d_name = next(d.nom_discipline for d in disciplines if d.id_discipline == d_id)
-          #      assigned_in_slot.append(f"{e_name} -> {d_name}")
-        
-        #if assigned_in_slot:
-        #    print(f"  {jour_str} {p_str}: {', '.join(assigned_in_slot)}")
 
     # --- CSV EXPORT ---
     import csv
