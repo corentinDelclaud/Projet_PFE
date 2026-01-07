@@ -1,13 +1,13 @@
 class discipline:
     id_discipline : int
     nom_discipline : str
-    salle : str
-    nb_fauteuil : int
+    salle : list[str] = [""] * 10
+    nb_fauteuil : list[int] = [0] * 10  # Default 10 slots with 0 fauteuils
     en_binome : bool
     quota : int
     presence : list[bool] = [False] * 10  # Default presence list with 10 False values
     
-    def __init__(self, id_discipline: int, nom_discipline: str, salle: str, nb_fauteuil: int, en_binome: bool, quota: int, presence: list[bool] = None):
+    def __init__(self, id_discipline: int, nom_discipline: str, salle: list[str], nb_fauteuil: list[int], en_binome: bool, quota: int, presence: list[bool] = None):
         self.id_discipline = id_discipline
         self.nom_discipline = nom_discipline
         self.salle = salle
@@ -51,4 +51,26 @@ class discipline:
         for i, s in zip(indices, status):
             self.modif_presence(i, s)
 
-    
+    def modif_nb_fauteuil(self, index: int, nb: int):
+        if 0 <= index < len(self.nb_fauteuil):
+            self.nb_fauteuil[index] = nb
+        else:
+            raise IndexError("Index out of range for nb_fauteuil list")
+        
+    def multiple_modif_nb_fauteuil(self, indices: list[int], nbs: list[int]):
+        if len(indices) != len(nbs):
+            raise ValueError("Indices and nbs lists must have the same length")
+        for i, nb in zip(indices, nbs):
+            self.modif_nb_fauteuil(i, nb)
+            
+    def modif_salle(self, index: int, salle_name: str):
+        if 0 <= index < len(self.salle):
+            self.salle[index] = salle_name
+        else:
+            raise IndexError("Index out of range for salle list")
+        
+    def multiple_modif_salle(self, indices: list[int], salle_names: list[str]):
+        if len(indices) != len(salle_names):
+            raise ValueError("Indices and salle_names lists must have the same length")
+        for i, name in zip(indices, salle_names):
+            self.modif_salle(i, name)
