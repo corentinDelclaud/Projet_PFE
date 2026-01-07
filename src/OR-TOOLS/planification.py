@@ -26,17 +26,17 @@ cs_urg : discipline
 sp : discipline
 urg_op : discipline
 
-poly = discipline(1, "Polyclinique", ["A101"] * 10, [20] * 10, True, 100)
-paro = discipline(2, "Parodontologie", ["A102"] * 10, [15] * 10, True, 80)
-como = discipline(3, "Comodulation", ["A103"] * 10, [10] * 10, True, 60)
-pedo = discipline(4, "Pédodontie", ["A104"] * 10, [5] * 10, True, 40)
-odf = discipline(5, "Orthodontie", ["A105"] * 10, [8] * 10, True, 50)
-occl = discipline(6, "Occlusodontie", ["A106"] * 10, [12] * 10, True, 70)
+poly = discipline(1, "Polyclinique", ["A101"] * 10, [20] * 10, True, 20)
+paro = discipline(2, "Parodontologie", ["A102"] * 10, [15] * 10, True, 15)
+como = discipline(3, "Comodulation", ["A103"] * 10, [10] * 10, True, 10)
+pedo = discipline(4, "Pédodontie", ["A104"] * 10, [5] * 10, True, 5)
+odf = discipline(5, "Orthodontie", ["A105"] * 10, [8] * 10, True, 5)
+occl = discipline(6, "Occlusodontie", ["A106"] * 10, [12] * 10, True, 10)
 ra = discipline(7, "Radiologie", ["A107"] * 10, [0] * 10, False, 0)
-ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 90)
+ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 15)
 pano = discipline(9, "Panoramique", ["A109"] * 10, [0] * 10, False, 0)
 cs_urg = discipline(10, "Consultation d'urgence", ["A110"] * 10, [0] * 10, False, 0)
-sp = discipline(11, "Soins Prothétiques", ["A111"] * 10, [14] * 10, True, 85)
+sp = discipline(11, "Soins Prothétiques", ["A111"] * 10, [14] * 10, True, 15)
 urg_op = discipline(12, "Urgences Opératoires", ["A112"] * 10, [2] * 10, False, 0)  
 
 poly.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
@@ -76,7 +76,7 @@ eleves_by_niveau = {
     niveau.DFTCC: []
 }
 
-csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'eleves.csv')
+csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'eleves.csv')
 try:
     with open(csv_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -134,14 +134,14 @@ for i in range(len(dfas01_list)):
     e_dfas01 = dfas01_list[i]
     if niveau.DFAS01 in STAGE_CONFIG[grp]:
         debut, fin = STAGE_CONFIG[grp][niveau.DFAS01]
-        stages_eleves[e_dfas01.id_eleve] = [stage(debut_stage=debut, fin_stage=fin)]
+        stages_eleves[e_dfas01.id_eleve] = [stage(f"Stage_G{grp}", debut_stage=debut, fin_stage=fin)]
         
     # Eleve DFTCC (Son binôme)
     if i < len(dftcc_list):
         e_dftcc = dftcc_list[i]
         if niveau.DFTCC in STAGE_CONFIG[grp]:
             debut, fin = STAGE_CONFIG[grp][niveau.DFTCC]
-            stages_eleves[e_dftcc.id_eleve] = [stage(debut_stage=debut, fin_stage=fin)]
+            stages_eleves[e_dftcc.id_eleve] = [stage(f"Stage_G{grp}", debut_stage=debut, fin_stage=fin)]
 
 # Génération des créneaux (Vacations) sur 1 semaine
 vacations: list[vacation] = []
@@ -233,7 +233,8 @@ for v_idx, vac in enumerate(vacations):
         # CONTRAINTE CAPACITÉ (Base_logique.py: Capacity)
         # Si matière en binôme : 1 fauteuil accueille 2 élèves (le binôme).
         # Sinon : 1 fauteuil accueille 1 élève.
-        limit = disc.nb_fauteuil * 2 if disc.en_binome else disc.nb_fauteuil
+        current_nb_fauteuil = disc.nb_fauteuil[slot_index] if isinstance(disc.nb_fauteuil, list) else disc.nb_fauteuil
+        limit = current_nb_fauteuil * 2 if disc.en_binome else current_nb_fauteuil
         if vars_in_discipline_slot:
             model.Add(sum(vars_in_discipline_slot) <= limit)
 
@@ -287,8 +288,8 @@ for el in eleves:
         
         # Si des variables existent, on applique la contrainte
         if vars_for_student_discipline:
-            # On suppose que disc.quota est le plafond (ex: 2 pour Soins Prothétiques)
-            model.Add(sum(vars_for_student_discipline) <= disc.quota)
+            # On suppose que disc.quota est le minimum requis (ex: 2 pour Soins Prothétiques)
+            model.Add(sum(vars_for_student_discipline) >= disc.quota)
 
 # OBJECTIF (Base_logique.py: Preference)
 # Maximiser les affectations sur les jours de préférence
@@ -317,8 +318,8 @@ print(f"Modèle construit en {os.times().elapsed - start_time:.2f}s. Lancement d
 solver = cp_model.CpSolver()
 # Enable logging
 solver.parameters.log_search_progress = True
-# Set a time limit of 5 minutes (300 seconds)
-solver.parameters.max_time_in_seconds = 300.0
+# Set a time limit of 10 minutes (600 seconds)
+solver.parameters.max_time_in_seconds = 600
 # Limit workers to prevent OOM
 solver.parameters.num_search_workers = 4
 
@@ -331,7 +332,7 @@ if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
     # --- CSV EXPORT ---
     import csv
     # Création du dossier resultat s'il n'existe pas
-    result_dir = os.path.join(os.path.dirname(__file__), '..', 'resultat')
+    result_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'resultat')
     os.makedirs(result_dir, exist_ok=True)
     
     csv_file_path = os.path.join(result_dir, 'planning_solution.csv')
