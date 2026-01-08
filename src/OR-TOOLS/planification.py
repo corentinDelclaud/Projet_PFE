@@ -93,10 +93,35 @@ try:
                 jour_preference=pref,
                 annee=niv
             )
+            # Chargement des périodes de stage
+            new_eleve.periode_stage = int(row.get("periode_stage", 0))
+            new_eleve.periode_stage_ext = int(row.get("periode_stage_ext", 0))
+            
             eleves.append(new_eleve)
             eleves_by_niveau[niv].append(new_eleve)
             
     print(f"Chargement réussi : {len(eleves)} élèves chargés depuis {csv_path}")
+
+    # --- CHARGEMENT DES STAGES ---
+    stages_lookup = {} # Key: (niveau_name, periode_id) -> List of stage dicts
+    stages_csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'stages.csv')
+    try:
+        with open(stages_csv_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # id_stage,nom_stage,deb_semaine,fin_semaine,pour_niveau,periode
+                key = (row["pour_niveau"], int(row["periode"]))
+                if key not in stages_lookup:
+                    stages_lookup[key] = []
+                stages_lookup[key].append({
+                     "nom": row["nom_stage"],
+                     "debut": int(row["deb_semaine"]),
+                     "fin": int(row["fin_semaine"]),
+                     "niveau_obj": niveau[row["pour_niveau"]]
+                })
+        print("Configuration des stages chargée avec succès.")
+    except FileNotFoundError:
+        print(f"Attention: Fichier stages.csv introuvable ({stages_csv_path}).")
 
 except FileNotFoundError:
     print(f"Erreur : Le fichier {csv_path} est introuvable. Veuillez exécuter generate_students_csv.py d'abord.")
@@ -117,31 +142,35 @@ dfas02_list = eleves_by_niveau[niveau.DFAS02]
 # 3. Gestion des Stages
 stages_eleves = {}
 
-# Configuration des stages (Groupe -> {Niveau -> (Debut, Fin)})
-STAGE_CONFIG = {
-    1: {niveau.DFTCC: (45, 51), niveau.DFAS01: (45, 51)},
-    2: {niveau.DFTCC: (2, 8),   niveau.DFAS01: (2, 8)},
-    3: {niveau.DFTCC: (9, 15),  niveau.DFAS01: (9, 15)},
-    4: {niveau.DFTCC: (16, 22), niveau.DFAS01: (38, 44)}
-}
+# Attribution des stages via le fichier de config et l'attribut éleve
+for el in eleves:
+    p_id = getattr(el, 'periode_stage', 0)
+    if p_id > 0:
+        # Chercher les stages correspondant au niveau de l'élève et sa période
+        key = (el.annee.name, p_id)
+        if key in stages_lookup:
+            stage_data_list = stages_lookup[key]
+            user_stages = []
+            for sd in stage_data_list:
+                # Création de l'objet stage
+                # __init__(self, nom_stage: str, debut_stage: int, fin_stage: int, pour_niveau: niveau, periode: int)
+                new_st = stage(sd["nom"], sd["debut"], sd["fin"], sd["niveau_obj"], p_id)
+                user_stages.append(new_st)
+            
+            stages_eleves[el.id_eleve] = user_stages
 
-# Attribution des groupes de stage
-# Pour garantir que les binômes ont le même groupe, on attribue par paire.
-for i in range(len(dfas01_list)):
-    grp = (i % 4) + 1 
-    
-    # Eleve DFAS01
-    e_dfas01 = dfas01_list[i]
-    if niveau.DFAS01 in STAGE_CONFIG[grp]:
-        debut, fin = STAGE_CONFIG[grp][niveau.DFAS01]
-        stages_eleves[e_dfas01.id_eleve] = [stage(f"Stage_G{grp}", debut_stage=debut, fin_stage=fin)]
-        
-    # Eleve DFTCC (Son binôme)
-    if i < len(dftcc_list):
-        e_dftcc = dftcc_list[i]
-        if niveau.DFTCC in STAGE_CONFIG[grp]:
-            debut, fin = STAGE_CONFIG[grp][niveau.DFTCC]
-            stages_eleves[e_dftcc.id_eleve] = [stage(f"Stage_G{grp}", debut_stage=debut, fin_stage=fin)]
+# Configuration des stages (Groupe -> {Niveau -> (Debut, Fin)}) - OBSOLETE
+# STAGE_CONFIG = {
+#     1: {niveau.DFTCC: (45, 51), niveau.DFAS01: (45, 51)},
+#     2: {niveau.DFTCC: (2, 8),   niveau.DFAS01: (2, 8)},
+#     3: {niveau.DFTCC: (9, 15),  niveau.DFAS01: (9, 15)},
+#     4: {niveau.DFTCC: (16, 22), niveau.DFAS01: (38, 44)}
+# }
+
+# Attribution des groupes de stage - OBSOLETE (Remplacé par lecture CSV)
+# for i in range(len(dfas01_list)):
+# ... (removed)
+
 
 # Génération des créneaux (Vacations) sur 1 semaine
 vacations: list[vacation] = []
@@ -348,11 +377,19 @@ if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
             jour_str = day_names[vac.jour]
             p_str = "Matin" if vac.period == Periode.matin else "Apres-Midi"
             
+            # 1. Affectations Disciplines
             for (e_id, d_id, idx), val in assignments.items():
                 if idx == v_idx and solver.Value(val) == 1:
-                    e_name = next(e.nom for e in eleves if e.id_eleve == e_id)
+                    e_name = eleve_dict[e_id].nom
                     d_name = next(d.nom_discipline for d in disciplines if d.id_discipline == d_id)
                     writer.writerow([vac.semaine, jour_str, p_str, e_name, d_name])
+
+            # 2. Affectations Stages
+            for e_id, s_list in stages_eleves.items():
+                for s in s_list:
+                    if s.debut_stage <= vac.semaine <= s.fin_stage:
+                        e_name = eleve_dict[e_id].nom
+                        writer.writerow([vac.semaine, jour_str, p_str, e_name, f"STAGE: {s.nom_stage}"])
                     
     print(f"\nPlanning exporté dans : {csv_file_path}")
     print(f"Solution trouvée! Valeur objectif: {solver.ObjectiveValue()}")
