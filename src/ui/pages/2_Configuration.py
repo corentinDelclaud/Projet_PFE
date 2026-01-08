@@ -16,7 +16,7 @@ if "stages" not in st.session_state:
     st.session_state.stages = []
 
 st.subheader("1. Gestion des disciplines")
-st.info("Ajoutez ou supprimez les disciplines")
+st.caption("Ajoutez ou supprimez les disciplines")
 
 # Formulaire d'ajout
 with st.form("ajout_discipline", clear_on_submit=True):
@@ -155,22 +155,38 @@ with st.form("ajout_stage", clear_on_submit=True):
     with col2:
         date_debut = st.date_input("Date de début")
         date_fin = st.date_input("Date de fin")
+
+    annee_universitaire = st.multiselect("Année universitaire", ["DFASO1", "DFASO2", "DFTCC"])
     
     submitted_stage = st.form_submit_button("Ajouter le stage")
 
-# Gestion de l'ajout de stage
+# Gestion de l'ajout de stage, add multiselect year one for each year
 if submitted_stage:
     if not nom_stage.strip():
         st.error("Veuillez renseigner le nom du stage.")
     elif date_fin < date_debut:
         st.error("La date de fin doit être postérieure à la date de début.")
+    elif annee_universitaire == []:
+        st.error("Veuillez sélectionner au moins une année universitaire.")
+    # Ajout pour chaque année sélectionnée
+    elif len(annee_universitaire) > 1:
+        for annee in annee_universitaire:
+            st.session_state.stages.append({
+                "numero_periode": numero_periode,
+                "nom_stage": nom_stage,
+                "date_debut": date_debut,
+                "date_fin": date_fin,
+                "annee_universitaire": [annee]
+            })
+        st.success(f"Stage '{nom_stage}' ajouté avec succès pour les années sélectionnées !")
     else:
         # Ajout dans le state
         st.session_state.stages.append({
             "numero_periode": numero_periode,
             "nom_stage": nom_stage,
             "date_debut": date_debut,
-            "date_fin": date_fin
+            "date_fin": date_fin,
+            "annee_universitaire": annee_universitaire
         })
         st.success(f"Stage '{nom_stage}' ajouté avec succès !")
 
@@ -179,7 +195,7 @@ if st.session_state.stages:
     st.subheader("Stages enregistrés")
 
     # Ajoute de titre de colonnes
-    col1, col2, col3, col4, col5 = st.columns([0.5, 2, 1.5, 1.5, 0.8])
+    col1, col2, col3, col4, col5, col6 = st.columns([0.5, 2, 1.5, 1.5, 1.5, 0.8])
     with col1:
         st.markdown("**Période**")
     with col2:
@@ -189,13 +205,15 @@ if st.session_state.stages:
     with col4:
         st.markdown("**Date de fin**")
     with col5:
+        st.markdown("**Année universitaire**")
+    with col6:
         st.markdown("**Actions**")
 
-    # Trier par numéro de période
-    stages_tries = sorted(st.session_state.stages, key=lambda x: x['numero_periode'])
+    # Trier par annee universitaire
+    stages_tries = sorted(st.session_state.stages, key=lambda x: x['annee_universitaire'])
     
     for idx, stage in enumerate(stages_tries):
-        col1, col2, col3, col4, col5 = st.columns([0.5, 2, 1.5, 1.5, 0.8])
+        col1, col2, col3, col4, col5, col6 = st.columns([0.5, 2, 1.5, 1.5, 1.5, 0.8])
         with col1:
             st.markdown(f"**{stage['numero_periode']}**")
         with col2:
@@ -205,6 +223,8 @@ if st.session_state.stages:
         with col4:
             st.write(f"{stage['date_fin'].strftime('%d/%m/%Y')}")
         with col5:
+            st.write(", ".join(stage['annee_universitaire']) if stage['annee_universitaire'] else "Toutes")
+        with col6:
             if st.button("Supprimer", key=f"delete_stage_{idx}", type="primary"):
                 # Retrouver l'index réel dans la liste non triée
                 real_idx = st.session_state.stages.index(stage)
