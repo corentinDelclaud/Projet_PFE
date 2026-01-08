@@ -15,26 +15,27 @@ st.subheader("1. Fichier Étudiants")
 with st.expander("Format Excel attendu", expanded=False):
     st.info("""
     **Format requis :**
-    - **301 lignes** (étudiants avec en-tête inclus)
-    - **6 colonnes** exactement
+    - **7 colonnes** exactement
     
     **En-têtes de colonnes :**
-    - num_etudiant
+    - id_eleve
+    - nom
     - annee
-    - num_etudiant_binome
+    - id_binome
     - jour_preference
     - periode_stage
-    - periode_stage_externe
+    - periode_stage_ext
     """)
     
     st.markdown("**Exemple :**")
     exemple_df = pd.DataFrame({
-        'num_etudiant': [1, 2, 3],
+        'id_eleve': [1, 2, 3],
+        'nom': ['Dupont Joe', 'Martin Paul', 'Durand Lucie'],
         'annee': ['DFASO1', 'DFASO2', 'DFTCC'],
-        'num_etudiant_binome': [2, 3, 4],
+        'id_binome': [2, 3, 4],
         'jour_preference': ['Lundi', 'Mardi', 'Mercredi'],
         'periode_stage': [1, 2, 3],
-        'periode_stage_externe': [3, 4, 1]
+        'periode_stage_ext': [3, 4, 1]
     })
     st.dataframe(exemple_df)
 
@@ -48,9 +49,8 @@ if etudiants_file:
     df = pd.read_excel(etudiants_file) if etudiants_file.name.endswith('xlsx') else pd.read_csv(etudiants_file)
     
     # Vérifications
-    expected_cols = ['numero_etudiant', 'nom', 'numero_etudiant_binome', 'jour_preference', 'annee']
-    expected_rows = 301
-    expected_nb_cols = 5
+    expected_cols = ['id_eleve', 'nom', 'id_binome', 'jour_preference', 'annee', 'periode_stage', 'periode_stage_ext']
+    expected_nb_cols = 7
     
     errors = []
     warnings = []
@@ -63,10 +63,6 @@ if etudiants_file:
     if list(df.columns) != expected_cols:
         errors.append(f"Colonnes attendues : {expected_cols}")
         errors.append(f"Colonnes trouvées : {list(df.columns)}")
-    
-    # Vérifier le nombre de lignes
-    if len(df) != expected_rows:
-        warnings.append(f"Nombre de lignes : {len(df)} (attendu : {expected_rows})")
     
     # Affichage des erreurs/warnings
     if errors:
@@ -134,54 +130,68 @@ with st.expander("Format Excel attendu", expanded=False):
         use_container_width=True
     )
 
-calendrier_file = st.file_uploader(
-    "Choisir un fichier",
+# Téléversement du fichier calendrier pour chaque niveau (DFASO1, DFASO2, DFTCC)
+calendrier_file_DFASO1 = st.file_uploader(
+    "Choisir le calendrier universitaire des DFASO1",
     type=["xlsx", "csv"],
-    key="calendrier"
+    key="calendrier1"
 )
 
-if calendrier_file:
-    df_cal = pd.read_excel(calendrier_file) if calendrier_file.name.endswith('xlsx') else pd.read_csv(calendrier_file)
-    
-    # Vérifications
-    expected_rows = 53
-    expected_nb_cols = 11
-    
-    errors = []
-    warnings = []
-    
-    # Vérifier le nombre de colonnes
-    if len(df_cal.columns) != expected_nb_cols:
-        errors.append(f"Nombre de colonnes incorrect : {len(df_cal.columns)} au lieu de {expected_nb_cols}")
-    
-    # Vérifier le nombre de lignes
-    if len(df_cal) != expected_rows:
-        errors.append(f"Nombre de lignes incorrect : {len(df_cal)} au lieu de {expected_rows}")
-    
-    # Vérifier la séquence des semaines (36-52, 1-35)
-    if len(df_cal) == expected_rows:
-        first_col = df_cal.iloc[:, 0]
-        semaines_attendues = list(range(36, 53)) + list(range(1, 36))
-        semaines_trouvees = first_col.tolist()
-        if semaines_trouvees != semaines_attendues:
-            warnings.append("L'ordre des semaines ne correspond pas à l'année universitaire (36-52, 1-35)")
-    
-    # Vérifier les valeurs dans les cellules
-    valid_values = ['C', 'F', 'A', '', ' ', None]
-    for col in df_cal.columns[1:]:  # Ignorer la colonne Semaine
-        invalid = df_cal[col][~df_cal[col].isin(valid_values) & df_cal[col].notna()]
-        if len(invalid) > 0:
-            warnings.append(f"Colonne {col} contient des valeurs invalides : {invalid.unique().tolist()}")
-    
-    # Affichage des erreurs/warnings
-    if errors:
-        for error in errors:
-            st.error(error)
-    elif warnings:
-        for warning in warnings:
-            st.warning(warning)
-        st.success(f"Calendrier importé ({len(df_cal)} semaines)")
-        st.dataframe(df_cal.head(10))
-    else:
-        st.success(f"Calendrier importé (validation OK - {len(df_cal)} semaines)")
-        st.dataframe(df_cal.head(10))
+calendrier_file_DFASO2 = st.file_uploader(
+    "Choisir le calendrier universitaire des DFASO2",
+    type=["xlsx", "csv"],
+    key="calendrier2"
+)
+
+calendrier_file_DFTCC = st.file_uploader(
+    "Choisir le calendrier universitaire des DFTCC",
+    type=["xlsx", "csv"],
+    key="calendrier3"
+)
+
+for niveau, calendrier_file in [("DFASO1", calendrier_file_DFASO1), ("DFASO2", calendrier_file_DFASO2), ("DFTCC", calendrier_file_DFTCC)]:
+    if calendrier_file:
+        df_cal = pd.read_excel(calendrier_file) if calendrier_file.name.endswith('xlsx') else pd.read_csv(calendrier_file)
+        
+        # Vérifications
+        expected_rows = 53
+        expected_nb_cols = 11
+        
+        errors = []
+        warnings = []
+        
+        # Vérifier le nombre de colonnes
+        if len(df_cal.columns) != expected_nb_cols:
+            errors.append(f"Nombre de colonnes incorrect : {len(df_cal.columns)} au lieu de {expected_nb_cols}")
+        
+        # Vérifier le nombre de lignes
+        if len(df_cal) != expected_rows:
+            errors.append(f"Nombre de lignes incorrect : {len(df_cal)} au lieu de {expected_rows}")
+        
+        # Vérifier la séquence des semaines (36-52, 1-35)
+        if len(df_cal) == expected_rows:
+            first_col = df_cal.iloc[:, 0]
+            semaines_attendues = list(range(36, 53)) + list(range(1, 36))
+            semaines_trouvees = first_col.tolist()
+            if semaines_trouvees != semaines_attendues:
+                warnings.append("L'ordre des semaines ne correspond pas à l'année universitaire (36-52, 1-35)")
+        
+        # Vérifier les valeurs dans les cellules
+        valid_values = ['C', 'F', 'A', '', ' ', None]
+        for col in df_cal.columns[1:]:  # Ignorer la colonne Semaine
+            invalid = df_cal[col][~df_cal[col].isin(valid_values) & df_cal[col].notna()]
+            if len(invalid) > 0:
+                warnings.append(f"Colonne {col} contient des valeurs invalides : {invalid.unique().tolist()}")
+        
+        # Affichage des erreurs/warnings
+        if errors:
+            for error in errors:
+                st.error(error)
+        elif warnings:
+            for warning in warnings:
+                st.warning(warning)
+            st.success(f"Calendrier importé ({len(df_cal)} semaines)")
+            st.dataframe(df_cal.head(10))
+        else:
+            st.success(f"Calendrier importé (validation OK - {len(df_cal)} semaines)")
+            st.dataframe(df_cal.head(10))
