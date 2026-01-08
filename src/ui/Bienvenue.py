@@ -3,7 +3,7 @@ import streamlit as st
 # Configuration de la page
 st.set_page_config(
     page_title="Gestion du Planning Hospitalier de la Faculté d'Odontologie",
-    page_icon="./assets/facult_d_odontologie_de_montpellier_logo.jpeg",
+    page_icon="https://media.licdn.com/dms/image/v2/D4D0BAQFQznNSBtSWWg/company-logo_200_200/company-logo_200_200/0/1738144388664/facult_d_odontologie_de_montpellier_logo?e=2147483647&v=beta&t=Uge2R8Hv_hCc8gv79aMsBIYe6lShFbPoMLJKzDF0bXk",
     layout="wide"
 )
 
