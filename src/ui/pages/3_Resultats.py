@@ -11,22 +11,19 @@ st.title("Résultats du Planning")
 st.markdown("---")
 
 # Onglets pour différentes vues
-tab1, tab2, tab3 = st.tabs(["Vue Calendrier", "Vue Étudiants", "Vue Fauteuils"])
+tab1, tab2 = st.tabs(["Vue Calendrier", "Vue Étudiants"])
 
 with tab1:
     st.subheader("Planning Calendrier")
-    # Ici : affichage du calendrier (peut utiliser st.dataframe avec style)
-    st.info("Calendrier interactif à implémenter")
 
 with tab2:
     st.subheader("Planning par Étudiant")
-    etudiant = st.selectbox("Sélectionner un étudiant", ["DUPONT Jean", "MARTIN Marie", "..."])
-    st.info(f"Planning de {etudiant}")
-
-st.markdown("---")
+    etudiant = st.selectbox("Exporter un étudiant (Sélectionnez un étudiant dans la liste)", ["1", "2", "..."])
+    # Sélectionner tous les étudiants
+    tous_les_etudiants = st.checkbox("Exporter tous les étudiants")
 
 # Section Export
-st.header("Export")
+st.subheader("Export")
 
 col1, col2 = st.columns(2)
 
