@@ -10,7 +10,7 @@ def generate_calendar():
     # Définition du chemin vers le dossier data
     output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data')
     os.makedirs(output_dir, exist_ok=True)
-    csv_file = os.path.join(output_dir, 'calendrier.csv')
+    csv_file = os.path.join(output_dir, 'mock_calendrier.csv')
 
     # Définition des colonnes
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]

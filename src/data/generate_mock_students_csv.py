@@ -91,7 +91,7 @@ def generate_students_csv():
     
     data_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data')
     os.makedirs(data_dir, exist_ok=True)
-    csv_file_path = os.path.join(data_dir, 'eleves.csv')
+    csv_file_path = os.path.join(data_dir, 'mock_eleves.csv')
     
     header = ["id_eleve", "nom", "id_binome", "jour_preference", "annee", "periode_stage", "periode_stage_ext"]
 

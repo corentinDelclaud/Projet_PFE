@@ -44,7 +44,7 @@ def generate_stages_csv():
 
     # Path setup
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(base_dir, '..', '..', 'data', 'stages.csv')
+    output_path = os.path.join(base_dir, '..', '..', 'data', 'mock_stages.csv')
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
     # Fields to export
