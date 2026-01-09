@@ -1,13 +1,19 @@
 import streamlit as st
 import pandas as pd
+from pathlib import Path
+import shutil
 
 st.set_page_config(
-    page_title="Import Données",
-    page_icon="",
+    page_title="Import des Données",
+    page_icon=":material/download:",
     layout="wide"
 )
 
 st.title("Import des Données")
+
+# Définir le dossier de sauvegarde des données
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+DATA_DIR.mkdir(exist_ok=True)
 
 # Section Étudiants
 st.subheader("1. Fichier Étudiants")
@@ -45,6 +51,13 @@ etudiants_file = st.file_uploader(
     key="etudiants"
 )
 
+existing_eleves = DATA_DIR / "eleves.csv"
+if existing_eleves.exists():
+    df = pd.read_csv(existing_eleves)
+    st.success(f"Liste des étudiants importée avec succès : {len(df)} étudiants \n\n Vous trouverez les 10 premiers enregistrements ci-dessous.")
+    st.dataframe(df.head(10))
+
+
 if etudiants_file:
     df = pd.read_excel(etudiants_file) if etudiants_file.name.endswith('xlsx') else pd.read_csv(etudiants_file)
     
@@ -71,10 +84,15 @@ if etudiants_file:
     elif warnings:
         for warning in warnings:
             st.warning(warning)
-        st.success(f"{len(df)} étudiants importés")
-        st.dataframe(df.head(10))
     else:
-        st.success(f"{len(df)} étudiants importés (validation OK)")
+        output_path = DATA_DIR / "eleves.csv"
+
+        if output_path.exists():
+            output_path.unlink()  # Supprimer l'ancien fichier s'il existe
+        
+        df.to_csv(output_path, index=False, encoding='utf-8')
+        
+        st.success(f"Liste des étudiants importée avec succès : {len(df)} étudiants \n\n Vous trouverez les 10 premiers enregistrements ci-dessous.")
         st.dataframe(df.head(10))
 
 st.markdown("---")

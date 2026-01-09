@@ -1,19 +1,32 @@
+from operator import attrgetter
 import streamlit as st
 import pandas as pd
+from pathlib import Path
+from datetime import datetime
 
 st.set_page_config(
     page_title="Configuration",
-    page_icon="",
+    page_icon=":material/settings:",
     layout="wide"
 )
 
 st.title("Configuration du Planning")
 
+# Définir le dossier pour stocker les données de configuration
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+DATA_DIR.mkdir(exist_ok=True)
+STAGES_CSV = DATA_DIR / "stages.csv"
+
 # Initialisation du state pour stocker les disciplines et les stages
 if "disciplines" not in st.session_state:
     st.session_state.disciplines = []
 if "stages" not in st.session_state:
-    st.session_state.stages = []
+    # Charger les stages existants depuis le CSV s'il existe
+    if STAGES_CSV.exists():
+        df_stages = pd.read_csv(STAGES_CSV)
+        st.session_state.stages = df_stages.to_dict('records')
+    else:
+        st.session_state.stages = []
 
 st.subheader("1. Gestion des disciplines")
 st.caption("Ajoutez ou supprimez les disciplines")
@@ -142,6 +155,22 @@ st.markdown("---")
 st.subheader("2. Gestion des stages")
 st.info("Configurez les périodes de stage")
 
+# Fonction pour sauvegarder les stages dans le CSV
+def save_stages_to_csv():
+    if st.session_state.stages:
+        df = pd.DataFrame(st.session_state.stages)
+        # Réorganiser les colonnes selon le format attendu
+        df = df[['id_stage', 'nom_stage', 'deb_semaine', 'fin_semaine', 'pour_niveau', 'periode']]
+        df.to_csv(STAGES_CSV, index=False)
+    else:
+        # Si plus de stages, créer un CSV vide avec les headers
+        df = pd.DataFrame(columns=['id_stage', 'nom_stage', 'deb_semaine', 'fin_semaine', 'pour_niveau', 'periode'])
+        df.to_csv(STAGES_CSV, index=False)
+
+# Fonction pour convertir une date en numéro de semaine
+def date_to_week_number(date):
+    return date.isocalendar()[1]
+
 # Formulaire d'ajout de stage
 with st.form("ajout_stage", clear_on_submit=True):
     st.markdown("##### Ajouter une nouvelle période de stage")
@@ -156,39 +185,44 @@ with st.form("ajout_stage", clear_on_submit=True):
         date_debut = st.date_input("Date de début")
         date_fin = st.date_input("Date de fin")
 
-    annee_universitaire = st.multiselect("Année universitaire", ["DFASO1", "DFASO2", "DFTCC"])
+    annee_universitaire = st.multiselect("Année universitaire", ["DFAS01", "DFAS02", "DFTCC"])
     
     submitted_stage = st.form_submit_button("Ajouter le stage")
 
 # Gestion de l'ajout de stage, add multiselect year one for each year
+# Gestion de l'ajout de stage
 if submitted_stage:
     if not nom_stage.strip():
         st.error("Veuillez renseigner le nom du stage.")
     elif date_fin < date_debut:
         st.error("La date de fin doit être postérieure à la date de début.")
-    elif annee_universitaire == []:
+    elif not annee_universitaire:
         st.error("Veuillez sélectionner au moins une année universitaire.")
-    # Ajout pour chaque année sélectionnée
-    elif len(annee_universitaire) > 1:
-        for annee in annee_universitaire:
-            st.session_state.stages.append({
-                "numero_periode": numero_periode,
-                "nom_stage": nom_stage,
-                "date_debut": date_debut,
-                "date_fin": date_fin,
-                "annee_universitaire": [annee]
-            })
-        st.success(f"Stage '{nom_stage}' ajouté avec succès pour les années sélectionnées !")
     else:
-        # Ajout dans le state
-        st.session_state.stages.append({
-            "numero_periode": numero_periode,
-            "nom_stage": nom_stage,
-            "date_debut": date_debut,
-            "date_fin": date_fin,
-            "annee_universitaire": annee_universitaire
-        })
-        st.success(f"Stage '{nom_stage}' ajouté avec succès !")
+        # Générer un nouvel ID (max ID existant + 1)
+        max_id = max([s['id_stage'] for s in st.session_state.stages], default=0)
+        
+        # Convertir les dates en numéros de semaine
+        semaine_debut = date_to_week_number(date_debut)
+        semaine_fin = date_to_week_number(date_fin)
+        
+        # Ajouter pour chaque année sélectionnée
+        for annee in annee_universitaire:
+            max_id += 1
+            st.session_state.stages.append({
+                'id_stage': max_id,
+                'nom_stage': nom_stage,
+                'deb_semaine': semaine_debut,
+                'fin_semaine': semaine_fin,
+                'pour_niveau': annee,
+                'periode': numero_periode
+            })
+        
+        # Sauvegarder dans le CSV
+        save_stages_to_csv()
+        
+        st.success(f"Stage '{nom_stage}' ajouté avec succès pour {', '.join(annee_universitaire)} !")
+
 
 # Affichage des stages enregistrés
 if st.session_state.stages:
@@ -210,25 +244,26 @@ if st.session_state.stages:
         st.markdown("**Actions**")
 
     # Trier par annee universitaire
-    stages_tries = sorted(st.session_state.stages, key=lambda x: x['annee_universitaire'])
+    stages_tries = sorted(st.session_state.stages, key=lambda x: (x['pour_niveau'],x['periode']))
     
     for idx, stage in enumerate(stages_tries):
         col1, col2, col3, col4, col5, col6 = st.columns([0.5, 2, 1.5, 1.5, 1.5, 0.8])
         with col1:
-            st.markdown(f"**{stage['numero_periode']}**")
+            st.markdown(f"**{stage['periode']}**")
         with col2:
             st.write(stage['nom_stage'])
         with col3:
-            st.write(f"{stage['date_debut'].strftime('%d/%m/%Y')}")
+            st.write(f"{stage['deb_semaine']}")
         with col4:
-            st.write(f"{stage['date_fin'].strftime('%d/%m/%Y')}")
+            st.write(f"{stage['fin_semaine']}")
         with col5:
-            st.write(", ".join(stage['annee_universitaire']) if stage['annee_universitaire'] else "Toutes")
+            st.write(stage['pour_niveau'])
         with col6:
-            if st.button("Supprimer", key=f"delete_stage_{idx}", type="primary"):
+            if st.button("Supprimer", key=f"delete_stage_{stage['id_stage']}", type="primary"):
                 # Retrouver l'index réel dans la liste non triée
                 real_idx = st.session_state.stages.index(stage)
                 st.session_state.stages.pop(real_idx)
+                save_stages_to_csv()
                 st.rerun()
 else:
     st.warning("Aucun stage enregistré. Ajoutez-en un ci-dessus.")

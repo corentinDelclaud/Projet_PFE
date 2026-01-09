@@ -69,8 +69,8 @@ import random
 import csv
 
 
-# --- nom documents csv ---
-eleves_csv = 'mock_eleves.csv'
+# --- Chargement des documents depuis streamlit ---
+eleves_csv = 'eleves.csv'
 stages_csv = 'mock_stages.csv'
 
 # Chargement des élèves depuis le CSV
