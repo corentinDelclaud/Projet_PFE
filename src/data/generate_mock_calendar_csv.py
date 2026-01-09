@@ -13,14 +13,12 @@ def generate_calendar():
     csv_file = os.path.join(output_dir, 'mock_calendrier.csv')
 
     # Définition des colonnes
-    jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-    moments = ["Matin", "ApresMidi"]
+    demijournee = [1,2,3,4,5,6,7,8,9,10]  # Représente Lundi_Matin à Vendredi_ApresMidi
     
     # Construction de l'en-tête: Semaine, Lundi_Matin, Lundi_ApresMidi, ...
     header = ["Semaine"]
-    for j in jours:
-        for m in moments:
-            header.append(f"{j}_{m}")
+    for j in demijournee:
+        header.append(f"{j}")
 
     print(f"Génération du calendrier dans : {csv_file}")
 
