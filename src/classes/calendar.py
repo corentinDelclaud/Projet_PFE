@@ -1,8 +1,10 @@
-class calendar:
+class calendar_class:
     
     weeks = 52
     days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
     periods = ["Matin", "ApresMidi"]
+    vacations_per_week = 10  # 5 days * 2 periods
+    vacations : list[str] = [] * 520 # Placeholder for vacation  
     
     
     def __init__(self):
