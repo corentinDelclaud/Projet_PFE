@@ -29,25 +29,29 @@ def generate_individual_plannings(input_csv_path, output_dir):
             
         try:
             student_col_idx = headers.index("Eleve")
+            id_col_idx = headers.index("Id_Eleve")
         except ValueError:
-            print("Error: 'Eleve' column not found in CSV")
+            print("Error: 'Eleve' or 'Id_Eleve' column not found in CSV")
             return
 
         for row in reader:
             if not row: continue
             student_name = row[student_col_idx]
+            student_id = row[id_col_idx]
             
-            if student_name not in student_plannings:
-                student_plannings[student_name] = []
+            key = (student_id, student_name)
             
-            student_plannings[student_name].append(row)
+            if key not in student_plannings:
+                student_plannings[key] = []
+            
+            student_plannings[key].append(row)
 
     # 2. Write Individual Files
     count = 0
-    for student, rows in student_plannings.items():
+    for (s_id, s_name), rows in student_plannings.items():
         # Sanitize filename (remove characters invalid in filenames)
-        safe_name = "".join([c for c in student if c.isalnum() or c in (' ', '_', '-')]).strip()
-        filename = f"{safe_name}.csv"
+        safe_name = "".join([c for c in s_name if c.isalnum() or c in (' ', '_', '-')]).strip()
+        filename = f"{s_id}_{safe_name}.csv"
         filepath = os.path.join(output_dir, filename)
         
         with open(filepath, mode='w', newline='', encoding='utf-8') as sout:
