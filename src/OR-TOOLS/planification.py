@@ -294,7 +294,7 @@ for v_idx, vac in enumerate(vacations):
                             key1 = (el.id_eleve, disc.id_discipline, v_idx)
                             key2 = (binome_obj.id_eleve, disc.id_discipline, v_idx)
                             
-                            # Si les deux peuvent être affectés (variables existent)
+                            # Si les deux peuvent être affectés (variables existantes)
                             if key1 in assignments and key2 in assignments:
                                 model.Add(assignments[key1] == assignments[key2])
                             # Si l'un ne peut pas être là (stage/cours), l'autre ne peut pas être là non plus
@@ -304,8 +304,9 @@ for v_idx, vac in enumerate(vacations):
                             elif key1 not in assignments and key2 in assignments:
                                 model.Add(assignments[key2] == 0)
 
-# CONTRAINTE QUOTAS (Base_logique.py: Quotas)
+# CONTRAINTE QUOTAS (Base_logique.py: Quotas) - SOFT VERSION
 # Le nombre total de vacations effectuées par un élève dans une discipline ne doit pas dépasser le quota de cette discipline
+quota_penalties = []
 for el in eleves:
     for disc in disciplines:
         # Rassembler toutes les variables d'affectation pour ce couple (élève, discipline) sur l'ensemble des vacations
@@ -315,13 +316,19 @@ for el in eleves:
             if key in assignments:
                 vars_for_student_discipline.append(assignments[key])
         
-        # Si des variables existent, on applique la contrainte
+        # Si des variables existent, on applique la contrainte (avec variable d'ecart)
         if vars_for_student_discipline:
-            # On suppose que disc.quota est le minimum requis (ex: 2 pour Soins Prothétiques)
-            model.Add(sum(vars_for_student_discipline) >= disc.quota)
+            # Shortfall = max(0, Quota - Assignés)
+            # Assignés + Shortfall >= Quota
+            # On cherche à minimiser Shortfall
+            target_quota = disc.quota
+            if target_quota > 0:
+                shortfall = model.NewIntVar(0, target_quota, f"shortfall_e{el.id_eleve}_d{disc.id_discipline}")
+                model.Add(sum(vars_for_student_discipline) + shortfall >= target_quota)
+                quota_penalties.append(shortfall)
 
 # OBJECTIF (Base_logique.py: Preference)
-# Maximiser les affectations sur les jours de préférence
+# Maximiser les affectations sur les jours de préférence tout en minimisant les pénalités de quota
 objective_terms = []
 for (e_id, d_id, v_idx), x_var in assignments.items():
     # Optimisation O(1)
@@ -338,8 +345,10 @@ for (e_id, d_id, v_idx), x_var in assignments.items():
         
     objective_terms.append(weight * x_var)
 
-# Maximiser la somme pondérée
-model.Maximize(sum(objective_terms))
+# Maximiser la somme pondérée - Pénalités
+# On donne un poids TRES fort aux quotas (ex: 1000) pour qu'ils soient prioritaires sur les préférences
+QUOTA_PENALTY_WEIGHT = 1000
+model.Maximize(sum(objective_terms) - QUOTA_PENALTY_WEIGHT * sum(quota_penalties))
 
 print(f"Modèle construit en {os.times().elapsed - start_time:.2f}s. Lancement du solveur...")
 
@@ -369,7 +378,7 @@ if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
     with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         # Header
-        writer.writerow(["Semaine", "Jour", "Periode", "Eleve", "Discipline"])
+        writer.writerow(["Semaine", "Jour", "Periode", "Id_Eleve", "Eleve", "Discipline"])
         
         day_names = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
         
@@ -382,14 +391,14 @@ if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
                 if idx == v_idx and solver.Value(val) == 1:
                     e_name = eleve_dict[e_id].nom
                     d_name = next(d.nom_discipline for d in disciplines if d.id_discipline == d_id)
-                    writer.writerow([vac.semaine, jour_str, p_str, e_name, d_name])
+                    writer.writerow([vac.semaine, jour_str, p_str, e_id, e_name, d_name])
 
             # 2. Affectations Stages
             for e_id, s_list in stages_eleves.items():
                 for s in s_list:
                     if s.debut_stage <= vac.semaine <= s.fin_stage:
                         e_name = eleve_dict[e_id].nom
-                        writer.writerow([vac.semaine, jour_str, p_str, e_name, f"STAGE: {s.nom_stage}"])
+                        writer.writerow([vac.semaine, jour_str, p_str, e_id, e_name, f"STAGE: {s.nom_stage}"])
                     
     print(f"\nPlanning exporté dans : {csv_file_path}")
     print(f"Solution trouvée! Valeur objectif: {solver.ObjectiveValue()}")
