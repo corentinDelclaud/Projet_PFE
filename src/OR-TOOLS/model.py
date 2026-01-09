@@ -68,6 +68,11 @@ from classes.enum.periode import Periode
 import random
 import csv
 
+
+# --- nom documents csv ---
+eleves_csv = 'mock_eleves.csv'
+stages_csv = 'mock_stages.csv'
+
 # Chargement des élèves depuis le CSV
 eleves: list[eleve] = []
 eleves_by_niveau = {
@@ -76,7 +81,7 @@ eleves_by_niveau = {
     niveau.DFTCC: []
 }
 
-csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'eleves.csv')
+csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', eleves_csv)
 try:
     with open(csv_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -104,7 +109,7 @@ try:
 
     # --- CHARGEMENT DES STAGES ---
     stages_lookup = {} # Key: (niveau_name, periode_id) -> List of stage dicts
-    stages_csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'stages.csv')
+    stages_csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', stages_csv)
     try:
         with open(stages_csv_path, mode='r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
