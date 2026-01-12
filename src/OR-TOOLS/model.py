@@ -72,6 +72,9 @@ import csv
 # --- Chargement des documents depuis streamlit ---
 eleves_csv = 'eleves.csv'
 stages_csv = 'mock_stages.csv'
+calendrier_DFAS01_csv = 'mock_calendrier_DFAS01.csv'
+calendrier_DFAS02_csv = 'mock_calendrier_DFAS02.csv'
+calendrier_DFTCC_csv = 'mock_calendrier_DFTCC.csv'
 
 # Chargement des élèves depuis le CSV
 eleves: list[eleve] = []
@@ -184,11 +187,48 @@ for semaine in range(1, 53): # Semaines 1
         for p in Periode:
             vacations.append(vacation(semaine, jour, p))
 
-# Mock des indisponibilités (Cours / Stages)
-# Ex: Pierre (3) a cours le Mercredi matin (Semaine 1 et 2)
-cours_eleves = {
-    3: [cours(1, 2), cours(2, 2)] # Mercredi = jour 2
+# --- CHARGEMENT DES CALENDRIERS (EMPLOIS DU TEMPS) ---
+# Format: Semaine (lignes) x Créneaux[1-10] (colonnes)
+# Contenu non vide = Indisponible (Cours)
+calendar_unavailability = {
+    niveau.DFAS01: set(),
+    niveau.DFAS02: set(),
+    niveau.DFTCC: set()
 }
+
+calendar_files = {
+    niveau.DFAS01: calendrier_DFAS01_csv,
+    niveau.DFAS02: calendrier_DFAS02_csv,
+    niveau.DFTCC: calendrier_DFTCC_csv
+}
+
+print("Chargement des calendriers...")
+for niv, filename in calendar_files.items():
+    cal_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', filename)
+    try:
+        with open(cal_path, mode='r', encoding='utf-8') as f:
+            # Le CSV a pour header: Semaine,1,2,3,4,5,6,7,8,9,10
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    s_val = row.get("Semaine")
+                    if not s_val:
+                        continue
+                    semaine = int(s_val)
+                    
+                    # Parcours des créneaux 1 à 10
+                    for i in range(1, 11):
+                        col_k = str(i)
+                        val = (row.get(col_k) or "").strip()
+                        # Si non vide, c'est occupé
+                        if val:
+                            calendar_unavailability[niv].add((semaine, i - 1))
+                except ValueError:
+                    continue
+        print(f"  - Calendrier {niv.name} chargé ({len(calendar_unavailability[niv])} indisponibilités).")
+
+    except FileNotFoundError:
+        print(f"Attention: Calendrier introuvable {cal_path}")
 
 print(f"Planification pour {len(eleves)} élèves, {len(disciplines)} disciplines, sur {len(vacations)} créneaux.")
 
@@ -244,15 +284,11 @@ for v_idx, vac in enumerate(vacations):
                         en_stage = True
                         break
             
-            # 2. Cours verification
+            # 2. Cours verification (Priorité 2: Calendrier commun)
+            # Vérifie si le calendrier du niveau de l'élève marque ce créneau comme occupé
             en_cours = False
-            if el.id_eleve in cours_eleves:
-                for c in cours_eleves[el.id_eleve]:
-                    if c.semaine == vac.semaine and c.jour == vac.jour:
-                        # Si cours toute la journée ou spécifié (ici on simplifie: cours = jour complet ou check période?)
-                        # La classe cours n'a pas de période, on suppose qu'un cours bloque la journée (ou à affiner)
-                        en_cours = True
-                        break
+            if (vac.semaine, slot_index) in calendar_unavailability.get(el.annee, set()):
+                en_cours = True
             
             if en_stage or en_cours:
                 continue # Pas de variable créée = pas d'affectation possible
