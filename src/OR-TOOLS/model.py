@@ -167,22 +167,16 @@ for el in eleves:
             
             stages_eleves[el.id_eleve] = user_stages
 
-# Configuration des stages (Groupe -> {Niveau -> (Debut, Fin)}) - OBSOLETE
-# STAGE_CONFIG = {
-#     1: {niveau.DFTCC: (45, 51), niveau.DFAS01: (45, 51)},
-#     2: {niveau.DFTCC: (2, 8),   niveau.DFAS01: (2, 8)},
-#     3: {niveau.DFTCC: (9, 15),  niveau.DFAS01: (9, 15)},
-#     4: {niveau.DFTCC: (16, 22), niveau.DFAS01: (38, 44)}
-# }
-
-# Attribution des groupes de stage - OBSOLETE (Remplacé par lecture CSV)
-# for i in range(len(dfas01_list)):
-# ... (removed)
 
 
-# Génération des créneaux (Vacations) sur 1 semaine
+
+
+# Génération des créneaux (Vacations)
 vacations: list[vacation] = []
-for semaine in range(1, 53): # Semaines 1 
+# L'année universitaire commence semaine 34 et finit semaine 33 l'année suivante
+weeks_range = list(range(34, 53)) + list(range(1, 34))
+
+for semaine in weeks_range: 
     for jour in range(0, 5): # Lundi (0) à Vendredi (4)
         for p in Periode:
             vacations.append(vacation(semaine, jour, p))
@@ -367,6 +361,61 @@ for el in eleves:
                 shortfall = model.NewIntVar(0, target_quota, f"shortfall_e{el.id_eleve}_d{disc.id_discipline}")
                 model.Add(sum(vars_for_student_discipline) + shortfall >= target_quota)
                 quota_penalties.append(shortfall)
+
+# CONTRAINTE LISSAGE (Lissage par niveau des vacations entre élèves par discipline)
+# Les élèves d'un même niveau ne doivent pas avoir un nombre de vacations trop différent.
+# Si Quota > LISSAGE_THRESHOLD -> écart max [-5; 5]
+# Sinon -> écart max [-2; 2]
+LISSAGE_THRESHOLD = 25
+print("Ajout des contraintes de lissage...")
+
+# Pré-calcul des sommes de vacations par élève et par discipline pour éviter de refaire les boucles
+# (id_eleve, id_discipline) -> sum(vars)
+student_vars_by_disc = {} 
+
+for el in eleves:
+    for disc in disciplines:
+        vars_for_student_discipline = []
+        for v_idx in range(len(vacations)):
+            key = (el.id_eleve, disc.id_discipline, v_idx)
+            if key in assignments:
+                vars_for_student_discipline.append(assignments[key])
+        
+        # On stocke la somme (expression lineaire) ou 0 si vide
+        if vars_for_student_discipline:
+            student_vars_by_disc[(el.id_eleve, disc.id_discipline)] = sum(vars_for_student_discipline)
+        else:
+            student_vars_by_disc[(el.id_eleve, disc.id_discipline)] = 0
+
+for niv, students_in_level in eleves_by_niveau.items():
+    if not students_in_level:
+        continue
+    
+    for disc in disciplines:
+        # Détermination de l'écart autorisé (delta)
+        if disc.quota >= LISSAGE_THRESHOLD:
+            delta_max = 5
+        else:
+            delta_max = 2
+            
+        # Récupération des totaux pour ce niveau/discipline
+        counts = []
+        for el in students_in_level:
+            counts.append(student_vars_by_disc[(el.id_eleve, disc.id_discipline)])
+            
+        # Application de la contrainte: max(counts) - min(counts) <= delta_max
+        if counts:
+            # Création bornes min/max locales ce groupe
+            # Borne sup théorique = nombre total de créneaux
+            max_possible = len(vacations)
+            min_assign = model.NewIntVar(0, max_possible, f"min_assign_{niv.name}_{disc.nom_discipline}")
+            max_assign = model.NewIntVar(0, max_possible, f"max_assign_{niv.name}_{disc.nom_discipline}")
+            
+            for c in counts:
+                model.Add(c >= min_assign)
+                model.Add(c <= max_assign)
+            
+            model.Add(max_assign - min_assign <= delta_max)
 
 # OBJECTIF (Base_logique.py: Preference)
 # Maximiser les affectations sur les jours de préférence tout en minimisant les pénalités de quota

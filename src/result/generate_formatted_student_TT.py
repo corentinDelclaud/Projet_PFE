@@ -190,8 +190,10 @@ def create_timetable_excel(csv_folder, output_excel):
             row_idx += 1
     
     # Créer un dossier spécifique pour le fichier Excel
-    excel_folder = Path('/Users/poomedy/Desktop/semester 9/PFE/Projet_PFE/resultat') / "emplois_du_temps_excel"
-    excel_folder.mkdir(exist_ok=True)
+    # On assume que la structure est Projet_PFE/src/result/ce_script.py
+    project_root = Path(__file__).resolve().parent.parent.parent
+    excel_folder = project_root / 'resultat' / "emplois_du_temps_excel"
+    excel_folder.mkdir(parents=True, exist_ok=True)
     
     # Sauvegarder le fichier Excel dans ce dossier
     output_path = excel_folder / output_excel
@@ -202,5 +204,6 @@ def create_timetable_excel(csv_folder, output_excel):
 
 # Utilisation
 if __name__ == "__main__":
-    csv_folder = "/Users/poomedy/Desktop/semester 9/PFE/Projet_PFE/resultat/planning_personnel"
+    project_root = Path(__file__).resolve().parent.parent.parent
+    csv_folder = project_root / 'resultat' / 'planning_personnel'
     create_timetable_excel(csv_folder, "emplois_du_temps.xlsx")
