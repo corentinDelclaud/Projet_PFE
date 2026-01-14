@@ -276,3 +276,6 @@ if __name__ == "__main__":
         output_dir = os.path.join(base_dir, "resultat", f"feuilles_appel_S{args.semaine}_{args.jour}")
 
     generate_all_discipline_appel_pdfs_for_one_day(input_dir, output_dir, args.semaine, args.jour, args.periode)
+    
+    
+    #& "C:/Program Files/Python313/python.exe" c:/Users/coren/Desktop/PFE/Projet_PFE/src/result/generate_appel_pdf.py --semaine 6 --jour Jeudi --periode "Matin"
