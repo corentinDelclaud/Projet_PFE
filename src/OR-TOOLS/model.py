@@ -33,7 +33,7 @@ pedo = discipline(4, "Pédodontie", ["A104"] * 10, [5] * 10, True, 5, [True]*10,
 odf = discipline(5, "Orthodontie", ["A105"] * 10, [8] * 10, True, 5, [True]*10,[4,5,6])
 occl = discipline(6, "Occlusodontie", ["A106"] * 10, [12] * 10, True, 10, [True]*10,[4,5,6])
 ra = discipline(7, "Radiologie", ["A107"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
-ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 15, [True]*10,[4,5,6])
+ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 15, [True]*10,[5])
 pano = discipline(9, "Panoramique", ["A109"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
 cs_urg = discipline(10, "Consultation d'urgence", ["A110"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
 sp = discipline(11, "Soins Prothétiques", ["A111"] * 10, [14] * 10, True, 15, [True]*10,[4,5,6])
@@ -72,9 +72,9 @@ import csv
 # --- Chargement des documents depuis streamlit ---
 eleves_csv = 'eleves_with_code.csv'
 stages_csv = 'mock_stages.csv'
-calendrier_DFAS01_csv = 'calendrier.xlsx - DFASO1.csv'
-calendrier_DFAS02_csv = 'calendrier.xlsx - DFASO2.csv'
-calendrier_DFTCC_csv = 'calendrier.xlsx - DFTCC.csv'
+calendrier_DFAS01_csv = 'calendrier_DFASO1.csv'
+calendrier_DFAS02_csv = 'calendrier_DFASO2.csv'
+calendrier_DFTCC_csv = 'calendrier_DFTCC.csv'
 
 # Chargement des élèves depuis le CSV
 eleves: list[eleve] = []
@@ -201,14 +201,16 @@ for niv, filename in calendar_files.items():
     cal_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', filename)
     try:
         with open(cal_path, mode='r', encoding='utf-8') as f:
-            # Le CSV a pour header: Semaine,1,2,3,4,5,6,7,8,9,10
+            # Le CSV a pour header: Semaine,1,2,3,4,5,6,7,8,9,10,période
             reader = csv.DictReader(f)
             for row in reader:
                 try:
                     s_val = row.get("Semaine")
                     if not s_val:
-                        continue
-                    semaine = int(s_val)
+                        continue                    # Correction: Le CSV contient "S34", "S35"... il faut retirer le "S"
+                    if s_val.upper().startswith("S"):
+                         s_val = s_val[1:]                    
+                         semaine = int(s_val)
                     
                     # Parcours des créneaux 1 à 10
                     for i in range(1, 11):
@@ -319,53 +321,90 @@ for v_idx, vac in enumerate(vacations):
             model.Add(sum(vars_for_student_in_slot) <= 1)
 
 # CONTRAINTE BINOME (Base_logique.py: Binome)
-# Si une discipline est 'en_binome', et qu'un élève a un binome, ils doivent être ensemble.
-# A <-> B équivaut à A == B
+forced_to_zero = set() # Set of (id_eleve, id_discipline, v_idx) forced to 0
+
 for v_idx, vac in enumerate(vacations):
     for disc in disciplines:
         if disc.en_binome:
             for el in eleves:
                 if el.id_binome != 0:
-                    # Trouver l'objet binome (Optimisation O(1))
                     binome_obj = eleve_dict.get(el.id_binome)
                     if binome_obj:
-                        # On ne traite la contrainte qu'une fois pour la paire (id < id_binome)
                         if el.id_eleve < binome_obj.id_eleve:
                             key1 = (el.id_eleve, disc.id_discipline, v_idx)
                             key2 = (binome_obj.id_eleve, disc.id_discipline, v_idx)
                             
-                            # Si les deux peuvent être affectés (variables existantes)
                             if key1 in assignments and key2 in assignments:
                                 model.Add(assignments[key1] == assignments[key2])
-                            # Si l'un ne peut pas être là (stage/cours), l'autre ne peut pas être là non plus
-                            # (Car discipline en binôme obligatoire)
                             elif key1 in assignments and key2 not in assignments:
-                                model.Add(assignments[key1] == 0)
-                            elif key1 not in assignments and key2 in assignments:
-                                model.Add(assignments[key2] == 0)
+                                # Le binôme (key2/binome_obj) est indisponible.
+                                # Vérifions si c'est à cause d'un stage.
+                                binome_en_stage = False
+                                if binome_obj.id_eleve in stages_eleves:
+                                    for s in stages_eleves[binome_obj.id_eleve]:
+                                        if s.debut_stage <= vac.semaine <= s.fin_stage:
+                                            binome_en_stage = True
+                                            break
+                                
+                                if binome_en_stage:
+                                    # EXCEPTION "Binôme Exceptionnel":
+                                    # Si le binôme est en stage, l'élève présent (A) N'EST PAS BLOQUÉ.
+                                    # Il pourra travailler seul ou avec un autre orphelin (C).
+                                    pass
+                                else:
+                                    # Sinon (ex: cours), on maintient la contrainte stricte
+                                    model.Add(assignments[key1] == 0)
+                                    forced_to_zero.add(key1)
 
-# CONTRAINTE QUOTAS (Base_logique.py: Quotas) - SOFT VERSION
-# Le nombre total de vacations effectuées par un élève dans une discipline ne doit pas dépasser le quota de cette discipline
-quota_penalties = []
+                            elif key1 not in assignments and key2 in assignments:
+                                # Même logique symétrique pour key2 (si A est absent)
+                                eleve_en_stage = False
+                                if el.id_eleve in stages_eleves:
+                                    for s in stages_eleves[el.id_eleve]:
+                                        if s.debut_stage <= vac.semaine <= s.fin_stage:
+                                            eleve_en_stage = True
+                                            break
+                                
+                                if eleve_en_stage:
+                                    pass
+                                else:
+                                    model.Add(assignments[key2] == 0)
+                                    forced_to_zero.add(key2)
+
+# CONTRAINTE QUOTAS (HARD MINIMUM VERSION)
 for el in eleves:
     for disc in disciplines:
-        # Rassembler toutes les variables d'affectation pour ce couple (élève, discipline) sur l'ensemble des vacations
+        if el.annee.value not in disc.annee:
+            continue
+            
         vars_for_student_discipline = []
+        effective_vars = [] # Variables not forced to zero
+        
         for v_idx in range(len(vacations)):
             key = (el.id_eleve, disc.id_discipline, v_idx)
             if key in assignments:
                 vars_for_student_discipline.append(assignments[key])
+                if key not in forced_to_zero:
+                    effective_vars.append(assignments[key])
         
-        # Si des variables existent, on applique la contrainte (avec variable d'ecart)
-        if vars_for_student_discipline:
-            # Shortfall = max(0, Quota - Assignés)
-            # Assignés + Shortfall >= Quota
-            # On cherche à minimiser Shortfall
-            target_quota = disc.quota
-            if target_quota > 0:
-                shortfall = model.NewIntVar(0, target_quota, f"shortfall_e{el.id_eleve}_d{disc.id_discipline}")
-                model.Add(sum(vars_for_student_discipline) + shortfall >= target_quota)
-                quota_penalties.append(shortfall)
+        target_quota = disc.quota
+        if target_quota > 0:
+            # DIAGNOSTIC AMELIORE
+            # On vérifie sur les "effective_vars" (celles qui ne sont pas tuées par le binôme)
+            if len(effective_vars) < target_quota:
+                 print(f"ERREUR FATALE: L'élève {el.nom} (ID {el.id_eleve}) manque de créneaux pour {disc.nom_discipline}.")
+                 print(f"  - Quota requis : {target_quota}")
+                 print(f"  - Créneaux théoriques : {len(vars_for_student_discipline)}")
+                 print(f"  - Créneaux effectifs (hors blocage binôme) : {len(effective_vars)}")
+                 print(f"  -> L'élève (ou son binôme) a trop d'indisponibilités (Stages/Cours).")
+            
+            if vars_for_student_discipline:
+                 model.Add(sum(vars_for_student_discipline) >= target_quota)
+            else:
+                 # Si l'élève doit faire un quota mais n'a aucune disponibilité/créneau possible -> Infeasible
+                 # On force le modèle à échouer pour signaler le problème de données
+                 print(f"Warning: Impossible d'atteindre le quota {target_quota} pour {el.nom} en {disc.nom_discipline} (indisponibilités totales)")
+                 # model.Add(0 >= target_quota) # Uncomment to force failure
 
 # CONTRAINTE LISSAGE (Lissage par niveau des vacations entre élèves par discipline)
 # Les élèves d'un même niveau ne doivent pas avoir un nombre de vacations trop différent.
@@ -440,10 +479,8 @@ for (e_id, d_id, v_idx), x_var in assignments.items():
         
     objective_terms.append(weight * x_var)
 
-# Maximiser la somme pondérée - Pénalités
-# On donne un poids TRES fort aux quotas (ex: 1000) pour qu'ils soient prioritaires sur les préférences
-QUOTA_PENALTY_WEIGHT = 1000
-model.Maximize(sum(objective_terms) - QUOTA_PENALTY_WEIGHT * sum(quota_penalties))
+# Maximiser la somme pondérée (Préférences uniquement)
+model.Maximize(sum(objective_terms))
 
 print(f"Modèle construit en {os.times().elapsed - start_time:.2f}s. Lancement du solveur...")
 
