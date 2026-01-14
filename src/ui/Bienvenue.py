@@ -67,20 +67,4 @@ with col3:
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Informations techniques
-with st.expander("Informations techniques"):
-    st.markdown("""
-    **Formats de fichiers acceptés :** Excel (.xlsx) et CSV (.csv)
-    
-    **Contraintes prises en compte par l'algorithme :**
-    - Préférences de jours des étudiants
-    - Périodes de stage externe
-    - Constitution des binômes
-    - Quotas minimums par discipline
-    - Disponibilité des encadrants UIC
-    - Capacité maximale des salles
-    
-    **Développé pour la Faculté d'Odontologie de Montpellier**
-    """)
-
 st.caption("© 2026 - Faculté d'Odontologie de Montpellier")

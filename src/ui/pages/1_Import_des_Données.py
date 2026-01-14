@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 import shutil
+import sys
+from pathlib import Path
 
 st.set_page_config(
     page_title="Import des Données",
@@ -21,13 +23,12 @@ st.subheader("1. Fichier Étudiants")
 with st.expander("Format Excel attendu", expanded=False):
     st.info("""
     **Format requis :**
-    - **7 colonnes** exactement
+    - **6 colonnes** exactement
     
     **En-têtes de colonnes :**
-    - id_eleve
-    - nom
+    - id_eleve : numéro étudiant unique
+    - id_binome : numéro étudiant du binôme
     - annee
-    - id_binome
     - jour_preference
     - periode_stage
     - periode_stage_ext
@@ -35,10 +36,9 @@ with st.expander("Format Excel attendu", expanded=False):
     
     st.markdown("**Exemple :**")
     exemple_df = pd.DataFrame({
-        'id_eleve': [1, 2, 3],
-        'nom': ['Dupont Joe', 'Martin Paul', 'Durand Lucie'],
+        'id_eleve': [234, 678, 101],
+        'id_binome': [345, 789, 111],
         'annee': ['DFASO1', 'DFASO2', 'DFTCC'],
-        'id_binome': [2, 3, 4],
         'jour_preference': ['Lundi', 'Mardi', 'Mercredi'],
         'periode_stage': [1, 2, 3],
         'periode_stage_ext': [3, 4, 1]
@@ -51,19 +51,19 @@ etudiants_file = st.file_uploader(
     key="etudiants"
 )
 
-existing_eleves = DATA_DIR / "eleves.csv"
+existing_eleves = DATA_DIR / "eleves_with_code.csv"
 if existing_eleves.exists():
-    df = pd.read_csv(existing_eleves)
-    st.success(f"Liste des étudiants importée avec succès : {len(df)} étudiants \n\n Vous trouverez les 10 premiers enregistrements ci-dessous.")
-    st.dataframe(df.head(10))
+    st.warning(f"Un fichier d'élèves avec codes existe déjà : {existing_eleves.name}. Le téléversement d'un nouveau fichier le remplacera.")
 
+if etudiants_file:    
+    output_path = DATA_DIR / "eleves.csv"
+    output_with_code_path = DATA_DIR / "eleves_with_code.csv"
 
-if etudiants_file:
     df = pd.read_excel(etudiants_file) if etudiants_file.name.endswith('xlsx') else pd.read_csv(etudiants_file)
     
     # Vérifications
-    expected_cols = ['id_eleve', 'nom', 'id_binome', 'jour_preference', 'annee', 'periode_stage', 'periode_stage_ext']
-    expected_nb_cols = 7
+    expected_cols = ['id_eleve', 'id_binome', 'jour_preference', 'annee', 'periode_stage', 'periode_stage_ext']
+    expected_nb_cols = 6
     
     errors = []
     warnings = []
@@ -85,15 +85,39 @@ if etudiants_file:
         for warning in warnings:
             st.warning(warning)
     else:
-        output_path = DATA_DIR / "eleves.csv"
-
         if output_path.exists():
-            output_path.unlink()  # Supprimer l'ancien fichier s'il existe
-        
+            output_path.unlink()  # Supprimer le fichier existant pour le remplacer
+        if output_with_code_path.exists():
+            output_with_code_path.unlink()
+        # Sauvegarder le fichier téléversé nommmé "eleves.csv"
         df.to_csv(output_path, index=False, encoding='utf-8')
-        
-        st.success(f"Liste des étudiants importée avec succès : {len(df)} étudiants \n\n Vous trouverez les 10 premiers enregistrements ci-dessous.")
-        st.dataframe(df.head(10))
+
+        # Maintenant importer le module
+        try:
+            # Ajouter le chemin vers le dossier src/data
+            data_code_path = Path(__file__).parent.parent.parent / "data"
+            if str(data_code_path) not in sys.path:
+                sys.path.insert(0, str(data_code_path))
+            from generate_student_code import generate_codes
+
+            with st.spinner("Génération des codes en cours..."):
+                generate_codes(str(output_path))
+            
+            # Charger et afficher le fichier avec codes
+            if output_with_code_path.exists():
+                df_with_codes = pd.read_csv(output_with_code_path)
+                st.success(f"Codes de {len(df_with_codes)} générés avec succès ! Vous trouverez les 10 premiers enregistrements ci-dessous.")
+                st.dataframe(df_with_codes.head(10))
+            else:
+                st.warning("Le fichier avec codes n'a pas été généré. Affichage des données brutes.")
+                st.dataframe(df.head(10))
+                
+        except ImportError as e:
+            st.error(f"Le module 'code_creation' n'a pas pu être importé : {str(e)}")
+            st.dataframe(df.head(10))
+        except Exception as e:
+            st.error(f"Erreur lors de la génération des codes : {str(e)}")
+            st.dataframe(df.head(10))
 
 st.markdown("---")
 

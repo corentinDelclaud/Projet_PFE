@@ -1,13 +1,12 @@
 import pandas as pd
 import os
 
-def generate_codes():
+def generate_codes(csv_file_path : str):
     # Setup paths
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # Assuming file is in src/data/code_creation.py
     # Data is in data/mock_eleves.csv (root/data)
     project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
-    csv_file_path = os.path.join(project_root, 'data', 'mock_eleves.csv')
     
     print(f"Reading CSV from: {csv_file_path}")
     
@@ -81,7 +80,7 @@ def generate_codes():
         df = df.sort_values(by='code')
     
     # Save to a new CSV file
-    output_file_path = os.path.join(project_root, 'data', 'mock_eleves_with_code.csv')
+    output_file_path = os.path.join(project_root, 'data', 'eleves_with_code.csv')
     df.to_csv(output_file_path, index=False, encoding='utf-8')
     print(f"Success! Created {output_file_path} with {len(df)} rows and 'code' column.")
     print(df[['id_eleve', 'annee', 'jour_preference', 'code']].head())

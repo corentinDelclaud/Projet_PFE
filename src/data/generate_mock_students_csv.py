@@ -25,7 +25,7 @@ def generate_students_csv():
     for niv in niveau:
         for i in range(100):
             pref = random.choice(list(jour_pref))
-            new_eleve = eleve(id_counter, f"Eleve_{id_counter}_{niv.name}", 0, pref, niv)
+            new_eleve = eleve(id_counter, 0, pref, niv)
             eleves.append(new_eleve)
             eleves_by_niveau[niv].append(new_eleve)
             id_counter += 1
@@ -93,7 +93,7 @@ def generate_students_csv():
     os.makedirs(data_dir, exist_ok=True)
     csv_file_path = os.path.join(data_dir, 'mock_eleves.csv')
     
-    header = ["id_eleve", "nom", "id_binome", "jour_preference", "annee", "periode_stage", "periode_stage_ext"]
+    header = ["id_eleve", "id_binome", "jour_preference", "annee", "periode_stage", "periode_stage_ext"]
 
     try:
         with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
@@ -103,7 +103,6 @@ def generate_students_csv():
             for el in eleves:
                 writer.writerow([
                     el.id_eleve,
-                    el.nom,
                     el.id_binome,
                     el.jour_preference.name,
                     el.annee.name,

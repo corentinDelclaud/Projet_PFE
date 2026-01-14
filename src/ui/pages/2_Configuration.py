@@ -38,7 +38,7 @@ with st.form("ajout_discipline", clear_on_submit=True):
     # Informations générales
     nom_discipline = st.text_input("Nom de la discipline", placeholder="Ex: Prothèse, Parodontologie...")
     en_binome = st.checkbox("Travail en binôme")
-    quota_par_etudiant = st.number_input("Quota par étudiant", min_value=1, step=1, value=1)
+    quota_par_etudiant = st.number_input("Quota minimum par étudiant", min_value=1, step=1, value=1)
 
     st.markdown("---")
     st.markdown("**Configuration par vacation** (demi-journées 1 à 10)")
