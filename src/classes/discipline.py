@@ -6,8 +6,9 @@ class discipline:
     en_binome : bool
     quota : int
     presence : list[bool] = [False] * 10  # Default presence list with 10 False values
+    annee : list[int] = [4,5,6]  # Default to all years
     
-    def __init__(self, id_discipline: int, nom_discipline: str, salle: list[str], nb_fauteuil: list[int], en_binome: bool, quota: int, presence: list[bool] = None):
+    def __init__(self, id_discipline: int, nom_discipline: str, salle: list[str], nb_fauteuil: list[int], en_binome: bool, quota: int, presence: list[bool] = None, annee: list[int] = None):
         self.id_discipline = id_discipline
         self.nom_discipline = nom_discipline
         self.salle = salle
@@ -15,6 +16,7 @@ class discipline:
         self.en_binome = en_binome
         self.quota = quota
         self.presence = presence if presence is not None else [False] * 10
+        self.annee = annee if annee is not None else [4, 5, 6]
         
     def __repr__(self):
         return f"UIC(id_discipline={self.id_discipline}, nom='{self.nom_discipline}', fauteuil={self.nb_fauteuil}, binome={self.en_binome}, presence={self.presence})"
