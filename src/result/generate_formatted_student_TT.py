@@ -42,8 +42,9 @@ def create_timetable_excel(csv_folder, output_excel):
         df = pd.read_csv(csv_file)
         
         # Créer une nouvelle feuille avec le nom de l'élève
+        #pouvant être un int
         student_name = df['Eleve'].iloc[0] if 'Eleve' in df.columns else csv_file.stem
-        ws = wb.create_sheet(title=student_name[:31])  # Excel limite à 31 caractères
+        ws = wb.create_sheet(title=str(student_name))  # Excel limite à 31 caractères
         
         # Créer l'en-tête
         headers = ['SEMAINE', 'DATE']

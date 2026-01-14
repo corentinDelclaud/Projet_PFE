@@ -26,18 +26,18 @@ cs_urg : discipline
 sp : discipline
 urg_op : discipline
 
-poly = discipline(1, "Polyclinique", ["A101"] * 10, [20] * 10, True, 20)
-paro = discipline(2, "Parodontologie", ["A102"] * 10, [15] * 10, True, 15)
-como = discipline(3, "Comodulation", ["A103"] * 10, [10] * 10, True, 10)
-pedo = discipline(4, "Pédodontie", ["A104"] * 10, [5] * 10, True, 5)
-odf = discipline(5, "Orthodontie", ["A105"] * 10, [8] * 10, True, 5)
-occl = discipline(6, "Occlusodontie", ["A106"] * 10, [12] * 10, True, 10)
-ra = discipline(7, "Radiologie", ["A107"] * 10, [0] * 10, False, 0)
-ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 15)
-pano = discipline(9, "Panoramique", ["A109"] * 10, [0] * 10, False, 0)
-cs_urg = discipline(10, "Consultation d'urgence", ["A110"] * 10, [0] * 10, False, 0)
-sp = discipline(11, "Soins Prothétiques", ["A111"] * 10, [14] * 10, True, 15)
-urg_op = discipline(12, "Urgences Opératoires", ["A112"] * 10, [2] * 10, False, 0)  
+poly = discipline(1, "Polyclinique", ["A101"] * 10, [20] * 10, True, 20, [True]*10,[4,5,6])
+paro = discipline(2, "Parodontologie", ["A102"] * 10, [15] * 10, True, 15, [True]*10,[4,5,6])
+como = discipline(3, "Comodulation", ["A103"] * 10, [10] * 10, True, 10, [True]*10,[4,5,6])
+pedo = discipline(4, "Pédodontie", ["A104"] * 10, [5] * 10, True, 5, [True]*10,[4,5,6])
+odf = discipline(5, "Orthodontie", ["A105"] * 10, [8] * 10, True, 5, [True]*10,[4,5,6])
+occl = discipline(6, "Occlusodontie", ["A106"] * 10, [12] * 10, True, 10, [True]*10,[4,5,6])
+ra = discipline(7, "Radiologie", ["A107"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
+ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 15, [True]*10,[4,5,6])
+pano = discipline(9, "Panoramique", ["A109"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
+cs_urg = discipline(10, "Consultation d'urgence", ["A110"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
+sp = discipline(11, "Soins Prothétiques", ["A111"] * 10, [14] * 10, True, 15, [True]*10,[4,5,6])
+urg_op = discipline(12, "Urgences Opératoires", ["A112"] * 10, [2] * 10, False, 0, [True]*10,[4,5,6])  
 
 poly.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
 paro.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, True, True, True, True, True, True, True, True])
@@ -70,11 +70,11 @@ import csv
 
 
 # --- Chargement des documents depuis streamlit ---
-eleves_csv = 'eleves.csv'
+eleves_csv = 'eleves_with_code.csv'
 stages_csv = 'mock_stages.csv'
-calendrier_DFAS01_csv = 'mock_calendrier_DFAS01.csv'
-calendrier_DFAS02_csv = 'mock_calendrier_DFAS02.csv'
-calendrier_DFTCC_csv = 'mock_calendrier_DFTCC.csv'
+calendrier_DFAS01_csv = 'calendrier.xlsx - DFASO1.csv'
+calendrier_DFAS02_csv = 'calendrier.xlsx - DFASO2.csv'
+calendrier_DFTCC_csv = 'calendrier.xlsx - DFTCC.csv'
 
 # Chargement des élèves depuis le CSV
 eleves: list[eleve] = []
@@ -96,7 +96,7 @@ try:
             
             new_eleve = eleve(
                 id_eleve=int(row["id_eleve"]),
-                nom=row["nom"],
+                nom=row["code"],
                 id_binome=int(row["id_binome"]),
                 jour_preference=pref,
                 annee=niv
@@ -268,6 +268,11 @@ for v_idx, vac in enumerate(vacations):
         vars_in_discipline_slot = []
         
         for el in eleves:
+            # Vérifier si la discipline concerne l'année de l'élève
+            # el.annee est une Enum (niveau), .value donne l'entier (4, 5, 6)
+            if el.annee.value not in disc.annee:
+                continue
+
             # Vérifier les indisponibilités élèves (Base_logique.py: Availability)
             
             # 1. Stage verification
