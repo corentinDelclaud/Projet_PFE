@@ -4,11 +4,11 @@ class discipline:
     salle : list[str] = [""] * 10
     nb_fauteuil : list[int] = [0] * 10  # Default 10 slots with 0 fauteuils
     en_binome : bool
-    quota : int
+    quota : list[int] = [0] * 3  # Default quota list for each year
     presence : list[bool] = [False] * 10  # Default presence list with 10 False values
     annee : list[int] = [4,5,6]  # Default to all years
     
-    def __init__(self, id_discipline: int, nom_discipline: str, salle: list[str], nb_fauteuil: list[int], en_binome: bool, quota: int, presence: list[bool] = None, annee: list[int] = None):
+    def __init__(self, id_discipline: int, nom_discipline: str, salle: list[str], nb_fauteuil: list[int], en_binome: bool, quota: list[int], presence: list[bool] = None, annee: list[int] = None):
         self.id_discipline = id_discipline
         self.nom_discipline = nom_discipline
         self.salle = salle
