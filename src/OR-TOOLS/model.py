@@ -36,10 +36,10 @@ if __name__ == "__main__":
         pedo_urg : discipline
         bloc : discipline
 
-        poly = discipline(1, "Polyclinique", ["A101"] * 10, [10,0,0,0,20,20,20,0,20], True, [20,20,20], [True]*10,[4,5,6])
-        paro = discipline(2, "Parodontologie", ["A102"] * 10, [0,4,4,4,4,4,4,4,4], False, [6,6,6], [False, True, True, True, True, True, True, True, True, True],[4,5,6])
+        poly = discipline(1, "Polyclinique", ["A101"] * 10, [20,20,20,20,20,20,20,20,20,20], True, [52,52,52], [True]*10,[4,5,6])
+        paro = discipline(2, "Parodontologie", ["A102"] * 10, [0,4,4,4,4,4,4,4,4,4], False, [6,6,6], [False, True, True, True, True, True, True, True, True, True],[4,5,6])
         como = discipline(3, "Comodulation", ["A103"] * 10, [3,3,3,3,3,3,0,0,3,3], False, [6,6,6] , [True, True, True, True, True, True, False, False, True, True],[4,5,6])
-        pedo_soins = discipline(4, "Pédodontie Soins", ["A104"] * 10, [10,0,0,0,20,20,20,0,20], True, [12,12,12], [True]*10,[4,5,6])
+        pedo_soins = discipline(4, "Pédodontie Soins", ["A104"] * 10, [10,0,0,0,20,20,20,0,20,0], True, [12,12,12], [True]*10,[4,5,6])
         odf = discipline(5, "Orthodontie", ["A105"] * 10, [3] * 10, False, [4,4,4], [True]*10,[5])
         occl = discipline(6, "Occlusodontie", ["A106"] * 10, [4,0,4,0,0,0,4,0,4,0], False, [3,0,0], [True, False, True, False, False, False, True, False, True, False],[4])
         ra = discipline(7, "Radiologie", ["A107"] * 10, [4] * 10, False, [9,8,6], [True]*10,[4,5,6])
@@ -312,10 +312,9 @@ if __name__ == "__main__":
                     vars_in_discipline_slot.append(x_var)
                 
                 # CONTRAINTE CAPACITÉ (Base_logique.py: Capacity)
-                # Si matière en binôme : 1 fauteuil accueille 2 élèves (le binôme).
-                # Sinon : 1 fauteuil accueille 1 élève.
-                current_nb_fauteuil = disc.nb_fauteuil[slot_index] if isinstance(disc.nb_fauteuil, list) else disc.nb_fauteuil
-                limit = current_nb_fauteuil * 2 if disc.en_binome else current_nb_fauteuil
+                # Limite le nombre d'élèves par discipline et par créneau
+                current_nb_eleve = disc.nb_eleve[slot_index] if isinstance(disc.nb_eleve, list) else disc.nb_eleve
+                limit = current_nb_eleve
                 if vars_in_discipline_slot:
                     model.Add(sum(vars_in_discipline_slot) <= limit)
 
