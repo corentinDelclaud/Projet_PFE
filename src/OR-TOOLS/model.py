@@ -26,40 +26,40 @@ if __name__ == "__main__":
         poly : discipline
         paro : discipline
         como : discipline
-        pedo : discipline
+        pedo_soins : discipline
         odf : discipline
         occl : discipline
         ra : discipline
         ste : discipline
         pano : discipline
         cs_urg : discipline
-        sp : discipline
+        pedo_urg : discipline
         urg_op : discipline
 
         poly = discipline(1, "Polyclinique", ["A101"] * 10, [20] * 10, True, 20, [True]*10,[4,5,6])
         paro = discipline(2, "Parodontologie", ["A102"] * 10, [15] * 10, True, 15, [True]*10,[4,5,6])
         como = discipline(3, "Comodulation", ["A103"] * 10, [10] * 10, True, 10, [True]*10,[4,5,6])
-        pedo = discipline(4, "Pédodontie", ["A104"] * 10, [5] * 10, True, 5, [True]*10,[4,5,6])
-        odf = discipline(5, "Orthodontie", ["A105"] * 10, [8] * 10, True, 5, [True]*10,[4,5,6])
+        pedo_soins = discipline(4, "Pédodontie Soins", ["A104"] * 10, [10,0,0,0,20,20,20,0,20], True, [12,12,12], [True]*10,[4,5,6])
+        odf = discipline(5, "Orthodontie", ["A105"] * 10, [3] * 10, False, [4,4,4], [True]*10,[5])
         occl = discipline(6, "Occlusodontie", ["A106"] * 10, [12] * 10, True, 10, [True]*10,[4,5,6])
-        ra = discipline(7, "Radiologie", ["A107"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
-        ste = discipline(8, "Stomatologie", ["A108"] * 10, [18] * 10, True, 15, [True]*10,[5])
-        pano = discipline(9, "Panoramique", ["A109"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
+        ra = discipline(7, "Radiologie", ["A107"] * 10, [4] * 10, False, [9,8,6], [True]*10,[4,5,6])
+        ste = discipline(8, "Stérilisation", ["A108"] * 10, [1] * 10, False, [3,2,1], [True]*10,[4,5,6])
+        pano = discipline(9, "Panoramique", ["A109"] * 10, [1] * 10, False, [3,3,3], [True]*10,[6])
         cs_urg = discipline(10, "Consultation d'urgence", ["A110"] * 10, [0] * 10, False, 0, [True]*10,[4,5,6])
-        sp = discipline(11, "Soins Prothétiques", ["A111"] * 10, [14] * 10, True, 15, [True]*10,[4,5,6])
+        pedo_urg = discipline(11, "Pédodontie Urgences", ["A111"] * 10, [2] * 10, False, [0,0,0], [True]*10,[5,6])
         urg_op = discipline(12, "Urgences Opératoires", ["A112"] * 10, [2] * 10, False, 0, [True]*10,[4,5,6])  
 
         poly.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
         paro.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, True, True, True, True, True, True, True, True])
         como.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-        pedo.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, False, False, False, True, True, True, False, True, False])
-        odf.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, True, True, False, True, False, True])
+        pedo_soins.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, False, False, False, True, True, True, False, True, False])
+        odf.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, True, True, False, False, False, True])
         occl.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, False, True, False, False, False, True, False, True, False])
         ra.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
         ste.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-        pano.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, False, True, False, True, False, True])
+        pano.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, True, True, False, True, False, True])
         cs_urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-        sp.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
+        pedo_urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, False, False, False, False, True, False, True])
         urg_op.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, False, False, False, False, False, True, False, True])
 
         print("Discipline reels charges avec succes.")
