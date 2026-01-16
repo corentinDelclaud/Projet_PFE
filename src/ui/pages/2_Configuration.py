@@ -38,11 +38,9 @@ with st.form("ajout_discipline", clear_on_submit=True):
     # Informations générales
     nom_discipline = st.text_input("Nom de la discipline", placeholder="Ex: Prothèse, Parodontologie...")
     en_binome = st.checkbox("Travail en binôme")
-    quota_par_etudiant = st.number_input("Quota minimum par étudiant", min_value=1, step=1, value=1)
-
     st.markdown("---")
-    st.markdown("**Configuration par vacation** (demi-journées 1 à 10)")
-    st.caption("Pour chaque vacation, indiquez si l'UIC est présent, le nom de la salle et le nombre de fauteuils disponibles.")
+    st.markdown("**Configuration des vacations** (demi-journées 1 à 10)")
+    st.caption("Pour chaque vacation, indiquez si l'UIC est présent, le nom de la salle et le nombre d'élèves nécessaires.")
 
     # Configuration par vacation
     vacations_data = []
@@ -72,12 +70,12 @@ with st.form("ajout_discipline", clear_on_submit=True):
                     key=f"salle_{vacation_num}",
                     placeholder=f"Ex: Salle {vacation_num}"
                 )
-                fauteuils = st.number_input(
-                    f"Nombre de fauteuils",
+                eleves = st.number_input(
+                    f"Nombre d'élèves",
                     min_value=1,
                     step=1,
                     value=1,
-                    key=f"fauteuils_{vacation_num}"
+                    key=f"eleves_{vacation_num}"
                 )
                 
                 # On enregistre seulement si présence cochée
@@ -85,9 +83,163 @@ with st.form("ajout_discipline", clear_on_submit=True):
                     "vacation": vacation_num,
                     "presence": presence,
                     "salle": salle if presence else "",
-                    "fauteuils": fauteuils if presence else 0
+                    "eleves": eleves if presence else 0
                 })
 
+    st.markdown("---")
+    st.markdown("Configuration optionnelle")
+    st.caption("Sélectionnez les niveaux concernés par cette discipline et indiquez le quota minimum pour l'année pour chaque niveau.")
+
+    # Sélection des niveaux en cochant les cases sur la même ligne
+    niveaux_possibles = ["DFAS01", "DFAS02", "DFTCC"]
+    niveaux_selectionnes = [""]
+    niveau_cols = st.columns(len(niveaux_possibles))
+    for i, niveau in enumerate(niveaux_possibles):
+        with niveau_cols[i]:
+            if st.checkbox(niveau, key=f"niveau_{niveau}"):
+                niveaux_selectionnes.append(niveau)
+
+    # Quotas par niveau sur une seule ligne
+    quota_par_niveau = {}
+    quota_cols = st.columns(len(niveaux_possibles))
+    for i, niveau in enumerate(niveaux_possibles):
+        with quota_cols[i]:
+            quota = st.number_input(
+                f"Quota minimum pour {niveau}",
+                min_value=0,
+                step=1,
+                value=0,
+                key=f"quota_{niveau}"
+            )
+            quota_par_niveau[niveau] = quota
+
+    st.markdown("")
+
+    # fréquence de semaines pour les vacations
+    freq_vacations = st.number_input(
+        f"Fréquence de semaines des vacations pour l’élève ( 1 = chaque semaine, 2 = une semaine sur deux, ... )",
+        min_value=1,
+        step=1,
+        value=1,
+        key=f"frequence_semaines"
+    )
+
+    # nombre de vacations par semaine 
+    nb_vacations_par_semaine = st.number_input(
+        f"Nombre de vacations à faire par semaine pour l’élève",
+        min_value=1,
+        step=1,
+        value=1,
+        key=f"nb_vacations_semaine"
+    )
+
+    # nombre de vacations nécessaires pour chaque semestre (il y en a 2 par an) sur la meme ligne
+    nb_semestres = 2
+    semestre_cols = st.columns(nb_semestres)
+    for semestre in range(1, nb_semestres + 1):
+        with semestre_cols[semestre - 1]:
+            nb_vacations_semestre = st.number_input(
+                f"Nombre de vacations nécessaires pour le semestre {semestre}",
+                min_value=1,
+                step=1,
+                value=1,
+                key=f"nb_vacations_semestre_{semestre}"
+            )
+    
+    # Paires de jours consécutifs autorisés (ex: Lundi-Mardi, Mercredi-Jeudi)
+    jours_consécutifs = st.multiselect(
+        "Paires de jours consécutifs autorisés",
+        options=[
+            "Lundi-Mardi",
+            "Mardi-Mercredi",
+            "Mercredi-Jeudi",
+            "Jeudi-Vendredi",
+            "Vendredi-Lundi"
+        ],
+        key="jours_consecutifs"
+    )
+
+    # Mixité des niveaux dans une même vacation (0: pas de contraintes, 1: exactement 1 élève de chaque niveau, 2: au moins 2 niveaux différents, 3: tous du meme niveau)
+    mixite_options = {
+        1: "Exactement 1 élève de chaque niveau",
+        2: "Au moins 2 niveaux différents",
+        3: "Tous du même niveau"
+    }
+    mixite_selection = st.selectbox(
+        "Mixité des niveaux dans une même vacation",
+        options=list(mixite_options.keys()),
+        format_func=lambda x: mixite_options[x],
+        key="mixite_niveaux"
+    )
+
+    # éviter les répétitions (pas X fois de suite la même vacation pour un élève (X = 2 à 5)) 
+    evitement_repetitions = st.number_input(
+        f"Éviter les répétitions (pas X fois de suite la même vacation pour un élève)",
+        min_value=2,
+        max_value=5,
+        step=1,
+        value=2,
+        key=f"evitement_repetitions"
+    )
+
+    # Ordre de priorité des niveaux (ex: DFAS01 > DFAS02 > DFTCC) un dropdown avec les niveaux dans l'ordre
+    st.caption("**Ordre de priorité des niveaux**")
+    ordre_niveaux = []
+    ordre_cols = st.columns(len(niveaux_possibles))
+    niveaux_restants = niveaux_possibles.copy()
+    for i in range(len(niveaux_possibles)):
+        with ordre_cols[i]:
+            niveau_choisi = st.selectbox(
+                f"Niveau {i + 1}",
+                options=niveaux_restants,
+                key=f"ordre_niveau_{i}"
+            )
+            ordre_niveaux.append(niveau_choisi)
+            niveaux_restants.remove(niveau_choisi)
+
+    # Règles de remplacement (ex: si un élève DFAS01 est indisponible, il peut être remplacé par un DFAS02, puis DFTCC il faut indiquer aussi le nombre d'élèves maximum par niveau qui peuvent remplacer)
+    st.caption("**Règles de remplacement**")
+
+    col_niveau_absent, col_niveau_remplacant, col_quota = st.columns(3)
+    with col_niveau_absent:
+        st.write("**Niveau absent**")
+    with col_niveau_remplacant:
+        st.write("**Remplacer par**")
+    with col_quota:
+        st.write("**Quota**")
+
+    regles_remplacement = {}
+
+    for i in range(len(niveaux_possibles)):
+        col_niveau_absent, col_niveau_remplacant, col_quota = st.columns([0.2, 0.4, 0.4])
+        
+        with col_niveau_absent:
+            st.caption(f"**{niveaux_possibles[i]}** :")
+        
+        with col_niveau_remplacant:
+            niveau_remplacant = st.selectbox(
+                "Remplacer par",
+                options=[n for n in niveaux_possibles if n != niveaux_possibles[i]],
+                key=f"niveau_remplacant_{i}",
+                label_visibility="collapsed" 
+            )
+        
+        with col_quota:
+            quota_remplacement = st.number_input(
+                "Quota de remplacement",
+                min_value=1,
+                step=1,
+                value=1,
+                key=f"quota_remplacement_{i}",
+                label_visibility="collapsed" 
+            )
+        
+        regles_remplacement[niveaux_possibles[i]] = {
+            'niveau_remplacant': niveau_remplacant,
+            'quota': quota_remplacement
+        }
+
+     # Soumission du formulair
     submitted = st.form_submit_button("Ajouter la discipline")
 
 # Gestion de l'ajout
@@ -104,7 +256,7 @@ if submitted:
             "code_discipline": code_discipline,
             "nom_discipline": nom_discipline,
             "en_binome": en_binome,
-            "quota_par_etudiant": quota_par_etudiant,
+            "quota_par_niveau": quota_par_niveau,
             "vacations": vacations_data
         })
 
@@ -121,7 +273,7 @@ if st.session_state.disciplines:
             with col_info:
                 st.markdown("**Informations générales**")
                 st.write(f"1. Travail en binôme : {'Oui' if d['en_binome'] else 'Non'}")
-                st.write(f"2. Quota par étudiant : {d['quota_par_etudiant']}")
+                st.write(f"2. Quota par étudiant : {d['quota_par_niveau']}")
             
             with col_vacations:
                 st.markdown("**Configuration des vacations**")
@@ -134,9 +286,9 @@ if st.session_state.disciplines:
                     df_vac = df_vac.rename(columns={
                         'vacation': 'Vacation',
                         'salle': 'Salle',
-                        'fauteuils': 'Fauteuils'
+                        'eleves': 'Élèves'
                     })
-                    df_vac = df_vac[['Vacation', 'Salle', 'Fauteuils']]
+                    df_vac = df_vac[['Vacation', 'Salle', 'Élèves']]
                     st.dataframe(df_vac, hide_index=True, use_container_width=True)
                 else:
                     st.warning("Aucune vacation configurée pour cette discipline.")
@@ -153,7 +305,7 @@ else:
 st.markdown("---")
 
 st.subheader("2. Gestion des stages")
-st.info("Configurez les périodes de stage")
+st.caption("Configurez les périodes de stage")
 
 # Fonction pour sauvegarder les stages dans le CSV
 def save_stages_to_csv():
