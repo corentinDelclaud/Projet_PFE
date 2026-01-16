@@ -447,7 +447,13 @@ if __name__ == "__main__":
             
             for disc in disciplines:
                 # Détermination de l'écart autorisé (delta)
-                if disc.quota >= LISSAGE_THRESHOLD:
+                current_quota = 0
+                if isinstance(disc.quota, list):
+                    if 4 <= niv.value <= 6:
+                        current_quota = disc.quota[niv.value - 4]
+                else:
+                    current_quota = disc.quota
+                if current_quota >= LISSAGE_THRESHOLD:
                     delta_max = 5
                 else:
                     delta_max = 2
