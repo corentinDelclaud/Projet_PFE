@@ -42,12 +42,13 @@ if __name__ == "__main__":
         pedo_soins = discipline(4, "Pédodontie Soins", ["A104"] * 10, [10,0,0,0,20,20,20,0,20,0], True, [12,12,12], [True]*10,[4,5,6])
         odf = discipline(5, "Orthodontie", ["A105"] * 10, [3] * 10, False, [4,4,4], [True]*10,[5])
         occl = discipline(6, "Occlusodontie", ["A106"] * 10, [4,0,4,0,0,0,4,0,4,0], False, [3,0,0], [True, False, True, False, False, False, True, False, True, False],[4])
-        ra = discipline(7, "Radiologie", ["A107"] * 10, [4] * 10, False, [9,8,6], [True]*10,[4,5,6])
-        ste = discipline(8, "Stérilisation", ["A108"] * 10, [1] * 10, False, [3,2,1], [True]*10,[4,5,6])
-        pano = discipline(9, "Panoramique", ["A109"] * 10, [1] * 10, False, [3,3,3], [True]*10,[6])
-        urg = discipline(10, "Urgence", ["A110"] * 10, [12] * 10, False, [0,0,0], [True]*10,[4,5,6])
-        pedo_urg = discipline(11, "Pédodontie Urgences", ["A111"] * 10, [2] * 10, False, [0,0,0], [True]*10,[5,6])
-        bloc = discipline(12, "BLOC", ["A112"] * 10, [2] * 10, False, [0,0,0], [True,False,True,False,False,False,True,False,False,False],[4,5,6])  
+        ra = discipline(7, "Radiologie", ["A107"] * 10, [4] * 10, False, [9,8,0], [True]*10,[4,5])
+        ste = discipline(8, "Stérilisation", ["A108"] * 10, [1] * 10, False, [3,2,0], [True]*10,[4,5,6])
+        pano = discipline(9, "Panoramique", ["A109"] * 10, [0,1,0,1,0,1,0,1,0,1,0,1] * 10, False, [0,3,3], [True]*10,[5,6])
+        urg = discipline(10, "Urgence", ["A110"] * 10, [12] * 10, False, [20,20,20], [True]*10,[4,5,6])
+        pedo_urg = discipline(11, "Pédodontie Urgences", ["A111"] * 10, [2] * 10, False, [0,1,1], [True]*10,[5,6])
+        bloc = discipline(12, "BLOC", ["A112"] * 10, [0,0,2,0,0,0,2,0,0,0], False, [0,1,1], [False,False,True,False,False,False,True,False,False,False],[5,6])
+        sp = discipline(13, "Soins spécifiques", ["A113"] * 10, [1,0,0,0,0,0,0,0,0,0], False, [0,0,0], [True,False,False,False,False,False,False,False,False,False],[5,6])   
 
         poly.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
         paro.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, True, True, True, True, True, True, True, True])
@@ -57,14 +58,14 @@ if __name__ == "__main__":
         occl.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, False, True, False, False, False, True, False, True, False])
         ra.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
         ste.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-        pano.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, True, True, False, True, False, True])
+        pano.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, False, True, False, True, False, True])
         urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
         pedo_urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, False, False, False, False, True, False, True])
         bloc.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True,False,True,False,False,False,True,False,False,False])
 
         print("Discipline reels charges avec succes.")
 
-        x = [poly, paro, como, pedo_soins, odf, occl, ra, ste, pano, urg, pedo_urg, bloc]
+        x = [poly, paro, como, pedo_soins, odf, occl, ra, ste, pano, urg, pedo_urg, bloc,sp]
         disciplines = x
 
         # --- DATA MOCKING (Pour tester l'algo sans BDD) ---
