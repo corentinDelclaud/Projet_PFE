@@ -27,11 +27,11 @@ def generate_codes(csv_file_path : str):
     
     # Lundi: 0, Mardi: 1, Mercredi: 2, Jeudi: 3, Vendredi: 4
     jour_map = {
-        'lundi': 0,
-        'mardi': 1,
-        'mercredi': 2,
-        'jeudi': 3,
-        'vendredi': 4
+        'lundi': 1,
+        'mardi': 2,
+        'mercredi': 3,
+        'jeudi': 4,
+        'vendredi': 5
     }
     
     # Ensure columns exist
