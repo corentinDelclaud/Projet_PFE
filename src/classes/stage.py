@@ -1,5 +1,7 @@
 import sys
 import os
+
+from pyparsing import Optional
 # Add the parent directory (project root) to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -7,12 +9,12 @@ from classes.enum.niveaux import niveau
 class stage:
     id_stage : int = -1
     nom_stage : str
-    periode : int
+    periode : int 
     pour_niveau : niveau
-    debut_stage : int #semaine de debut du stage
-    fin_stage : int #semaine de fin du stage
+    debut_stage : int | None #semaine de debut du stage si pas toute la periode
+    fin_stage : int | None #semaine de fin du stage si pas toute la periode (ex : service sanitaire)
     
-    def __init__(self, nom_stage: str, debut_stage: int, fin_stage: int, pour_niveau: niveau, periode: int):
+    def __init__(self, nom_stage: str, debut_stage: int | None, fin_stage: int | None, pour_niveau: niveau, periode: int):
         self.periode = periode
         self.pour_niveau = pour_niveau
         self.id_stage = stage.id_stage + 1

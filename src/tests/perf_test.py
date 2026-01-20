@@ -14,7 +14,7 @@ from classes.cours import cours
 from classes.stage import stage
 from classes.jour_preference import jour_pref
 from classes.enum.niveaux import niveau
-from classes.enum.periode import Periode
+from Projet_PFE.src.classes.enum.demijournee import Periode
 
 # --- SETUP COMMON DATA ---
 
