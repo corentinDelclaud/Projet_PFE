@@ -23,7 +23,7 @@ from classes.periode import Periode
 print("Initialisation du modèle et chargement des données...")
 
 # Instanciation des disciplines (Configuration issue de new_model.py)
-poly = discipline(1, "Polyclinique", [20,20,20,20,20,20,20,20,20,20], True, [52,52,52], [True]*10,[4,5,6])
+poly = discipline(1, "Polyclinique", [20,20,20,20,20,20,20,20,20,20], True, [50,50,50], [True]*10,[4,5,6])
 paro = discipline(2, "Parodontologie", [0,4,4,4,4,4,4,4,4,4], False, [6,6,6], [False, True, True, True, True, True, True, True, True, True],[4,5,6])
 como = discipline(3, "Comodulation", [3,3,3,3,3,3,0,0,3,3], False, [6,6,6] , [True, True, True, True, True, True, False, False, True, True],[4,5,6])
 pedo_soins = discipline(4, "Pédodontie Soins", [10,0,0,0,20,20,20,0,20,0], True, [12,12,12], [True]*10,[4,5,6])
@@ -250,13 +250,143 @@ for disc in disciplines:
                         obj_terms.append(pair_ok)
                         weights.append(50)
 
+# FILL REQUIREMENT (Hard - Vacation Capacity Fullness)
+print("Ajout contrainte: Remplissage Obligatoire (Vacations Pleines)...")
+for disc in disciplines:
+    if disc.be_filled:
+        for v_idx, vac in enumerate(vacations):
+            # Index du créneau dans la semaine (0-9)
+            slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
+            
+            # Vérifier si la discipline est ouverte sur ce créneau (déjà filtré à la création variables)
+            # Récupérer toutes les variables d'affectation pour cette discipline sur ce créneau
+            vars_in_disc_slot = vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
+            
+            if vars_in_disc_slot:
+                # Capacité théorique du créneau
+                cap = disc.nb_eleve[slot_idx] if slot_idx < len(disc.nb_eleve) else 0
+                
+                # S'il y a assez d'élèves disponibles pour remplir, on force l'égalité
+                # Sinon on remplit au max des variables dispos (cas rare de pénurie)
+                target = min(cap, len(vars_in_disc_slot))
+                if target > 0:
+                     model.Add(sum(vars_in_disc_slot) == target)
+
+# BINOME (Hard)
+print("Ajout contrainte: Binômes...")
+for disc in disciplines:
+    if disc.en_binome:
+        for s in range(1, 53):
+            for (e1_id, e2_id) in [(e.id_eleve, e.id_binome) for e in eleves if e.id_binome > 0]:
+                vars_e1 = vars_by_student_disc_semaine.get((e1_id, disc.id_discipline, s), [])
+                vars_e2 = vars_by_student_disc_semaine.get((e2_id, disc.id_discipline, s), [])
+                
+                if not vars_e1 or not vars_e2:
+                    continue
+                
+                for j in range(5):
+                    for p in DemiJournee:
+                        v_idxs_e1 = [v[0] for v in vars_e1 if vacations[v[0]].jour == j and vacations[v[0]].period == p]
+                        v_idxs_e2 = [v[0] for v in vars_e2 if vacations[v[0]].jour == j and vacations[v[0]].period == p]
+                        
+                        if v_idxs_e1 and v_idxs_e2:
+                            var_e1 = assignments.get((e1_id, disc.id_discipline, v_idxs_e1[0]))
+                            var_e2 = assignments.get((e2_id, disc.id_discipline, v_idxs_e2[0]))
+                            if var_e1 is not None and var_e2 is not None:
+                                model.Add(var_e1 == var_e2)
 # OBJECTIF PRINCIPAL: Remplissage et Quotas
 print("Configuration Objectifs...")
 
-# A. Maximiser le nombre total d'affectations (Remplissage de base)
-for var in assignments.values():
-    obj_terms.append(var)
-    weights.append(1)
+# Préparation des variables par (Eleve, Discipline) pour les objectifs
+vars_by_student_disc_all = collections.defaultdict(list)
+for (e_id, d_id, _), var in assignments.items():
+    vars_by_student_disc_all[(e_id, d_id)].append(var)
+
+# # D. LISSAGE (Soft Constraint)
+# # Les élèves d'un même niveau ne doivent pas avoir un écart trop important
+# # Nous transformons la contrainte stricte en pénalité pour éviter les cas d'infaisabilité (best: -inf)
+# print("Ajout contrainte: Lissage par Niveau (Objective)...")
+# for disc in disciplines:
+#     for year_val in disc.annee: # [4, 5, 6]
+#         # Identifier les élèves concernés (présents dans la discipline et de l'année concernée)
+#         students_in_group = [el for el in eleves if el.annee.value == year_val]
+#         if not students_in_group:
+#             continue
+            
+#         group_sums = []
+#         for el in students_in_group:
+#             v_list = vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
+#             # Important: s'assurer qu'il y a des variables
+#             if v_list:
+#                 group_sums.append(sum(v_list))
+        
+#         # S'il y a au moins 2 élèves pour comparer
+#         if len(group_sums) > 1:
+#             # Création variables Min et Max du groupe
+#             min_load = model.NewIntVar(0, 500, f"min_load_d{disc.id_discipline}_y{year_val}")
+#             max_load = model.NewIntVar(0, 500, f"max_load_d{disc.id_discipline}_y{year_val}")
+            
+#             # Liaison Min/Max aux sommes des élèves
+#             model.AddMinEquality(min_load, group_sums)
+#             model.AddMaxEquality(max_load, group_sums)
+            
+#             # Calcul de l'écart (Range)
+#             load_diff = model.NewIntVar(0, 500, f"diff_d{disc.id_discipline}_y{year_val}")
+#             model.Add(load_diff == max_load - min_load)
+
+#             # PENALITÉ (Soft Constraint)
+#             # Au lieu d'interdire un écart > 2 ou 5 (ce qui bloquait le solveur),
+#             # on applique un malus progressif.
+#             # Plus l'écart est grand, plus le score baisse.
+#             # Poids combiné : -50 points par unité d'écart.
+#             # Ex: Ecart de 2 -> -100pts (Acceptable). Ecart de 10 -> -500pts (Evité).
+#             obj_terms.append(load_diff)
+#             weights.append(-50)
+
+# A. Maximiser le nombre d'affectations jusqu'au Quota
+# (Les affectations au-delà du quota ne rapportent pas de points)
+for disc in disciplines:
+    for el in eleves:
+        if el.annee.value not in disc.annee: continue
+        
+        vars_list = vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
+        if not vars_list: continue
+
+        # Récupération du quota pour l'année de l'élève
+        try:
+            adx = disc.annee.index(el.annee.value)
+            quota = disc.quota[adx]
+        except ValueError:
+            quota = 0
+        
+        if quota > 0:
+            # OPTIMISATION: Fusion des logiques Bonus/Malus pour réduire le nombre de variables
+            # Maximiser (Points) revient au même qu'éviter (Malus).
+            # On garde uniquement les variables "positives" mais avec des poids cumulés.
+
+            # 1. INCITATION AU REMPLISSAGE (Jusqu'au Quota)
+            sat_var = model.NewIntVar(0, quota, f"sat_e{el.id_eleve}_d{disc.id_discipline}")
+            model.Add(sat_var <= sum(vars_list))
+            obj_terms.append(sat_var)
+            weights.append(150) 
+
+            # 2. MALUS DE DÉPASSEMENT (Pour laisser la place aux autres)
+            # Une assignation au-delà du quota n'apporte rien via sat_var (borné),
+            # mais nous ajoutons ici un coût explicite pour "refroidir" le solveur.
+            excess_var = model.NewIntVar(0, 500, f"excess_e{el.id_eleve}_d{disc.id_discipline}")
+            # excess >= sum - quota
+            # <=> excess + quota >= sum
+            model.Add(excess_var + quota >= sum(vars_list))
+            
+            obj_terms.append(excess_var)
+            weights.append(-200) # Malus supérieur au gain (+150), donc dépassant strictement découragé
+            
+            # 3. BONUS TERMINAISON (Gros Bonus si Quota Atteint)
+            is_success = model.NewBoolVar(f"success_e{el.id_eleve}_d{disc.id_discipline}")
+            model.Add(sum(vars_list) >= quota).OnlyEnforceIf(is_success)
+            
+            obj_terms.append(is_success)
+            weights.append(7000)
 
 # B. Respect des Préférences (Jour Préféré)
 if poly.take_jour_pref: # Seulement pour Poly ou configurable globalement
@@ -268,17 +398,7 @@ if poly.take_jour_pref: # Seulement pour Poly ou configurable globalement
             # vac.jour 0..4, pref 1..5
             if (vac.jour + 1) == el.jour_preference.value:
                 obj_terms.append(var)
-                weights.append(20) # Bonus significatif
-
-# C. Quotas (Version Simplifiée: Maximiser jusqu'au quota)
-for disc in disciplines:
-    for el in eleves:
-        if el.annee.value not in disc.annee: continue
-        vars_all = [assignments[k] for k in assignments if k[0] == el.id_eleve and k[1] == disc.id_discipline]
-        if vars_all:
-             # On veut atteindre le quota. Chaque affectation apporte des points
-             # Poids adaptatif ? Non, simple somme pondérée suffit pour la maximisation
-             pass
+                weights.append(10) # Bonus significatif
 
 model.Maximize(sum(t * w for t, w in zip(obj_terms, weights)))
 
@@ -286,51 +406,84 @@ model.Maximize(sum(t * w for t, w in zip(obj_terms, weights)))
 # 4. RESOLUTION ET EXPORT
 # =============================================================================
 print("Lancement du solveur...")
+
+# Classe de Callback pour sauvegarder les solutions intermédiaires
+class SolutionSaver(cp_model.CpSolverSolutionCallback):
+    def __init__(self, assignments, vacations, eleve_dict, disciplines, output_csv):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__assignments = assignments
+        self.__vacations = vacations
+        self.__eleve_dict = eleve_dict
+        self.__disciplines = disciplines
+        self.__output_csv = output_csv
+        self.__solution_count = 0
+
+    def on_solution_callback(self):
+        self.__solution_count += 1
+        current_obj = self.ObjectiveValue()
+        print(f"  [Callback] Solution #{self.__solution_count} trouvée ! Objectif = {current_obj}")
+        
+        # Export CSV immédiat
+        self.export_csv()
+
+    def export_csv(self):
+        # Note: on utilise self.Value(var) pour lire la valeur dans le contexte du callback
+        try:
+            with open(self.__output_csv, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                headers = ["Semaine", "Jour", "Apres-Midi", "Discipline", "Id_Discipline", "Eleve", "Id_Eleve", "Id_Binome", "Annee", "Code_Eleve"]
+                writer.writerow(headers)
+                
+                rows_buffer = []
+                for (e_id, d_id, v_idx), var in self.__assignments.items():
+                    # self.Value(var) est rapide
+                    if self.Value(var) == 1:
+                        vac = self.__vacations[v_idx]
+                        el = self.__eleve_dict[e_id]
+                        disc = next(d for d in self.__disciplines if d.id_discipline == d_id)
+                        
+                        jours_str = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+                        
+                        rows_buffer.append([
+                            vac.semaine,
+                            jours_str[vac.jour],
+                            1 if vac.period == DemiJournee.apres_midi else 0,
+                            disc.nom_discipline,
+                            disc.id_discipline,
+                            el.nom,
+                            el.id_eleve,
+                            el.id_binome,
+                            el.annee.name,
+                            el.nom
+                        ])
+                writer.writerows(rows_buffer)
+            # print(f"  [Sauvegarde] Données écrites dans {self.__output_csv}")
+        except Exception as e:
+            print(f"  [Erreur Sauvegarde] {e}")
+
 solver = cp_model.CpSolver()
-solver.parameters.max_time_in_seconds = 300
+solver.parameters.max_time_in_seconds = 300 # 5 minutes
 solver.parameters.log_search_progress = True
-status = solver.Solve(model)
+solver.parameters.num_workers = 8 # Réduit à 8 pour ménager le CPU et éviter les freezes
+
+# Préparation chemin de sortie
+output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'resultat')
+if not os.path.exists(output_dir): os.makedirs(output_dir)
+output_csv = os.path.join(output_dir, 'planning_solution.csv')
+
+# Instanciation du callback
+solution_saver = SolutionSaver(assignments, vacations, eleve_dict, disciplines, output_csv)
+
+# Résolution avec gestion d'interruption
+status = cp_model.UNKNOWN
+try:
+    status = solver.Solve(model, solution_saver)
+except KeyboardInterrupt:
+    print("\nInterruption utilisateur (Ctrl+C).")
+    status = cp_model.FEASIBLE if solution_saver.ObjectiveValue() > 0 else cp_model.UNKNOWN
 
 if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-    print(f"Solution trouvée ! Objectif: {solver.ObjectiveValue()}")
-    
-    # Export CSV
-    output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'resultat')
-    if not os.path.exists(output_dir): os.makedirs(output_dir)
-    output_csv = os.path.join(output_dir, 'planning_solution.csv')
-
-    print(f"Export en cours vers {output_csv}...")
-    headers = ["Semaine", "Jour", "Apres-Midi", "Discipline", "Id_Discipline", "Eleve", "Id_Eleve", "Annee", "Code_Eleve"]
-    
-    with open(output_csv, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(headers)
-        
-        count = 0
-        for (e_id, d_id, v_idx), var in assignments.items():
-            if solver.Value(var) == 1:
-                vac = vacations[v_idx]
-                el = eleve_dict[e_id]
-                disc = next(d for d in disciplines if d.id_discipline == d_id)
-                
-                # Jour str
-                jours_str = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-                # Period str
-                per_str = "Matin" if vac.period == DemiJournee.matin else "Apres-Midi"
-                
-                writer.writerow([
-                    vac.semaine,
-                    jours_str[vac.jour],
-                    1 if vac.period == DemiJournee.apres_midi else 0, # Apres-Midi bool/int check formatters
-                    disc.nom_discipline,
-                    disc.id_discipline,
-                    el.nom, # Nom eleve (Code)
-                    el.id_eleve,
-                    el.annee.name,
-                    el.nom
-                ])
-                count += 1
-    print(f"Export terminé. {count} affectations générées.")
-    
+    print(f"Terminé. Meilleure solution : {solver.ObjectiveValue()}")
+    print(f"Le fichier {output_csv} contient la dernière meilleure solution trouvée.")
 else:
-    print("Aucune solution trouvée (Infeasible).")
+    print("Aucune solution trouvée ou arrêt avant première solution.")
