@@ -101,7 +101,7 @@ def create_timetable_excel(csv_folder, output_excel):
         
         # Organiser les données par semaine
         df['vacation'] = df.apply(
-            lambda row: jour_periode_to_vacation.get((row['Jour'], row['Periode']), None),
+            lambda row: jour_periode_to_vacation.get((row['Jour'], row['Apres-Midi']), None),
             axis=1
         )
         
