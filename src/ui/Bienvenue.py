@@ -44,7 +44,6 @@ with col1:
     st.info("""
     ### Import Données
     Importez vos fichiers Excel :
-    - Liste des étudiants
     - Calendrier universitaire
     """)
 
