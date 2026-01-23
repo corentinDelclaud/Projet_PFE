@@ -8,7 +8,7 @@ class discipline:
     annee : list[int] = [4,5,6]  # Default to all years
     frequence_vacations : int = 0  # Fréquence des vacations à effectuer pour l’élève Toutes les X semaines : number input (1, 2, 3...), 0 = pas de contrainte, 1 = chaque semaine 2 = une semaine sur deux 3 = une semaine sur trois
     nb_vacations_par_semaine : int = 0  # Nombre de vacations par semaine à effectuer pour l’élève, 0 = pas de contrainte
-    repartition_semestrielle : list[int] | None = None  # Répartition semestrielle du total des quotas [semestre1, semestre2] semestre1 + semestre2 = total des quotas
+    repartition_semestrielle : list[int] | None = None  # Répartition semestrielle du total des quotas [semestre1 (int), semestre2(int)] semestre1 + semestre2 = total des quotas
     paire_jours : list[(int, int )] | None = None  # indiquer que les vacations doivent être planifiées par paire sur les jours (Lundi, Mercredi) ou (Mardi, Jeudi) -> [(0,2),(1,3)]
     mixite_groupes : int = 0  # Composition des groupes Mixité des niveaux  0 = Pas de contrainte, 1 = Exactement 1 élève de chaque niveau, 2 = Au moins 2 niveaux différents par vacation, 3 = Tous du même niveau
     repetition_continuite : int = 0  # Contrainte de continuité Éviter répétitions : 0 = Pas de contrainte 1 = Pas 2 fois de suite 2 = Pas 3 fois de suite 3 = Jamais plus de X fois (préciser X)
@@ -112,8 +112,12 @@ class discipline:
         self.nb_vacations_par_semaine = nb_vacations
     #repartition_semestrielle : list[int] | None = None  # Répartition semestrielle du total des quotas [semestre1, semestre2] semestre1 + semestre2 = total des quotas
     def modif_repartition_semestrielle(self, repartition: list[int]):
-        if sum(repartition) != sum(self.quota):
-            raise ValueError("La somme de la répartition semestrielle doit être égale au total des quotas")
+        if sum(repartition) != self.quota[0]:
+            raise ValueError("La somme de la répartition semestrielle doit être égale au total des quotas des quatrièmes années")
+        if sum(repartition) != self.quota[1]:
+            raise ValueError("La somme de la répartition semestrielle doit être égale au total des quotas des cinquièmes années")
+        if sum(repartition) != self.quota[2]:
+            raise ValueError("La somme de la répartition semestrielle doit être égale au total des quotas des sixièmes années")
         self.repartition_semestrielle = repartition
     #paire_jours : list[(int, int )] | None = None  # indiquer que les vacations doivent être planifiées par paire sur les jours (Lundi, Mercredi) et (Mardi, Jeudi) -> [(0,2),(1,3)]
     def modif_paire_jours(self, paires: list[(int, int)]):
