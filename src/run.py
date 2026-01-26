@@ -2,7 +2,6 @@ import streamlit
 import streamlit.web.cli as stcli
 import os, sys
 
-
 def resolve_path(path):
     # Gérer à la fois le mode normal et le mode PyInstaller
     if getattr(sys, 'frozen', False):

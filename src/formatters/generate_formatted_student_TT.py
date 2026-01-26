@@ -1,31 +1,86 @@
+import os
 import pandas as pd
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from pathlib import Path
 from datetime import datetime, timedelta
+import csv
 
-def create_timetable_excel(csv_folder, output_excel):
-    """
-    Convertit des fichiers CSV d'emplois du temps en un fichier Excel formaté.
+# Fonction pour générer des plannings individuels à partir de planning_solution.csv
+def generate_individual_plannings(input_csv_path, output_dir):
+    student_plannings = {}
+    headers = []
+
+    print(f"Reading from: {input_csv_path}")
     
-    Args:
-        csv_folder: Dossier contenant les fichiers CSV des élèves
-        output_excel: Nom du fichier Excel de sortie
-    """
-    
+    # Vérifier si le fichier d'entrée existe
+    if not os.path.exists(input_csv_path):
+        print(f"Error: Input file not found at {input_csv_path}")
+        return
+
+    # Créer le dossier de sortie s'il n'existe pas
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 1. Lire le fichier CSV et organiser les données par élève
+    with open(input_csv_path, mode='r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        try:
+            headers = next(reader) # Lire les en-têtes
+        except StopIteration:
+            print("Error: Empty CSV file")
+            return
+            
+        try:
+            id_col_idx = headers.index("Id_Eleve")
+        except ValueError:
+            print("Error: 'Id_Eleve' column not found in CSV")
+            return
+        
+        # Parcourir les lignes et organiser par id d'élève
+        for row in reader:
+            if not row: continue
+            key = (row[id_col_idx])
+            
+            # Initialiser la liste pour cet élève si nécessaire
+            if key not in student_plannings:
+                student_plannings[key] = []
+            
+            # Ajouter la ligne à la liste de l'élève déjà existante
+            student_plannings[key].append(row)
+
+    # Écrire les fichiers individuels
+    count = 0
+    for s_id, rows in student_plannings.items():
+        # Nétoyer le nom pour un nom de fichier sûr
+        safe_name = "".join([c for c in s_id if c.isalnum() or c in (' ', '_', '-')]).strip()
+        filename = f"{s_id}_{safe_name}.csv"
+        filepath = os.path.join(output_dir, filename)
+        
+        with open(filepath, mode='w', newline='', encoding='utf-8') as sout:
+            writer = csv.writer(sout)
+            writer.writerow(headers)
+            writer.writerows(rows)
+        
+        count += 1
+
+    print(f"Successfully generated {count} individual planning files in: {output_dir}")
+
+
+# Fonction pour créer un fichier Excel formaté pour les emplois du temps des élèves
+def create_timetable_excel(csv_folder, output_excel, date_entree):
     # Mapper les jours et périodes aux vacations 1-10
     jour_periode_to_vacation = {
-        ('Lundi', 'Matin'): 1,
-        ('Lundi', 'Apres-Midi'): 2,
-        ('Mardi', 'Matin'): 3,
-        ('Mardi', 'Apres-Midi'): 4,
-        ('Mercredi', 'Matin'): 5,
-        ('Mercredi', 'Apres-Midi'): 6,
-        ('Jeudi', 'Matin'): 7,
-        ('Jeudi', 'Apres-Midi'): 8,
-        ('Vendredi', 'Matin'): 9,
-        ('Vendredi', 'Apres-Midi'): 10
+        ('Lundi', 0): 1,
+        ('Lundi', 1): 2,
+        ('Mardi', 0): 3,
+        ('Mardi', 1): 4,
+        ('Mercredi', 0): 5,
+        ('Mercredi', 1): 6,
+        ('Jeudi', 0): 7,
+        ('Jeudi', 1): 8,
+        ('Vendredi', 0): 9,
+        ('Vendredi', 1): 10
     }
     
     # Créer le workbook
@@ -42,8 +97,7 @@ def create_timetable_excel(csv_folder, output_excel):
         df = pd.read_csv(csv_file)
         
         # Créer une nouvelle feuille avec le nom de l'élève
-        #pouvant être un int
-        student_name = df['Eleve'].iloc[0] if 'Eleve' in df.columns else csv_file.stem
+        student_name = df['Id_Eleve'].iloc[0] if 'Id_Eleve' in df.columns else csv_file.stem
         ws = wb.create_sheet(title=str(student_name))  # Excel limite à 31 caractères
         
         # Créer l'en-tête
@@ -117,13 +171,13 @@ def create_timetable_excel(csv_folder, output_excel):
             
             planning_dict[semaine][vacation] = discipline
         
-        # Date de début (1er septembre 2025 - semaine 36)
-        start_date = datetime(2025, 9, 1)
+        # Date de début de l'année universitaire
+        start_date = datetime(date_entree.year, date_entree.month, date_entree.day)
         
-        # Remplir les données pour les 53 semaines
+        # Remplir les données pour les 52 semaines
         row_idx = 3
-        for semaine in range(36, 53):  # Semaines 36-52
-            date_semaine = start_date + timedelta(weeks=(semaine - 36))
+        for semaine in range(34, 53):  # Semaines 34-52
+            date_semaine = start_date + timedelta(weeks=(semaine - 34))
             
             # Écrire le numéro de semaine et la date
             ws.cell(row=row_idx, column=1, value=semaine)
@@ -205,6 +259,14 @@ def create_timetable_excel(csv_folder, output_excel):
 
 # Utilisation
 if __name__ == "__main__":
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    
+    input_csv = os.path.join(base_dir, 'resultat', 'planning_solution.csv')
+    output_folder = os.path.join(base_dir, 'resultat', 'planning_personnel')
+    
+    generate_individual_plannings(input_csv, output_folder)
+
+
     project_root = Path(__file__).resolve().parent.parent.parent
     csv_folder = project_root / 'resultat' / 'planning_personnel'
-    create_timetable_excel(csv_folder, "emplois_du_temps.xlsx")
+    create_timetable_excel(csv_folder, "emplois_du_temps.xlsx", datetime(2025, 9, 1))
