@@ -59,10 +59,28 @@ poly.modif_take_jour_pref(True)
 
 bloc.modif_fill_requirement(True)
 
+occl.modif_repetition_continuite(1, 12)  # Pas 2 fois de suite
+
 sp.modif_fill_requirement(True)
 
+ste.modif_fill_requirement(True)
+
 ra.modif_priorite_niveau([4,5,6])
-# paro.modif_mixite_groupes(2) # Désactivé pour stabilité initiale
+
+odf.modif_repartition_semestrielle([2,2])  # 4 total, 2 in each semester
+
+pedo_soins.modif_frequence_vacations(2)  # Une semaine sur deux
+pedo_soins.modif_priorite_niveau([5,6,4])  # 1st prio 5A, 2nd prio 6A, 3rd prio 4A
+
+paro.modif_mixite_groupes(2) # au moins 2 niveaux différents par vacation
+
+como.modif_mixite_groupes(3) # un élève de chaque niveau
+
+pano.modif_priorite_niveau([6,5])
+
+urg.modif_remplacement_niveau([(5,6,7),(5,4,5)])  # Remplacement 5A par 6A (7 élèves), 5A par 4A (5 élèves)
+
+pedo_urg.modif_priorite_niveau([6,5])
 
 disciplines = [poly, paro, como, pedo_soins, odf, occl, ra, ste, pano, urg, pedo_urg, bloc, sp]
 
@@ -179,10 +197,14 @@ print("Pré-traitement des variables (Indexation)...")
 vars_by_student_vac = collections.defaultdict(list)   # (eleve_id, vac_idx) -> [var]
 vars_by_disc_vac = collections.defaultdict(list)      # (disc_id, vac_idx) -> [var]
 vars_by_student_disc_semaine = collections.defaultdict(list) # (eleve_id, disc_id, semaine) -> [var]
+vars_by_disc_vac_niveau = collections.defaultdict(list) # (disc_id, vac_idx, annee) -> [var]
 
 for (e_id, d_id, v_idx), var in assignments.items():
     vars_by_student_vac[(e_id, v_idx)].append(var)
     vars_by_disc_vac[(d_id, v_idx)].append(var)
+    
+    el_annee = eleve_dict[e_id].annee
+    vars_by_disc_vac_niveau[(d_id, v_idx, el_annee)].append(var)
     
     semaine = vacations[v_idx].semaine
     vars_by_student_disc_semaine[(e_id, d_id, semaine)].append((v_idx, var))
@@ -298,6 +320,148 @@ for disc in disciplines:
                             var_e2 = assignments.get((e2_id, disc.id_discipline, v_idxs_e2[0]))
                             if var_e1 is not None and var_e2 is not None:
                                 model.Add(var_e1 == var_e2)
+                                
+#fréquence_vacations : Toutes les X semaines : number input (1, 2, 3...) 1 = chaque semaine 2 = une semaine sur deux 3 = chaque semaine sur trois
+print("Ajout contrainte: Fréquence des Vacations...")
+for disc in disciplines:
+    if disc.frequence_vacations > 1:
+        for el in eleves:
+            if el.annee.value not in disc.annee: continue
+            for start_week in range(1, disc.frequence_vacations + 1):
+                weeks_group = list(range(start_week, 53, disc.frequence_vacations))
+                for i in range(0, len(weeks_group), disc.frequence_vacations):
+                    group_weeks = weeks_group[i:i + disc.frequence_vacations]
+                    vars_in_group = []
+                    for s in group_weeks:
+                        vars_entries = vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                        vars_in_group.extend([v[1] for v in vars_entries])
+                    if vars_in_group:
+                        model.Add(sum(vars_in_group) <= 1)
+                        
+#Répartition semestrielle du total des quotas [semestre1, semestre2] semestre1 + semestre2 = total des quotas
+print("Ajout contrainte: Répartition Semestrielle...")
+for disc in disciplines:
+    if disc.repartition_semestrielle:
+        for el in eleves:
+            if el.annee.value not in disc.annee: continue
+            
+            # Récupération du quota pour l'année de l'élève
+            try:
+                adx = disc.annee.index(el.annee.value)
+                quota = disc.quota[adx]
+            except ValueError:
+                quota = 0
+            
+            if quota > 0:
+                sem1_target = disc.repartition_semestrielle[0]
+                sem2_target = disc.repartition_semestrielle[1]
+                
+                vars_sem1 = []
+                vars_sem2 = []
+                
+                for s in range(1, 53):
+                    vars_entries = vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                    if vars_entries:
+                        if s <= 26:
+                            vars_sem1.extend([v[1] for v in vars_entries])
+                        else:
+                            vars_sem2.extend([v[1] for v in vars_entries])
+                
+                if vars_sem1:
+                    model.Add(sum(vars_sem1) <= sem1_target)
+                if vars_sem2:
+                    model.Add(sum(vars_sem2) <= sem2_target)
+# =============================================================================
+#Mixité des groupes : Composition des groupes Mixité des niveaux  0 = Pas de contrainte, 1 = Exactement 1 élève de chaque niveau, 2 = Au moins 2 niveaux différents par vacation, 3 = Tous du même niveau
+print("Ajout contrainte: Mixité des Groupes...")
+for disc in disciplines:
+    if disc.mixite_groupes > 0:
+        for v_idx, vac in enumerate(vacations):
+            if not vars_by_disc_vac.get((disc.id_discipline, v_idx)):
+                continue
+
+            if disc.mixite_groupes == 1:
+                # Exactement 1 élève de chaque niveau
+                for niv in niveau:
+                    vars_niv = vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
+                    model.Add(sum(vars_niv) == 1)
+            
+            elif disc.mixite_groupes == 2:
+                # Au moins 2 niveaux différents (si vacation non vide)
+                niv_bools = []
+                for niv in niveau:
+                    vars_niv = vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
+                    if vars_niv:
+                        b_niv = model.NewBoolVar(f"pres_{niv.name}_d{disc.id_discipline}_v{v_idx}")
+                        model.Add(sum(vars_niv) >= 1).OnlyEnforceIf(b_niv)
+                        model.Add(sum(vars_niv) == 0).OnlyEnforceIf(b_niv.Not())
+                        niv_bools.append(b_niv)
+                
+                if niv_bools:
+                     any_present = model.NewBoolVar(f"any_pres_d{disc.id_discipline}_v{v_idx}")
+                     model.Add(sum(niv_bools) >= 1).OnlyEnforceIf(any_present)
+                     model.Add(sum(niv_bools) == 0).OnlyEnforceIf(any_present.Not())
+                     model.Add(sum(niv_bools) >= 2).OnlyEnforceIf(any_present)
+
+            elif disc.mixite_groupes == 3:
+                # Tous du même niveau (donc max 1 niveau présent)
+                niv_bools = []
+                for niv in niveau:
+                    vars_niv = vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
+                    if vars_niv:
+                        b_niv = model.NewBoolVar(f"pres_{niv.name}_d{disc.id_discipline}_v{v_idx}")
+                        model.Add(sum(vars_niv) >= 1).OnlyEnforceIf(b_niv)
+                        model.Add(sum(vars_niv) == 0).OnlyEnforceIf(b_niv.Not())
+                        niv_bools.append(b_niv)
+                
+                if niv_bools:
+                    model.Add(sum(niv_bools) <= 1)
+
+#Répartition continuité : Pas plus de X vacations trop proche c'est à dire ne pas avoir plus de X vacations de la même discipline à moins 3 mois d'écart (12 semaines) d'intervalles distance (ici on choisit cela car il n'y a que occlusiodontie qui a cette contrainte cependant on le fait de manière générique)
+print("Ajout contrainte: Répartition de la Continuité...")
+for disc in disciplines:
+    if isinstance(disc.repetition_continuite, int):
+        continue
+    limit = disc.repetition_continuite[0]
+    distance = disc.repetition_continuite[1]
+    if limit > 0 and distance > 0:
+        for el in eleves:
+            if el.annee.value not in disc.annee: continue
+            for start_week in range(1, distance + 1):
+                weeks_group = list(range(start_week, 53, distance))
+                
+                vars_in_group = []
+                for s in weeks_group:
+                    vars_entries = vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                    vars_in_group.extend([v[1] for v in vars_entries])
+                
+                if vars_in_group:
+                    model.Add(sum(vars_in_group) <= limit)
+
+#Remplacement de niveau : Permettre à un niveau spécifique de remplacer un autre niveau (exemple 5A par 6A)
+print("Ajout contrainte: Remplacement de Niveau...")
+for disc in disciplines:
+    if disc.remplacement_niveau:
+        for (niv_from, niv_to, nb_eleves) in disc.remplacement_niveau:
+            eleves_from = [e for e in eleves if e.annee.value == niv_from]
+            eleves_to = [e for e in eleves if e.annee.value == niv_to]
+            for v_idx, vac in enumerate(vacations):
+                slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
+                vars_from = []
+                vars_to = []
+                for el in eleves_from:
+                    vars_entries = vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, vac.semaine), [])
+                    vars_from.extend([v[1] for v in vars_entries])
+                for el in eleves_to:
+                    vars_entries = vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, vac.semaine), [])
+                    vars_to.extend([v[1] for v in vars_entries])
+                if vars_from and vars_to:
+                    denom = max(1, len(eleves_from))
+                    model.Add(sum(vars_to) * denom >= sum(vars_from) * nb_eleves)
+
+# =============================================================================
+
+# 4. OBJECTIFS D'OPTIMISATION
 # OBJECTIF PRINCIPAL: Remplissage et Quotas
 print("Configuration Objectifs...")
 
@@ -457,7 +621,7 @@ class SolutionSaver(cp_model.CpSolverSolutionCallback):
         try:
             with open(self.__output_csv, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
-                headers = ["Semaine", "Jour", "Apres-Midi", "Discipline", "Id_Discipline", "Eleve", "Id_Eleve", "Id_Binome", "Annee", "Code_Eleve"]
+                headers = ["Semaine", "Jour", "Apres-Midi", "Discipline", "Id_Discipline", "Id_Eleve", "Id_Binome", "Annee", "Code_Eleve"]
                 writer.writerow(headers)
                 
                 rows_buffer = []
