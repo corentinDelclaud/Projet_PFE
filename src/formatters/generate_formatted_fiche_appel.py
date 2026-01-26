@@ -12,14 +12,14 @@ from openpyxl.utils import get_column_letter
 def generate_call_sheets(input_csv_path, output_dir):
     """
     Reads the global planning CSV and generates call sheets (lists of students)
-    grouped by (Semaine, Jour, Periode, Discipline).
+    grouped by (Semaine, Jour, Apres-Midi, Discipline).
     """
     if not os.path.exists(input_csv_path):
         print(f"Error: Input file not found at {input_csv_path}")
         return
 
     # Dictionary to store groupings
-    # Key: (Semaine, Jour, Periode, Discipline)
+    # Key: (Semaine, Jour, Apres-midi, Discipline)
     # Value: List of student names
     call_sheets = {}
     
@@ -29,19 +29,19 @@ def generate_call_sheets(input_csv_path, output_dir):
         reader = csv.DictReader(f)
         
         # Verify required headers
-        required = ["Semaine", "Jour", "Periode", "Discipline", "Eleve"]
+        required = ["Semaine", "Jour", "Apres-Midi", "Discipline", "Id_Eleve"]
         # Basic check if headers are present (csv.DictReader reads header automatically)
         if reader.fieldnames and not all(field in reader.fieldnames for field in required):
             print(f"Error: CSV missing required columns. Found: {reader.fieldnames}")
             return
 
         for row in reader:
-            key = (row["Semaine"], row["Jour"], row["Periode"], row["Discipline"])
+            key = (row["Semaine"], row["Jour"], row["Apres-Midi"], row["Discipline"])
             
             if key not in call_sheets:
                 call_sheets[key] = []
             
-            call_sheets[key].append(row["Eleve"])
+            call_sheets[key].append(row["Id_Eleve"])
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -69,247 +69,6 @@ def generate_call_sheets(input_csv_path, output_dir):
         count += 1
 
     print(f"Successfully generated {count} call sheets.")
-
-def generate_appel_pdf(input_path: str, output_path: str, target_semaine: int = None, target_jour: str = None, target_periode: str = None, target_discipline: str = None):
-    """
-    Generates a PDF attendance sheet from the planning CSV file.
-    Groups entries by Discipline, Day, and Period.
-    Can filter by specific Week, Day, Period, or Discipline.
-    """
-    print(f"Generating PDF from: {input_path}")
-    
-    if not os.path.exists(input_path):
-        print(f"Error: Input file {input_path} not found.")
-        return
-
-    # 1. Read CSV Data and Organize by Session
-    # Structure: sessions[Week][Day][Period][Discipline] = [List of Students]
-    sessions = {}
-    
-    try:
-        with open(input_path, mode='r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                # Row keys: Semaine, Jour, Periode, Id_Eleve, Eleve, Discipline
-                # Skip STAGE entries for attendance sheets (usually separate) or include them if needed
-                if "STAGE:" in row["Discipline"]:
-                    continue
-
-                semaine = int(row["Semaine"])
-                jour = row["Jour"]
-                periode = row["Periode"]
-                discipline = row["Discipline"]
-                eleve = row["Eleve"]
-
-                if semaine not in sessions:
-                    sessions[semaine] = {}
-                if jour not in sessions[semaine]:
-                    sessions[semaine][jour] = {}
-                if periode not in sessions[semaine][jour]:
-                    sessions[semaine][jour][periode] = {}
-                if discipline not in sessions[semaine][jour][periode]:
-                    sessions[semaine][jour][periode][discipline] = []
-                
-                sessions[semaine][jour][periode][discipline].append(eleve)
-    except Exception as e:
-        print(f"Error reading CSV: {e}")
-        return
-
-    # 2. Build PDF Document
-    doc = SimpleDocTemplate(output_path, pagesize=landscape(A4))
-    elements = []
-    styles = getSampleStyleSheet()
-    title_style = styles['Title']
-    heading_style = styles['Heading2']
-    normal_style = styles['Normal']
-
-    # Sort keys for consistent order
-    sorted_semaines = sorted(sessions.keys())
-    day_order = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-    period_order = ["Matin", "Apres-Midi"]
-
-    found_any = False
-
-    for semaine in sorted_semaines:
-        if semaine not in sessions: continue
-        # Filter by Week
-        if target_semaine is not None and semaine != target_semaine: continue
-        
-        # Week Header
-        elements.append(Paragraph(f"Semaine {semaine} - Feuille d'Appel", title_style))
-        elements.append(Spacer(1, 12))
-
-        for jour in day_order:
-            if jour not in sessions[semaine]: continue
-            # Filter by Day
-            if target_jour is not None and jour != target_jour: continue
-            
-            for periode in period_order:
-                if periode not in sessions[semaine][jour]: continue
-                # Filter by Period
-                if target_periode is not None and periode != target_periode: continue
-                
-                # Check if there are disciplines in this slot
-                disciplines_dict = sessions[semaine][jour][periode]
-                if not disciplines_dict: continue
-
-                # Filter disciplines
-                active_disciplines = [d for d in disciplines_dict if target_discipline is None or d == target_discipline]
-                if not active_disciplines: continue
-
-                found_any = True
-
-                # Section Header: Day - Period
-                elements.append(Paragraph(f"{jour} - {periode}", heading_style))
-                elements.append(Spacer(1, 6))
-
-                # Iterate through disciplines
-                for discipline in active_disciplines:
-                    students = disciplines_dict[discipline]
-                    elements.append(Paragraph(f"<b>{discipline}</b>", normal_style))
-                    
-                    # Create Table Data
-                    # Header row
-                    data = [['Nom Étudiant', 'Présent', 'Signature', 'Observations']]
-                    
-                    # Sort students alphabetically
-                    for student in sorted(students):
-                        data.append([student, '', '', ''])
-                    
-                    # Table Style
-                    t = Table(data, colWidths=[200, 50, 150, 150])
-                    t.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                    ]))
-                    
-                    elements.append(t)
-                    elements.append(Spacer(1, 12))
-                
-                # Page break only if we are not restricted to a single slot, or just to keep clean
-                if target_semaine is None or target_jour is None or target_periode is None or target_discipline is None:
-                    elements.append(PageBreak())
-
-    if not found_any:
-        print("Warning: No sessions found matching criteria.")
-        return
-
-    # Build
-    try:
-        doc.build(elements)
-        print(f"PDF successfully generated at: {output_path}")
-    except Exception as e:
-        print(f"Error building PDF: {e}")
-
-def generate_all_discipline_appel_pdfs_for_one_day(input_dir: str, output_dir: str, target_semaine: int, target_jour: str, target_periode: str = None):
-    """
-    Scans input_dir for CSV files matching the criteria (Week/Day) and generates one PDF per file.
-    Assumes individual attendance CSVs with format: Semaine{S}_{Jour}_{Periode}_{Discipline}.csv
-    """
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Created output directory: {output_dir}")
-
-    print(f"Scanning {input_dir} for Semaine {target_semaine}, Jour {target_jour}...")
-    
-    if not os.path.exists(input_dir):
-        print(f"Error: Input directory {input_dir} does not exist.")
-        return
-
-    found_any = False
-
-    for filename in os.listdir(input_dir):
-        if not filename.endswith(".csv"): continue
-        
-        # Check matching
-        # Expected Format: Semaine1_Jeudi_Apres-Midi_Comodulation.csv
-        parts = filename.replace(".csv", "").split("_")
-        
-        # Safety check on parts length: needs at least SemaineX, Jour, Periode, Discipline
-        if len(parts) < 4: continue 
-        
-        file_semaine_str = parts[0]
-        file_jour = parts[1]
-        file_periode = parts[2]
-        file_discipline = "_".join(parts[3:])
-        
-        try:
-            file_semaine = int(file_semaine_str.replace("Semaine", ""))
-        except:
-            continue
-            
-        if file_semaine != target_semaine: continue
-        if file_jour != target_jour: continue
-        if target_periode and file_periode != target_periode: continue
-        
-        # Found a match!
-        found_any = True
-        
-        # Read students from the small CSV
-        students = []
-        csv_full_path = os.path.join(input_dir, filename)
-        try:
-            with open(csv_full_path, "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    # Small CSV has "Eleve"
-                    if "Eleve" in row and row["Eleve"]:
-                        students.append(row["Eleve"])
-        except Exception as e:
-            print(f"Failed to read {filename}: {e}")
-            continue
-
-        if not students:
-            print(f"Skipping empty session: {filename}")
-            continue
-
-        # Generate PDF
-        output_pdf_name = f"feuille_appel_{filename.replace('.csv', '.pdf')}"
-        output_pdf_path = os.path.join(output_dir, output_pdf_name)
-        
-        print(f"Generating PDF for {file_discipline}...")
-        
-        # ReportLab generation (copied from main function to be standalone)
-        doc = SimpleDocTemplate(output_pdf_path, pagesize=landscape(A4))
-        elements = []
-        styles = getSampleStyleSheet()
-        
-        # Title
-        elements.append(Paragraph(f"Feuille d'Appel - {file_discipline.replace('_', ' ')}", styles['Title']))
-        elements.append(Spacer(1, 12))
-        elements.append(Paragraph(f"Semaine {file_semaine} - {file_jour} - {file_periode}", styles['Heading2']))
-        elements.append(Spacer(1, 12))
-        
-        # Table
-        data = [['Nom Étudiant', 'Présent', 'Signature', 'Observations']]
-        for student in sorted(students):
-            data.append([student, '', '', ''])
-            
-        t = Table(data, colWidths=[200, 50, 150, 150])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        elements.append(t)
-        
-        try:
-            doc.build(elements)
-            print(f"Created: {output_pdf_path}")
-        except Exception as e:
-            print(f"Error building PDF for {filename}: {e}")
-
-    if not found_any:
-        print("No matching files found.")
 
 def create_header_style():
     return {
@@ -349,9 +108,9 @@ def generate_appel_excel(input_path: str, output_path: str, target_semaine: int 
 
                 semaine = int(row["Semaine"])
                 jour = row["Jour"]
-                periode = row["Periode"]
+                periode = row["Apres-Midi"]
                 discipline = row["Discipline"]
-                eleve = row["Eleve"]
+                eleve = row["Id_Eleve"]
 
                 if semaine not in sessions:
                     sessions[semaine] = {}
@@ -385,7 +144,7 @@ def generate_appel_excel(input_path: str, output_path: str, target_semaine: int 
 
     sorted_semaines = sorted(sessions.keys())
     day_order = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-    period_order = ["Matin", "Apres-Midi"]
+    period_order = ["0", "1"]
 
     found_any = False
 
@@ -400,10 +159,10 @@ def generate_appel_excel(input_path: str, output_path: str, target_semaine: int 
         for jour in day_order:
             if jour not in sessions[semaine]: continue
             if target_jour is not None and jour != target_jour: continue
-            
+
             for periode in period_order:
                 if periode not in sessions[semaine][jour]: continue
-                if target_periode is not None and periode != target_periode: continue
+                if target_periode is not None and str(periode) != str(target_periode): continue
                 
                 disciplines_dict = sessions[semaine][jour][periode]
                 if not disciplines_dict: continue
@@ -414,6 +173,7 @@ def generate_appel_excel(input_path: str, output_path: str, target_semaine: int 
                 found_any = True
                 
                 # Section Header
+                periode_nom = "Matin" if periode == "0" else "Après-Midi"
                 ws.cell(row=row_idx, column=1, value=f"{jour} - {periode}").font = Font(size=12, bold=True)
                 row_idx += 2
 
