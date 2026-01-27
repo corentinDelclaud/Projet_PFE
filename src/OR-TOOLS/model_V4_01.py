@@ -567,7 +567,7 @@ model.Maximize(sum(t * w for t, w in zip(obj_terms, weights)))
 print("Lancement du solveur...")
 
 solver = cp_model.CpSolver()
-solver.parameters.max_time_in_seconds = 3600 # 20 minutes
+solver.parameters.max_time_in_seconds = 10800 # 3 hoursmù1
 solver.parameters.log_search_progress = True
 solver.parameters.num_workers = 8 # Réduit à 8 pour ménager le CPU et éviter les freezes
 
