@@ -78,12 +78,33 @@ def generate_codes(csv_file_path : str):
     # 6. Restore sort order by ID
     if 'id_eleve' in df.columns:
         df = df.sort_values(by='code')
+
+    # --- Update IDs (Code -> id_eleve) ---
+    if 'id_eleve' in df.columns and 'id_binome' in df.columns:
+        # Map old_id -> new_code
+        id_map = dict(zip(df['id_eleve'], df['code']))
+        
+        # Update binome IDs using the map
+        df['id_binome'] = df['id_binome'].apply(lambda x: id_map.get(x, x))
+        
+        # Set id_eleve to code
+        df['id_eleve'] = df['code']
+        
+        # Drop temporary 'code' column
+        df.drop(columns=['code'], inplace=True)
     
     # Save to a new CSV file
     output_file_path = os.path.join(project_root, 'data', 'eleves_with_code.csv')
     df.to_csv(output_file_path, index=False, encoding='utf-8')
-    print(f"Success! Created {output_file_path} with {len(df)} rows and 'code' column.")
-    print(df[['id_eleve', 'annee', 'jour_preference', 'code']].head())
+    print(f"Success! Created {output_file_path} with {len(df)} rows.")
+    if 'code' in df.columns:
+        print(df[['id_eleve', 'annee', 'jour_preference', 'code']].head())
+    else:
+        print(df[['id_eleve', 'annee', 'jour_preference']].head())
 
 if __name__ == "__main__":
-    generate_codes()
+    # Default execution
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
+    default_input = os.path.join(project_root, 'data', 'mock_eleves.csv')
+    generate_codes(default_input)
