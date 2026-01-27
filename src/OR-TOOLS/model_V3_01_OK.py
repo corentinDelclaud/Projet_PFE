@@ -469,47 +469,6 @@ vars_by_student_disc_all = collections.defaultdict(list)
 for (e_id, d_id, _), var in assignments.items():
     vars_by_student_disc_all[(e_id, d_id)].append(var)
 
-# # D. LISSAGE (Soft Constraint)
-# # Les élèves d'un même niveau ne doivent pas avoir un écart trop important
-# # Nous transformons la contrainte stricte en pénalité pour éviter les cas d'infaisabilité (best: -inf)
-# print("Ajout contrainte: Lissage par Niveau (Objective)...")
-# for disc in disciplines:
-#     for year_val in disc.annee: # [4, 5, 6]
-#         # Identifier les élèves concernés (présents dans la discipline et de l'année concernée)
-#         students_in_group = [el for el in eleves if el.annee.value == year_val]
-#         if not students_in_group:
-#             continue
-            
-#         group_sums = []
-#         for el in students_in_group:
-#             v_list = vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
-#             # Important: s'assurer qu'il y a des variables
-#             if v_list:
-#                 group_sums.append(sum(v_list))
-        
-#         # S'il y a au moins 2 élèves pour comparer
-#         if len(group_sums) > 1:
-#             # Création variables Min et Max du groupe
-#             min_load = model.NewIntVar(0, 500, f"min_load_d{disc.id_discipline}_y{year_val}")
-#             max_load = model.NewIntVar(0, 500, f"max_load_d{disc.id_discipline}_y{year_val}")
-            
-#             # Liaison Min/Max aux sommes des élèves
-#             model.AddMinEquality(min_load, group_sums)
-#             model.AddMaxEquality(max_load, group_sums)
-            
-#             # Calcul de l'écart (Range)
-#             load_diff = model.NewIntVar(0, 500, f"diff_d{disc.id_discipline}_y{year_val}")
-#             model.Add(load_diff == max_load - min_load)
-
-#             # PENALITÉ (Soft Constraint)
-#             # Au lieu d'interdire un écart > 2 ou 5 (ce qui bloquait le solveur),
-#             # on applique un malus progressif.
-#             # Plus l'écart est grand, plus le score baisse.
-#             # Poids combiné : -50 points par unité d'écart.
-#             # Ex: Ecart de 2 -> -100pts (Acceptable). Ecart de 10 -> -500pts (Evité).
-#             obj_terms.append(load_diff)
-#             weights.append(-50)
-
 # A. Maximiser le nombre d'affectations jusqu'au Quota
 # (Les affectations au-delà du quota ne rapportent pas de points)
 for disc in disciplines:
@@ -596,58 +555,6 @@ model.Maximize(sum(t * w for t, w in zip(obj_terms, weights)))
 # =============================================================================
 print("Lancement du solveur...")
 
-# Classe de Callback pour sauvegarder les solutions intermédiaires
-class SolutionSaver(cp_model.CpSolverSolutionCallback):
-    def __init__(self, assignments, vacations, eleve_dict, disciplines, output_csv):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__assignments = assignments
-        self.__vacations = vacations
-        self.__eleve_dict = eleve_dict
-        self.__disciplines = disciplines
-        self.__output_csv = output_csv
-        self.__solution_count = 0
-
-    def on_solution_callback(self):
-        self.__solution_count += 1
-        current_obj = self.ObjectiveValue()
-        print(f"  [Callback] Solution #{self.__solution_count} trouvée ! Objectif = {current_obj}")
-        
-        # Export CSV immédiat
-        self.export_csv()
-
-    def export_csv(self):
-        # Note: on utilise self.Value(var) pour lire la valeur dans le contexte du callback
-        try:
-            with open(self.__output_csv, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                headers = ["Semaine", "Jour", "Apres-Midi", "Discipline", "Id_Discipline", "Id_Eleve", "Id_Binome", "Annee"]
-                writer.writerow(headers)
-                
-                rows_buffer = []
-                for (e_id, d_id, v_idx), var in self.__assignments.items():
-                    # self.Value(var) est rapide
-                    if self.Value(var) == 1:
-                        vac = self.__vacations[v_idx]
-                        el = self.__eleve_dict[e_id]
-                        disc = next(d for d in self.__disciplines if d.id_discipline == d_id)
-                        
-                        jours_str = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
-                        
-                        rows_buffer.append([
-                            vac.semaine,
-                            jours_str[vac.jour],
-                            1 if vac.period == DemiJournee.apres_midi else 0,
-                            disc.nom_discipline,
-                            disc.id_discipline,
-                            el.id_eleve,
-                            el.id_binome,
-                            el.annee.name
-                        ])
-                writer.writerows(rows_buffer)
-            # print(f"  [Sauvegarde] Données écrites dans {self.__output_csv}")
-        except Exception as e:
-            print(f"  [Erreur Sauvegarde] {e}")
-
 solver = cp_model.CpSolver()
 solver.parameters.max_time_in_seconds = 3600 # 60 minutes
 solver.parameters.log_search_progress = True
@@ -658,19 +565,47 @@ output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'resultat')
 if not os.path.exists(output_dir): os.makedirs(output_dir)
 output_csv = os.path.join(output_dir, 'planning_solution.csv')
 
-# Instanciation du callback
-solution_saver = SolutionSaver(assignments, vacations, eleve_dict, disciplines, output_csv)
-
-# Résolution avec gestion d'interruption
+# Résolution directe
 status = cp_model.UNKNOWN
 try:
-    status = solver.Solve(model, solution_saver)
+    status = solver.Solve(model)
 except KeyboardInterrupt:
     print("\nInterruption utilisateur (Ctrl+C).")
-    status = cp_model.FEASIBLE if solution_saver.ObjectiveValue() > 0 else cp_model.UNKNOWN
+    status = cp_model.FEASIBLE if solver.ObjectiveValue() > 0 else cp_model.UNKNOWN # Tentative de récupération
 
 if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
     print(f"Terminé. Meilleure solution : {solver.ObjectiveValue()}")
-    print(f"Le fichier {output_csv} contient la dernière meilleure solution trouvée.")
+    print(f"Ecriture des résultats dans {output_csv}...")
+    
+    try:
+        with open(output_csv, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            headers = ["Semaine", "Jour", "Apres-Midi", "Discipline", "Id_Discipline", "Id_Eleve", "Id_Binome", "Annee"]
+            writer.writerow(headers)
+            
+            rows_buffer = []
+            for (e_id, d_id, v_idx), var in assignments.items():
+                if solver.Value(var) == 1:
+                    vac = vacations[v_idx]
+                    el = eleve_dict[e_id]
+                    disc = next(d for d in disciplines if d.id_discipline == d_id)
+                    
+                    jours_str = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+                    
+                    rows_buffer.append([
+                        vac.semaine,
+                        jours_str[vac.jour],
+                        1 if vac.period == DemiJournee.apres_midi else 0,
+                        disc.nom_discipline,
+                        disc.id_discipline,
+                        el.id_eleve,
+                        el.id_binome,
+                        el.annee.name
+                    ])
+            writer.writerows(rows_buffer)
+        print(f"Données sauvegardées.")
+    except Exception as e:
+        print(f"Erreur lors de l'écriture du fichier : {e}")
+
 else:
     print("Aucune solution trouvée ou arrêt avant première solution.")
