@@ -221,6 +221,7 @@ with st.form("ajout_discipline", clear_on_submit=True):
             st.markdown("##### 6. Mixité des niveaux")
         with col_check:
             use_mixite = st.checkbox("Activer", key="use_mixite")
+        st.caption("La mixité des niveaux permet de définir des contraintes sur la composition des groupes d'élèves lors des vacations.")
         
         # Mixité des niveaux dans une même vacation (0: pas de contraintes, 1: exactement 1 élève de chaque niveau, 2: au moins 2 niveaux différents, 3: tous du meme niveau)
         mixite_options = {
@@ -243,6 +244,8 @@ with st.form("ajout_discipline", clear_on_submit=True):
             st.markdown("##### 7. Évitement répétitions")
         with col_check:
             use_evitement = st.checkbox("Activer", key="use_evitement")
+        # Donner une explication simple et claire
+        st.caption("L'évitement des répétitions permet de limiter le nombre de fois qu'un élève peut avoir la même vacation consécutivement.")
         
         # éviter les répétitions (pas X fois de suite la même vacation pour un élève (X = 2 à 5)) 
         evitement_repetitions = st.number_input(
@@ -445,14 +448,10 @@ if submitted_periode:
         max_id = max([s['id_periode'] for s in st.session_state.periodes], default=0)
         max_id += 1
         
-        # Convertir les dates en numéros de semaine
-        semaine_debut = date_to_week_number(date_debut)
-        semaine_fin = date_to_week_number(date_fin)
-        
         st.session_state.periodes.append({
             'id_periode': max_id,
-            'deb_semaine': semaine_debut,
-            'fin_semaine': semaine_fin,
+            'deb_semaine': date_debut,
+            'fin_semaine': date_fin,
             'periode': numero_periode
         })
         
@@ -465,6 +464,20 @@ if submitted_periode:
 if st.session_state.periodes:
     st.subheader("Périodes enregistrées")
     periodes_tries = sorted(st.session_state.periodes, key=lambda x: x['periode'])
+
+    # Ajoute de titre de colonnes
+    col1, col2, col3, col4, col5 = st.columns([0.5, 1.5, 1.5, 1.5, 0.8])
+    with col1:
+        st.markdown("**Période**")
+    with col2:
+        st.markdown("**Date de début**")
+    with col3:
+        st.markdown("**Date de fin**")
+    with col4:
+        st.markdown("")
+    with col5:
+        st.markdown("**Actions**")
+
     for idx, periode in enumerate(periodes_tries):
         col1, col2, col3, col4, col5 = st.columns([0.5, 1.5, 1.5, 1.5, 0.8])
         with col1:
@@ -508,7 +521,6 @@ with st.form("ajout_stage", clear_on_submit=True):
     submitted_stage = st.form_submit_button("Ajouter le stage")
 
 # Gestion de l'ajout de stage, add multiselect year one for each year
-# Gestion de l'ajout de stage
 if submitted_stage:
     if not nom_stage.strip():
         st.error("Veuillez renseigner le nom du stage.")
