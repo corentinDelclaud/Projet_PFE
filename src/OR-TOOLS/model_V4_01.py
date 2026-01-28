@@ -53,7 +53,7 @@ pedo_urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, Fal
 bloc.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True,False,True,False,False,False,True,False,False,False])
 
 # Modifications spécifiques (Contraintes avancées)
-poly.modif_nb_vacations_par_semaine(4)
+poly.modif_nb_vacations_par_semaine(2)
 poly.modif_paire_jours([ (0,1), (2,3), (0,4) ]) # Paires requises
 poly.modif_take_jour_pref(True)
 

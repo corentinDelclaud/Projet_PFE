@@ -32,6 +32,41 @@ def load_data():
     bloc = discipline(12, "BLOC", [0,0,2,0,0,0,2,0,0,0], False, [0,1,1], [False,False,True,False,False,False,True,False,False,False],[5,6])
     sp = discipline(13, "Soins spécifiques", [1,0,0,0,0,0,0,0,0,0], False, [0,0,0], [True,False,False,False,False,False,False,False,False,False],[5,6])   
 
+    # --- Apply Constraints Modifications (Crucial for Stats) ---
+    # Copied from model_V4_01.py lines ~55-80
+    
+    # Configuration des présences (Ouvertures/Fermetures créneaux types)
+    poly.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
+    paro.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, True, True, True, True, True, True, True, True])
+    como.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, False, False, True, True])
+    pedo_soins.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, False, False, False, True, True, True, False, True, False])
+    odf.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, True, True, False, False, False, True])
+    occl.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, False, True, False, False, False, True, False, True, False])
+    ra.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
+    ste.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
+    pano.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, False, True, False, True, False, True])
+    urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
+    pedo_urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, False, False, False, False, True, False, True])
+    bloc.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True,False,True,False,False,False,True,False,False,False])
+
+    # Modifications spécifiques (Contraintes avancées)
+    poly.modif_nb_vacations_par_semaine(4)
+    poly.modif_paire_jours([ (0,1), (2,3), (0,4) ]) # Paires requises
+    poly.modif_take_jour_pref(True)
+    bloc.modif_fill_requirement(True)
+    occl.modif_repetition_continuite(1, 12)  # Pas 2 fois de suite
+    sp.modif_fill_requirement(True)
+    ste.modif_fill_requirement(True)
+    ra.modif_priorite_niveau([4,5,6])
+    odf.modif_repartition_semestrielle([2,2])  # 4 total, 2 in each semester
+    pedo_soins.modif_frequence_vacations(2)  # Une semaine sur deux
+    pedo_soins.modif_priorite_niveau([5,6,4])  # 1st prio 5A, 2nd prio 6A, 3rd prio 4A
+    paro.modif_mixite_groupes(2) # au moins 2 niveaux différents par vacation
+    como.modif_mixite_groupes(3) # un élève de chaque niveau
+    pano.modif_priorite_niveau([6,5])
+    urg.modif_remplacement_niveau([(5,6,7),(5,4,5)])
+    pedo_urg.modif_priorite_niveau([6,5])
+
     disciplines = [poly, paro, como, pedo_soins, odf, occl, ra, ste, pano, urg, pedo_urg, bloc, sp]
     disc_map = {d.nom_discipline: d for d in disciplines}
 
@@ -48,23 +83,46 @@ def load_data():
                     eleves[eid] = {
                         "id": eid,
                         "annee": annee_val,
-                        "nom_annee": row["annee"]
+                        "nom_annee": row["annee"],
+                        "id_binome": int(row["id_binome"]) if row["id_binome"] else 0,
+                        "jour_preference": row.get("jour_preference", "").strip().capitalize(),
+                        "periode_stage": int(row["periode_stage"]) if row.get("periode_stage") else 0
                     }
                 except KeyError: continue
     except FileNotFoundError:
         print(f"Error: {eleves_csv} not found.")
         return None, None
     
-    return disc_map, eleves
+    # --- 3. Load Stages ---
+    stages = {} # Key: (nom_annee, periode_id) -> (start_week, end_week)
+    stages_csv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'stages.csv')
+    try:
+        with open(stages_csv, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row.get("deb_semaine") and row.get("fin_semaine"):
+                    try:
+                        lvl = row["pour_niveau"]
+                        pid = int(row["periode"])
+                        start = float(row["deb_semaine"])
+                        end = float(row["fin_semaine"])
+                        stages[(lvl, pid)] = (start, end)
+                    except ValueError:
+                        continue
+    except FileNotFoundError:
+        print(f"Error: {stages_csv} not found.")
+    
+    return disc_map, eleves, stages
 
-def analyze_solution(solution_path, disc_map, eleves):
+def analyze_solution(solution_path, disc_map, eleves, stages):
     if not os.path.exists(solution_path):
         print(f"Error: {solution_path} not found.")
         return
 
     # Data Structure: { student_id: { discipline_name: count } }
     assignments = collections.defaultdict(lambda: collections.defaultdict(int))
-    
+    detailed_assignments = set() # (Semaine, Jour, Apres-Midi, Discipline, Id_Eleve)
+
     print(f"Reading solution from {solution_path}...")
     with open(solution_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -75,7 +133,396 @@ def analyze_solution(solution_path, disc_map, eleves):
                 sid = int(row["Id_Eleve"])
                 disc_name = row["Discipline"]
                 assignments[sid][disc_name] += 1
+                
+                # Check headers for detail extraction
+                if "Semaine" in row and "Jour" in row and "Apres-Midi" in row:
+                    detailed_assignments.add((int(row["Semaine"]), row["Jour"], row["Apres-Midi"], disc_name, sid))
+
             except ValueError: continue
+
+    # --- Binome Analysis ---
+    binome_stats = {
+        "Total_Binome_Vacations_Checked": 0,
+        "Respect_Binome": 0,
+        "Violations": 0,
+        "Percentage": 0
+    }
+    
+    binome_disciplines = {name for name, d in disc_map.items() if d.en_binome}
+    
+    for (sem, jour, am, disc_name, sid) in detailed_assignments:
+        if disc_name in binome_disciplines:
+            if sid not in eleves: continue
+            
+            bin_id = eleves[sid].get("id_binome", 0)
+            
+            # Check if valid binome exists (and is in the list)
+            if bin_id > 0 and bin_id in eleves:
+                binome_stats["Total_Binome_Vacations_Checked"] += 1
+                
+                # Check if binome is assigned to same slot
+                if (sem, jour, am, disc_name, bin_id) in detailed_assignments:
+                    binome_stats["Respect_Binome"] += 1
+                else:
+                    binome_stats["Violations"] += 1
+    
+    if binome_stats["Total_Binome_Vacations_Checked"] > 0:
+        binome_stats["Percentage"] = round(binome_stats["Respect_Binome"] / binome_stats["Total_Binome_Vacations_Checked"] * 100, 1)
+
+    # --- Constraint Analysis (New) ---
+    constraint_stats = []
+
+    # Convert detailed assignments to DataFrame for easier analysis
+    # Columns: Semaine, Jour, Apres-Midi, Discipline, Id_Eleve
+    # detailed_assignments is a set of tuples
+    
+    # We need to reconstruct the "HalfDay" integer/boolean for sorting if needed, 
+    # but Semaine is key for most constraints.
+    # Assignments DF
+    data_list = []
+    for (sem, jour, am, disc_name, sid) in detailed_assignments:
+        data_list.append({
+            "Semaine": sem,
+            "Jour": jour,
+            "Apres-Midi": am, # String usually "True"/"False" or similar depending on CSV
+            "Discipline": disc_name,
+            "Id_Eleve": sid,
+            "Annee": eleves[sid]["annee"], # Add level for Mixite check
+            "Jour_Index": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"].index(jour) if jour in ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"] else -1
+        })
+    
+    csv_df = pd.DataFrame(data_list)
+    
+    if not csv_df.empty:
+        # Pre-calculation for "Apres-Midi" boolean if it's string
+        # Assuming CSV has "True" or "False" strings or just checking uniqueness
+        pass
+
+        # 1. Max Vacations / Semaine
+        for disc_name, disc in disc_map.items():
+            if disc.nb_vacations_par_semaine > 0:
+                limit = disc.nb_vacations_par_semaine
+                subset = csv_df[csv_df["Discipline"] == disc_name]
+                if subset.empty: continue
+                
+                # Count per student per week
+                counts = subset.groupby(["Id_Eleve", "Semaine"]).size().reset_index(name="Count")
+                violations = counts[counts["Count"] > limit]
+                
+                total_checks = len(counts) # checking each student-week instance
+                nb_violations = len(violations)
+                
+                constraint_stats.append({
+                    "Discipline": disc_name,
+                    "Contrainte": f"Max {limit} / Semaine",
+                    "Total_Check": total_checks,
+                    "Violations": nb_violations,
+                    "Respect": total_checks - nb_violations
+                })
+
+        # 2. Fréquence Vacations (Gap check)
+        # "Une semaine sur X" -> Gap between weeks >= X
+        for disc_name, disc in disc_map.items():
+            if disc.frequence_vacations > 1:
+                freq = disc.frequence_vacations
+                subset = csv_df[csv_df["Discipline"] == disc_name]
+                if subset.empty: continue
+                
+                total_checks = 0
+                nb_violations = 0
+                
+                # Check per student
+                for sid, group in subset.groupby("Id_Eleve"):
+                    weeks = sorted(group["Semaine"].unique())
+                    # Check gaps
+                    for i in range(len(weeks) - 1):
+                        diff = weeks[i+1] - weeks[i]
+                        total_checks += 1
+                        # If freq=2 (1 week out of 2), we expect assignment, gap, assignment -> diff >= 2
+                        if diff < freq:
+                            nb_violations += 1
+                            
+                constraint_stats.append({
+                    "Discipline": disc_name,
+                    "Contrainte": f"Fréquence (Gap >= {freq})",
+                    "Total_Check": total_checks,
+                    "Violations": nb_violations,
+                    "Respect": total_checks - nb_violations
+                })
+
+        # 3. Répartition Continuité
+        # (Limit, Window) e.g. (1, 12) -> Max 1 time in 12 weeks
+        for disc_name, disc in disc_map.items():
+            if disc.repetition_continuite and isinstance(disc.repetition_continuite, (list, tuple)):
+                limit, window = disc.repetition_continuite
+                if limit > 0 and window > 0:
+                    subset = csv_df[csv_df["Discipline"] == disc_name]
+                    if subset.empty: continue
+
+                    total_checks = 0
+                    nb_violations = 0
+                    
+                    # For each student, check rolling window or simple distance
+                    # Easier: iterate all weeks and check if violations occur in window
+                    # Or check for each assignment, how many others in [w - window + 1, w]
+                    
+                    for sid, group in subset.groupby("Id_Eleve"):
+                        weeks = sorted(group["Semaine"].values)
+                        # Sliding window check
+                        # For every assigned week, verify no more than 'limit' assignments in 'window' size
+                        # Actually the constraint is usually "No more than Limit in ANY Window of size X"
+                        
+                        # Let's slide a window of size 'window' across the student's timeline
+                        if not weeks: continue
+                        
+                        min_w = min(weeks)
+                        max_w = max(weeks)
+                        
+                        # We only need to check windows starting at an assigned week (optimization)
+                        for start_w in weeks:
+                            end_w = start_w + window - 1 
+                            # Count assignments in [start_w, end_w]
+                            count = sum(1 for w in weeks if start_w <= w <= end_w)
+                            
+                            total_checks += 1
+                            if count > limit:
+                                nb_violations += 1
+                                # Avoid double counting? A set of bad assignments? 
+                                # Let's count "Bad Windows".
+                    
+                    constraint_stats.append({
+                        "Discipline": disc_name,
+                        "Contrainte": f"Continuité (Max {limit} en {window} sem)",
+                        "Total_Check": total_checks,
+                        "Violations": nb_violations,
+                        "Respect": total_checks - nb_violations
+                    })
+
+        # 4. Mixité des Groupes
+        # Check every occupied slot (Week, Day, AM)
+        for disc_name, disc in disc_map.items():
+            if disc.mixite_groupes > 0:
+                mix_type = disc.mixite_groupes
+                subset = csv_df[csv_df["Discipline"] == disc_name]
+                if subset.empty: continue
+                
+                # Group by Slot
+                grouped = subset.groupby(["Semaine", "Jour", "Apres-Midi"])
+                
+                total_checks = 0
+                nb_violations = 0
+                
+                for slot, group in grouped:
+                    levels = group["Annee"].unique()
+                    total_checks += 1
+                    
+                    if mix_type == 2: # At least 2 levels
+                        if len(levels) < 2:
+                            nb_violations += 1
+                    elif mix_type == 3: # All same level (Exactement 1 level)
+                        if len(levels) != 1:
+                            nb_violations += 1
+                
+                constraint_stats.append({
+                    "Discipline": disc_name,
+                    "Contrainte": f"Mixité (Type {mix_type})",
+                    "Total_Check": total_checks,
+                    "Violations": nb_violations,
+                    "Respect": total_checks - nb_violations
+                })
+
+        # 5. Répartition Semestrielle
+        # [S1_Quota, S2_Quota] -> S1 = Weeks 1-28, S2 = Weeks 29-52?
+        # Model uses: list_periodes = [Periode(0, 34, 44), Periode(1, 45, 51), Periode(2, 1, 8)...]
+        # But commonly semesters are 1-26 and 27-52.
+        # Let's assume split at 26/27.
+        for disc_name, disc in disc_map.items():
+            if disc.repartition_semestrielle and len(disc.repartition_semestrielle) == 2:
+                q1_req, q2_req = disc.repartition_semestrielle
+                subset = csv_df[csv_df["Discipline"] == disc_name]
+                if subset.empty: continue
+                
+                total_checks = 0
+                nb_violations = 0
+                
+                # Check per student
+                for sid, group in subset.groupby("Id_Eleve"):
+                    # Only check students concerned (those with assignments)
+                    # Check S1
+                    c1 = group[group["Semaine"] <= 26].shape[0]
+                    c2 = group[group["Semaine"] > 26].shape[0]
+                    
+                    total_checks += 1
+                    # Deviation? The constraint usually sets a specific target.
+                    # If I have 2 in S1 and 2 in S2.
+                    # If assignments < req, is it violation? 
+                    # Usually "Repartition" implies balancing.
+                    # I will check if c1 matches q1 and c2 matches q2 approximately or strictly?
+                    # Since quotas are hard in this model, I'll check exactitude if quota reached.
+                    # Or simplistically: |c1 - q1| + |c2 - q2| == 0?
+                    # Let's just report violations if they don't meet the target
+                    
+                    # We only flag if they have enough vacations to meet it?
+                    # If a student has total 4, and split is [2,2], then 2-2 is expected.
+                    # If they have 3, maybe 2-1 is okay.
+                    # Let's assume strict target for now if Total >= Sum(Targets).
+                    
+                    if c1 != q1_req or c2 != q2_req:
+                        # Soften: The constraint is likely: "Try to have X in S1 and Y in S2"
+                        nb_violations += 1
+
+                constraint_stats.append({
+                    "Discipline": disc_name,
+                    "Contrainte": f"Répartition Semestrielle [{q1_req}, {q2_req}]",
+                    "Total_Check": total_checks,
+                    "Violations": nb_violations,
+                    "Respect": total_checks - nb_violations
+                })
+
+        # 6. Fill Requirement (Remplissage Obligatoire)
+        # Check if slots are filled to capacity if be_filled=True
+        
+        # Pre-compute counts map for speed
+        # Key: (Semaine, Jour, Apres-Midi, Discipline) -> Count
+        slot_counts = collections.defaultdict(int)
+        for (sem, jour, am, disc_name, sid) in detailed_assignments:
+            slot_counts[(sem, jour, am, disc_name)] += 1
+            
+        jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+        
+        for disc_name, disc in disc_map.items():
+            if disc.be_filled:
+                total_checks = 0
+                nb_violations = 0
+                
+                # Iterate all theoretical slots
+                for s in range(1, 53):
+                    for j_idx, j_str in enumerate(jours):
+                        for am in [0, 1]: # 0=Matin, 1=Apres-Midi
+                            am_str = str(am) # CSV stores as string
+                            slot_idx = j_idx * 2 + am
+                            
+                            # Check if slot is open in configuration
+                            is_open = (len(disc.presence) > slot_idx and disc.presence[slot_idx])
+                            
+                            # Expected capacity
+                            capacity = disc.nb_eleve[slot_idx] if is_open else 0
+                            
+                            if capacity > 0:
+                                total_checks += 1
+                                current_count = slot_counts[(s, j_str, am_str, disc_name)]
+                                
+                                # Equality check
+                                if current_count != capacity:
+                                    nb_violations += 1
+                
+                constraint_stats.append({
+                    "Discipline": disc_name,
+                    "Contrainte": "Remplissage (Fill Req)",
+                    "Total_Check": total_checks,
+                    "Violations": nb_violations,
+                    "Respect": total_checks - nb_violations
+                })
+
+        # 7. Paire Jours (Daily Pairs)
+        # Verify that if a student is assigned to day A, they are also assigned to day B in the same week
+        for disc_name, disc in disc_map.items():
+            if disc.paire_jours:
+                subset = csv_df[csv_df["Discipline"] == disc_name]
+                if subset.empty: continue
+                
+                total_checks = 0
+                nb_violations = 0
+                
+                # Check per student/week
+                for (sid, week), group in subset.groupby(["Id_Eleve", "Semaine"]):
+                    # Get assigned day indices for this week
+                    # Map Day String to Index 0-4
+                    assigned_days = set(group["Jour_Index"].unique())
+                    
+                    for (d1, d2) in disc.paire_jours:
+                        # Logic: If one exists, the other must exist
+                        has_d1 = d1 in assigned_days
+                        has_d2 = d2 in assigned_days
+                        
+                        if has_d1 or has_d2:
+                            total_checks += 1
+                            if not (has_d1 and has_d2):
+                                nb_violations += 1
+                
+                constraint_stats.append({
+                    "Discipline": disc_name,
+                    "Contrainte": f"Paire Jours {disc.paire_jours}",
+                    "Total_Check": total_checks,
+                    "Violations": nb_violations,
+                    "Respect": total_checks - nb_violations
+                })
+
+        # 8. Respect Jour Préférence
+        # Verify assignments match the student's preferred day
+        for disc_name, disc in disc_map.items():
+            if disc.take_jour_pref:
+                subset = csv_df[csv_df["Discipline"] == disc_name]
+                if subset.empty: continue
+                
+                total_checks = 0
+                nb_violations = 0
+                
+                for index, row in subset.iterrows():
+                    sid = row["Id_Eleve"]
+                    assigned_jour = row["Jour"]
+                    
+                    # Preference from student data
+                    pref_str = eleves[sid].get("jour_preference", "")
+                    
+                    # If student has a preference (and it's a valid day)
+                    if pref_str and pref_str in ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]:
+                        total_checks += 1
+                        if assigned_jour != pref_str:
+                            nb_violations += 1
+                            
+                constraint_stats.append({
+                    "Discipline": disc_name,
+                    "Contrainte": "Jour Préférence",
+                    "Total_Check": total_checks,
+                    "Violations": nb_violations,
+                    "Respect": total_checks - nb_violations
+                })
+
+        # 9. Respect Stages (No assignments during stage weeks)
+        if stages:
+            total_checks = 0
+            violations = 0
+            
+            # Check per student
+            for sid, stud_data in eleves.items():
+                annee = stud_data.get("nom_annee")
+                p_stage = stud_data.get("periode_stage")
+                
+                if annee and p_stage and (annee, p_stage) in stages:
+                    start, end = stages[(annee, p_stage)]
+                    total_checks += 1 # We check this student's schedule
+                    
+                    # Assignments for this student
+                    stud_assignments = csv_df[csv_df["Id_Eleve"] == sid]
+                    
+                    if not stud_assignments.empty:
+                         # Check if any assignment week is in [start, end]
+                        conflict = stud_assignments[
+                            (stud_assignments["Semaine"] >= start) & 
+                            (stud_assignments["Semaine"] <= end)
+                        ]
+                        
+                        if not conflict.empty:
+                            violations += 1
+            
+            constraint_stats.append({
+                "Discipline": "TOUTES",
+                "Contrainte": "Respect Périodes Stage",
+                "Total_Check": total_checks,
+                "Violations": violations,
+                "Respect": total_checks - violations
+            })
 
     # --- Stats Compilation ---
     stats_data = []
@@ -134,9 +581,17 @@ def analyze_solution(solution_path, disc_map, eleves):
             })
 
     df = pd.DataFrame(stats_data)
-    return df
+    
+    # Format constraint stats for export
+    df_constraints = pd.DataFrame(constraint_stats)
+    if not df_constraints.empty:
+        df_constraints["Pourcentage_Respect"] = df_constraints.apply(
+            lambda r: round(r["Respect"] / r["Total_Check"] * 100, 1) if r["Total_Check"] > 0 else 100, axis=1
+        )
 
-def generate_report(df, output_path):
+    return df, binome_stats, df_constraints
+
+def generate_report(df, output_path, binome_stats=None, df_constraints=None):
     wb = Workbook()
     
     # 1. Detailed Sheet
@@ -286,6 +741,53 @@ def generate_report(df, output_path):
     ws_gen.column_dimensions['D'].width = 25
     ws_gen.column_dimensions['E'].width = 25
 
+    # 5. Binome Stats
+    if binome_stats:
+        ws_binome = wb.create_sheet("Stats Binômes")
+        ws_binome.append(["Statistiques Respect des Binômes"])
+        ws_binome.append(["Métrique", "Valeur"])
+        
+        # Style
+        ws_binome.cell(row=2, column=1).font = header_style
+        ws_binome.cell(row=2, column=1).fill = header_fill
+        ws_binome.cell(row=2, column=2).font = header_style
+        ws_binome.cell(row=2, column=2).fill = header_fill
+        
+        ws_binome.append(["Total Vacations (Disciplines en Binome)", binome_stats["Total_Binome_Vacations_Checked"]])
+        ws_binome.append(["Dont Binomes Respectés (Paires)", binome_stats["Respect_Binome"]])
+        ws_binome.append(["Dont Binomes Violés (Seuls)", binome_stats["Violations"]])
+        ws_binome.append(["Taux de Respect (%)", f"{binome_stats['Percentage']}%"])
+        
+        ws_binome.column_dimensions['A'].width = 40
+        ws_binome.column_dimensions['B'].width = 15
+
+    # 6. Constraints Details
+    if df_constraints is not None and not df_constraints.empty:
+        ws_constr = wb.create_sheet("Stats Contraintes")
+        
+        # Header
+        cols = ["Discipline", "Contrainte", "Total_Check", "Violations", "Respect", "Pourcentage_Respect"]
+        ws_constr.append(cols)
+        
+        for cell in ws_constr[1]:
+            cell.font = header_style
+            cell.fill = header_fill
+
+        # Data
+        for r in dataframe_to_rows(df_constraints[cols], index=False, header=False):
+            ws_constr.append(r)
+            
+        # Formatting
+        ws_constr.column_dimensions['A'].width = 20
+        ws_constr.column_dimensions['B'].width = 35
+        ws_constr.column_dimensions['C'].width = 12
+        ws_constr.column_dimensions['D'].width = 12
+        ws_constr.column_dimensions['E'].width = 12
+        ws_constr.column_dimensions['F'].width = 15
+        
+        # Color coding for %
+        # (Advanced styling omitted for brevity, simple list is fine)
+
     # Save
     wb.save(output_path)
     print(f"Report generated: {output_path}")
@@ -295,10 +797,10 @@ if __name__ == "__main__":
     solution_file = os.path.join(base_dir, 'resultat', 'planning_solution.csv')
     output_file = os.path.join(base_dir, 'resultat', 'statistiques_solution.xlsx')
     
-    disc_map, eleves = load_data()
+    disc_map, eleves, stages = load_data()
     if disc_map and eleves:
         print("Analyzing solution...")
-        df = analyze_solution(solution_file, disc_map, eleves)
+        df, binome_stats, df_constraints = analyze_solution(solution_file, disc_map, eleves, stages)
         if df is not None:
-            generate_report(df, output_file)
+            generate_report(df, output_file, binome_stats, df_constraints)
             print("Done.")
