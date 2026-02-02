@@ -34,7 +34,7 @@ def main():
         
         config = ModelConfig.from_csv_directory(
             data_dir,
-            max_time_seconds=10800, # 3 hours
+            max_time_seconds=1200, # 3 hours
             num_workers=8
         )
         

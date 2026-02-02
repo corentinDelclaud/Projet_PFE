@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import streamlit as st
 from pathlib import Path
 import sys
@@ -40,8 +40,8 @@ def check_csv_valid(filepath):
 
 # Check all required files
 checks = {
-    "Import des calendriers universitaires de la première année": DATA_DIR / "calendrier_DFASO1.csv",
-    "Import des calendriers universitaires de la deuxième année": DATA_DIR / "calendrier_DFASO2.csv",
+    "Import des calendriers universitaires de la première année": DATA_DIR / "calendrier_DFAS01.csv",
+    "Import des calendriers universitaires de la deuxième année": DATA_DIR / "calendrier_DFAS02.csv",
     "Import des calendriers universitaires de la troisième année": DATA_DIR / "calendrier_DFTCC.csv",
     "Configuration des disciplines": DATA_DIR / "disciplines.csv",
     "Configuration des périodes": DATA_DIR / "periodes.csv",
@@ -115,16 +115,13 @@ if st.session_state.get('model_running', False):
     status_text = st.empty()
     
     # Time display
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         elapsed_display = st.empty()
         elapsed_display.metric("Temps écoulé", "0s")
     with col2:
         remaining_display = st.empty()
         remaining_display.metric("Temps restant", "Calcul...")
-    with col3:
-        solutions_display = st.empty()
-        solutions_display.metric("Solutions trouvées", "0")
     
     log_expander = st.expander("Logs détaillés", expanded=False)
     log_container = log_expander.empty()
@@ -168,7 +165,7 @@ if st.session_state.get('model_running', False):
                 solver_start_match = re.search(r'SOLVER_START\|MaxTime: (\d+)s', line)
                 if solver_start_match:
                     max_time = int(solver_start_match.group(1))
-                    remaining_display.metric("⏳ Temps restant", f"{max_time}s")
+                    remaining_display.metric("Temps restant", f"{max_time}s")
                 
                 # Parse solution progress (EXACT FORMAT)
                 # Format: PROGRESS|Solution #X|Elapsed: Ys|Remaining: Zs|Objective: V
@@ -287,17 +284,70 @@ if st.session_state.get('model_status') == 'success':
             total = len(stats.get('quota_fulfillment', {}))
             st.metric("Quotas remplis", f"{fulfilled}/{total}")
     
-    # Download planning CSV
-    with open(planning_solution_path, 'rb') as f:
-        st.download_button(
-            label="Télécharger planning_solution.csv",
-            data=f,
-            file_name="planning_solution.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-    
-    st.success("Planning généré et prêt à l'export!")
+    col1, col2 = st.columns(2)
+
+    # L'emplois du temps complet
+    with col1:
+        st.markdown("#### Emplois du temps individuels")
+        if st.button("Générer et télécharger", key="edt", use_container_width=True):
+            with st.spinner("Génération en cours..."):
+                try:
+                    formatters_dir = Path(__file__).parent.parent.parent / "formatters"
+                    sys.path.insert(0, str(formatters_dir))
+                    
+                    from generate_formatted_student_TT import generate_individual_plannings, create_timetable_excel
+                    
+                    output_folder = RESULTAT_DIR / "planning_personnel"
+                    generate_individual_plannings(str(planning_solution_path), str(output_folder))
+                    
+                    excel_output = RESULTAT_DIR / "emplois_du_temps.xlsx"
+                    create_timetable_excel(str(output_folder), str(excel_output), datetime(2025, 9, 1))
+                    
+                    with open(excel_output, 'rb') as f:
+                        st.download_button(
+                            label="Télécharger emplois_du_temps.xlsx",
+                            data=f,
+                            file_name="emplois_du_temps.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True
+                        )
+                    st.success("Généré avec succès!")
+                    
+                except Exception as e:
+                    st.error(f"Erreur: {str(e)}")
+
+    with col2:
+        st.markdown("#### Fiches d'appel")
+        if st.button("Générer et télécharger", key="appel", use_container_width=True):
+            with st.spinner("Génération en cours..."):
+                try:
+                    formatters_dir = Path(__file__).parent.parent.parent / "formatters"
+                    sys.path.insert(0, str(formatters_dir))
+                    
+                    from generate_formatted_fiche_appel import generate_discipline_year_excel
+                    
+                    output_folder = RESULTAT_DIR / "fiche_appel_par_discipline"
+                    generate_discipline_year_excel(str(planning_solution_path), str(output_folder))
+                    
+                    # Créer un ZIP
+                    zip_buffer = BytesIO()
+                    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                        for excel_file in output_folder.glob("*.xlsx"):
+                            zip_file.write(excel_file, excel_file.name)
+                    
+                    zip_buffer.seek(0)
+                    
+                    st.download_button(
+                        label="Télécharger fiches_appel.zip",
+                        data=zip_buffer,
+                        file_name="fiches_appel_disciplines.zip",
+                        mime="application/zip",
+                        use_container_width=True
+                    )
+                    st.success("Généré avec succès!")
+                    
+                except Exception as e:
+                    st.error(f"Erreur: {str(e)}")
 
 else:
     st.info("ℹLancez d'abord la génération du planning pour accéder aux options d'export.")
