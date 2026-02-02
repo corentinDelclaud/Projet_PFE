@@ -2,6 +2,13 @@ import sys
 import os
 import csv
 import collections
+import argparse
+
+# Parse arguments for batch execution
+parser = argparse.ArgumentParser(description="Run optimization model.")
+parser.add_argument("--time_limit", type=int, default=600, help="Max time in seconds for the solver.")
+parser.add_argument("--output", type=str, default=None, help="Path to the output CSV file.")
+args, unknown = parser.parse_known_args()
 
 # Add the parent directory (project root) to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -472,6 +479,9 @@ for (e_id, d_id, _), var in assignments.items():
 # A. Maximiser le nombre d'affectations jusqu'au Quota
 # (Les affectations au-delà du quota ne rapportent pas de points)
 for disc in disciplines:
+    # List to track individual success for this discipline for the "All Quota" bonus
+    discipline_success_vars = []
+    
     for el in eleves:
         if el.annee.value not in disc.annee: continue
         
@@ -522,8 +532,34 @@ for disc in disciplines:
             is_success = model.NewBoolVar(f"success_e{el.id_eleve}_d{disc.id_discipline}")
             model.Add(sum(vars_list) >= quota).OnlyEnforceIf(is_success)
             
+            # Important: lier la variable dans les deux sens pour le bonus global
+            # Si le quota n'est pas atteint, is_success DOIT être faux (pour ne pas valider le bonus global à tort)
+            # Cependant, maximiser la somme pondérée poussera naturellement is_success à 1 si possible, 
+            # et le bonus global require qu'ils soient TOUS à 1. 
+            # Donc si un seul ne peut pas être à 1, le global est perdu.
+            # On ajoute quand même la contrainte inverse pour la propreté.
+            model.Add(sum(vars_list) < quota).OnlyEnforceIf(is_success.Not())
+            
+            discipline_success_vars.append(is_success)
+
             obj_terms.append(is_success)
             weights.append(w_success)
+
+    # 4. BONUS GLOBAL DISPLINE (SUPER BONUS)
+    # Si TOUS les élèves concernés ont atteint leur quota pour cette discipline
+    if discipline_success_vars:
+        all_success_var = model.NewBoolVar(f"all_success_d{disc.id_discipline}")
+        
+        # La variable est vraie SI ET SEULEMENT SI le minimum des succès individuels est 1 (donc tous à 1)
+        model.AddMinEquality(all_success_var, discipline_success_vars)
+        
+        # Poids massif pour encourager la complétion totale
+        w_grand_slam = 1000000 # 1 Million points
+        if disc.nom_discipline == "Polyclinique":
+             w_grand_slam = 5000000 # 5 Millions points for Poly
+
+        obj_terms.append(all_success_var)
+        weights.append(w_grand_slam)
 
 # B. Respect des Préférences (Jour Préféré)
 if poly.take_jour_pref: # Seulement pour Poly ou configurable globalement
@@ -567,14 +603,21 @@ model.Maximize(sum(t * w for t, w in zip(obj_terms, weights)))
 print("Lancement du solveur...")
 
 solver = cp_model.CpSolver()
-solver.parameters.max_time_in_seconds = 600 # 10 minutes
+# Use arguments if provided, else default
+solver.parameters.max_time_in_seconds = args.time_limit if args.time_limit else 3600
 solver.parameters.log_search_progress = True
 solver.parameters.num_workers = 8 # Réduit à 8 pour ménager le CPU et éviter les freezes
 
 # Préparation chemin de sortie
-output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'resultat')
-if not os.path.exists(output_dir): os.makedirs(output_dir)
-output_csv = os.path.join(output_dir, 'planning_solution.csv')
+if args.output:
+    output_csv = args.output
+    # Ensure dir exists
+    out_dir = os.path.dirname(output_csv)
+    if out_dir and not os.path.exists(out_dir): os.makedirs(out_dir)
+else:
+    output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'resultat')
+    if not os.path.exists(output_dir): os.makedirs(output_dir)
+    output_csv = os.path.join(output_dir, 'planning_solution.csv')
 
 # Résolution directe
 status = cp_model.UNKNOWN
@@ -614,7 +657,7 @@ if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                         el.annee.name
                     ])
             writer.writerows(rows_buffer)
-        print("Données sauvegardées.")
+        print(f"Données sauvegardées.")
     except Exception as e:
         print(f"Erreur lors de l'écriture du fichier : {e}")
 
