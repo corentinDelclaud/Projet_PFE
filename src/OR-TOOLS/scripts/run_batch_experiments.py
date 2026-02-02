@@ -6,7 +6,7 @@ from datetime import datetime
 
 # ================= Configuration =================
 # Define the time limits to test (in seconds)
-TIME_LIMITS = [ 3600] # 10 minutes
+TIME_LIMITS = [ 1200] # 20 minutes
 
 # Define how many times to run each configuration
 ITERATIONS = 10

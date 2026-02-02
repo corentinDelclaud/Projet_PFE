@@ -106,7 +106,7 @@ print(f"  {len(eleves)} élèves chargés.")
 # Chargement Stages
 list_periodes = [Periode(0, 34, 44), Periode(1, 45, 51), Periode(2, 1, 8), Periode(3, 9, 15), Periode(4, 16, 22), Periode(5, 23, 30)]
 stages_lookup = collections.defaultdict(list)
-stages_csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'mock_stages_copy.csv') # Using copy as per working context
+stages_csv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'stages.csv') # Using copy as per working context
 if os.path.exists(stages_csv_path):
     with open(stages_csv_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
