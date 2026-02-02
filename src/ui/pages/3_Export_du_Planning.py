@@ -61,8 +61,12 @@ def check_csv_valid(filepath):
 
 # Partie 1: Vérifications
 checks = {
-    "Liste des étudiants": DATA_DIR / "eleves.csv",
-    "Configuration des stages": DATA_DIR / "mock_stages.csv"
+    "Import des calendriers universitaires de la première année": DATA_DIR / "calendrier_DFASO1.csv",
+    "Import des calendriers universitaires de la deuxième année": DATA_DIR / "calendrier_DFASO2.csv",
+    "Import des calendriers universitaires de la troisième année": DATA_DIR / "calendrier_DFTCC.csv",
+    "Configuration des disciplines": DATA_DIR / "disciplines.csv",
+    "Configuration des périodes": DATA_DIR / "periodes.csv",
+    "Configuration des stages": DATA_DIR / "stages.csv",
 }
 
 all_valid = True
@@ -81,12 +85,11 @@ for name, (is_valid, message) in results.items():
 
 # Liens rapides vers les pages nécessaires
 if not all_valid:
-    eleves_valid, _ = results["Liste des étudiants"]
+
     stages_valid, _ = results["Configuration des stages"]
     
     missing_items = []
-    if not eleves_valid:
-        missing_items.append("Importer la liste des étudiants")
+
     if not stages_valid:
         missing_items.append("Configurer les stages")
     
