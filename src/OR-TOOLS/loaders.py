@@ -338,8 +338,8 @@ def load_calendars(data_dir: Path) -> Dict:
     calendar_unavailability = collections.defaultdict(set)
     
     cal_files = {
-        niveau.DFAS01: data_dir / 'calendrier_DFASO1.csv',
-        niveau.DFAS02: data_dir / 'calendrier_DFASO2.csv',
+        niveau.DFAS01: data_dir / 'calendrier_DFAS01.csv',
+        niveau.DFAS02: data_dir / 'calendrier_DFAS02.csv',
         niveau.DFTCC: data_dir / 'calendrier_DFTCC.csv'
     }
     
