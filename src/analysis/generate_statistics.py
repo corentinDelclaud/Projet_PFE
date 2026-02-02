@@ -2,6 +2,7 @@ import sys
 import os
 import csv
 import collections
+import argparse
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -524,6 +525,78 @@ def analyze_solution(solution_path, disc_map, eleves, stages):
                 "Respect": total_checks - violations
             })
 
+    # --- Occupancy Analysis (Remplissage Salles) ---
+    occupancy_data = []
+    
+    if not csv_df.empty:
+        # Determine range of weeks
+        # Convert Semaine to int just in case
+        csv_df["Semaine"] = pd.to_numeric(csv_df["Semaine"], errors='coerce').fillna(0).astype(int)
+        all_weeks = sorted(csv_df["Semaine"].unique())
+        all_weeks = [w for w in all_weeks if w > 0] # Filter valid weeks
+        
+        # Pre-compute counts map for speed (Re-use slot_counts if valid, but ensure keys match)
+        # slot_counts keys: (Semaine, Jour, Apres-Midi, Discipline)
+        # Note: In detailed_assignments, 'Semaine' might be string or int depending on reader. 
+        # The reader converts 'id_eleve' but not Semaine explicitly in the loop above?
+        # Let's ensure types. In the reader loop:
+        # row["Semaine"] is string.
+        
+        # Let's rebuild a robust counts map from csv_df which is clean
+        # csv_df columns: Semaine (int), Jour (str), Apres-Midi (str/int?), Discipline (str)
+        
+        real_counts = csv_df.groupby(["Semaine", "Jour", "Apres-Midi", "Discipline"]).size().to_dict()
+        # Key: (1, 'Lundi', '0', 'Polyclinique')
+        
+        jours_ord = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+        
+        for w in all_weeks:
+            for d_idx, day_name in enumerate(jours_ord):
+                for am_val in [0, 1]:
+                    # Helper index for discipline arrays (0..9)
+                    # 0=Lundi Matin, 1=Lundi Soir, 2=Mardi Matin...
+                    slot_idx = d_idx * 2 + am_val
+                    
+                    # AM value in CSV is usually "0" or "1" (String)
+                    am_str = str(am_val)
+                    
+                    for disc_name, disc in disc_map.items():
+                        # Check presence (Is the clinic open for this discipline at this time?)
+                        if slot_idx < len(disc.presence) and disc.presence[slot_idx]:
+                            capacity = disc.nb_eleve[slot_idx]
+                            
+                            # Get count
+                            # Key format matching GroupBy: (Semaine, Jour, Apres-Midi, Discipline)
+                            # csv_df["Apres-Midi"] might be int or str. Let's check csv_df dtypes or normalized data.
+                            # In loop above: data_list.append(..., "Apres-Midi": am, ...)
+                            # am comes from row["Apres-Midi"]. In CSV it is "0" or "1".
+                            try:
+                                count = real_counts.get((w, day_name, am_str, disc_name), 0)
+                            except KeyError:
+                                # Try int if key mismatch
+                                count = real_counts.get((w, day_name, am_val, disc_name), 0)
+                            
+                            rate = (count / capacity * 100) if capacity > 0 else 0
+                            
+                            status = "VIDE"
+                            if count == 0: status = "VIDE"
+                            elif count == capacity: status = "PLEIN"
+                            elif count > capacity: status = "SURCHARGE"
+                            else: status = "PARTIEL"
+                            
+                            occupancy_data.append({
+                                "Semaine": w,
+                                "Jour": day_name,
+                                "Apres-Midi": "Apres-Midi" if am_val == 1 else "Matin",
+                                "Discipline": disc_name,
+                                "Capacite": capacity,
+                                "Occupe": count,
+                                "Taux": round(rate, 1),
+                                "Status": status
+                            })
+                            
+    df_occupancy = pd.DataFrame(occupancy_data)
+
     # --- Stats Compilation ---
     stats_data = []
     
@@ -589,9 +662,9 @@ def analyze_solution(solution_path, disc_map, eleves, stages):
             lambda r: round(r["Respect"] / r["Total_Check"] * 100, 1) if r["Total_Check"] > 0 else 100, axis=1
         )
 
-    return df, binome_stats, df_constraints
+    return df, binome_stats, df_constraints, df_occupancy
 
-def generate_report(df, output_path, binome_stats=None, df_constraints=None):
+def generate_report(df, output_path, binome_stats=None, df_constraints=None, df_occupancy=None):
     wb = Workbook()
     
     # 1. Detailed Sheet
@@ -788,19 +861,84 @@ def generate_report(df, output_path, binome_stats=None, df_constraints=None):
         # Color coding for %
         # (Advanced styling omitted for brevity, simple list is fine)
 
+    # 7. Occupancy Stats (Remplissage Salles)
+    if df_occupancy is not None and not df_occupancy.empty:
+        ws_occ = wb.create_sheet("Remplissage Salles")
+        
+        # A. Summary by Discipline
+        ws_occ.append(["Synthèse Remplissage par Discipline"])
+        
+        # Group: Discipline -> Sum(Occupe), Sum(Capacite), Avg(Taux), Count(Status=PLEIN)...
+        summary_occ = df_occupancy.groupby("Discipline").agg({
+            "Occupe": "sum",
+            "Capacite": "sum",
+            "Taux": "mean",
+            "Semaine": "count" # Total slots open
+        }).reset_index()
+        
+        summary_occ["Taux_Global"] = (summary_occ["Occupe"] / summary_occ["Capacite"] * 100).round(1)
+        summary_occ = summary_occ.rename(columns={"Semaine": "Nb_Creneaux_Ouverts", "Taux": "Moyenne_Taux_Creneau"})
+        summary_occ["Moyenne_Taux_Creneau"] = summary_occ["Moyenne_Taux_Creneau"].round(1)
+        
+        # Calculate Status Counts
+        status_counts = df_occupancy.groupby(["Discipline", "Status"]).size().unstack(fill_value=0).reset_index()
+        # Ensure cols exist
+        for col in ["VIDE", "PARTIEL", "PLEIN", "SURCHARGE"]:
+            if col not in status_counts.columns:
+                status_counts[col] = 0
+                
+        # Merge
+        summary_occ = pd.merge(summary_occ, status_counts, on="Discipline", how="left")
+        
+        cols = ["Discipline", "Nb_Creneaux_Ouverts", "Capacite", "Occupe", "Taux_Global", "Moyenne_Taux_Creneau", "VIDE", "PARTIEL", "PLEIN", "SURCHARGE"]
+        ws_occ.append(cols)
+        
+        for cell in ws_occ[2]:
+            cell.font = header_style
+            cell.fill = header_fill
+
+        for r in dataframe_to_rows(summary_occ[cols], index=False, header=False):
+            ws_occ.append(r)
+            
+        ws_occ.append([])
+        ws_occ.append([])
+        
+        # B. Detailed List
+        ws_occ.append(["Détail par Créneau"])
+        detail_header_row = ws_occ.max_row
+        ws_occ.append(list(df_occupancy.columns))
+        
+        for cell in ws_occ[detail_header_row + 1]:
+            cell.font = header_style
+            cell.fill = header_fill
+            
+        for r in dataframe_to_rows(df_occupancy, index=False, header=False):
+            ws_occ.append(r)
+            
+        ws_occ.column_dimensions['A'].width = 10
+        ws_occ.column_dimensions['B'].width = 15
+        ws_occ.column_dimensions['C'].width = 12
+        ws_occ.column_dimensions['D'].width = 20
+
     # Save
     wb.save(output_path)
     print(f"Report generated: {output_path}")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", "-i", type=str, help="Input CSV solution file")
+    parser.add_argument("--output", "-o", type=str, help="Output Excel statistics file")
+    args = parser.parse_args()
+
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-    solution_file = os.path.join(base_dir, 'resultat', 'planning_solution.csv')
-    output_file = os.path.join(base_dir, 'resultat', 'statistiques_solution.xlsx')
+    
+    solution_file = args.input if args.input else os.path.join(base_dir, 'resultat', 'planning_solution.csv')
+    output_file = args.output if args.output else os.path.join(base_dir, 'resultat', 'statistiques_solution.xlsx')
     
     disc_map, eleves, stages = load_data()
     if disc_map and eleves:
         print("Analyzing solution...")
-        df, binome_stats, df_constraints = analyze_solution(solution_file, disc_map, eleves, stages)
+        df, binome_stats, df_constraints, df_occupancy = analyze_solution(solution_file, disc_map, eleves, stages)
         if df is not None:
-            generate_report(df, output_file, binome_stats, df_constraints)
+            generate_report(df, output_file, binome_stats, df_constraints, df_occupancy)
             print("Done.")
