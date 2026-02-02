@@ -57,6 +57,14 @@ Projet_PFE/
 ├── data/         # Données d'entrée (calendriers, étudiants)
 ├── docs/         # Documentation
 └── tests/        # Tests unitaires
+
+config_manager.py - Manages and validates configuration
+loaders.py - Loads data from CSV files with error handling
+optimizer.py - Core optimization engine with CP-SAT
+exporter.py - Exports results to various formats
+app_V1.py - Main script that orchestrates everything
+3_Export_du_Planning.py - Updated Streamlit UI page
+
 ```
 
 ## Contributeurs
