@@ -34,7 +34,7 @@ def check_csv_valid(filepath):
         df = pd.read_csv(filepath)
         if len(df) < 1:
             return False, "Fichier vide"
-        return True, f"✓ {len(df)} entrée(s)"
+        return True, f"{len(df)} entrée(s)"
     except Exception as e:
         return False, f"Erreur: {str(e)}"
 
@@ -130,7 +130,7 @@ if st.session_state.get('model_running', False):
     log_container = log_expander.empty()
     
     # Path to optimizer script
-    app_script = Path(__file__).parent.parent.parent / "OR-TOOLS" / "app_V1.py"
+    app_script = Path(__file__).parent.parent.parent / "OR-TOOLS" / "app.py"
     env_python = sys.executable
     
     try:
@@ -204,23 +204,6 @@ if st.session_state.get('model_running', False):
                         "Temps restant",
                         format_time(remaining_time)
                     )
-                    solutions_display.metric(
-                        "Solutions trouvées",
-                        f"{solution_count}"
-                    )
-                    
-                    # Update progress based on time
-                    if max_time > 0:
-                        time_progress = min(100, int((elapsed_time / max_time) * 100))
-                        # Map to 75-100% range during solving
-                        ui_progress = 75 + (time_progress * 0.25)
-                        progress_bar.progress(int(ui_progress) / 100)
-                        
-                        status_text.info(
-                            f"Résolution: {time_progress}% , "
-                            f"Solution #{solution_count} , "
-                            f"Objectif: {objective:,.0f}"
-                        )
                 
                 # Check for other progress keywords
                 progress_keywords = {
