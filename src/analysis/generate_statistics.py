@@ -7,6 +7,7 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+import json
 
 # Add the parent parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -661,7 +662,7 @@ def analyze_solution(solution_path, disc_map, eleves, stages):
 
     return df, binome_stats, df_constraints, df_occupancy
 
-def generate_report(df, output_path, binome_stats=None, df_constraints=None, df_occupancy=None):
+def generate_report(df, output_path, binome_stats=None, df_constraints=None, df_occupancy=None, optimization_scores=None):
     wb = Workbook()
     
     # 1. Detailed Sheet
@@ -916,7 +917,37 @@ def generate_report(df, output_path, binome_stats=None, df_constraints=None, df_
         ws_occ.column_dimensions['B'].width = 15
         ws_occ.column_dimensions['C'].width = 12
         ws_occ.column_dimensions['D'].width = 20
-
+    # 8. Optimization Scores (if available)
+    if optimization_scores:
+        ws_scores = wb.create_sheet("Scores Optimisation")
+        ws_scores.append(["Métrique", "Valeur"])
+        
+        # Style header
+        for col in range(1, 3):
+            cell = ws_scores.cell(1, col)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill("solid", fgColor="4F81BD")
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+        
+        # Add scores data
+        ws_scores.append(["Score Brut", f"{optimization_scores.get('raw_score', 0):,.0f}"])
+        ws_scores.append(["Score Maximum Théorique", f"{optimization_scores.get('max_theoretical_score', 0):,.0f}"])
+        ws_scores.append(["Score Normalisé (/100)", f"{optimization_scores.get('normalized_score', 0):.2f}"])
+        ws_scores.append(["Statut Solution", optimization_scores.get('status', 'UNKNOWN')])
+        
+        # Format
+        ws_scores.column_dimensions['A'].width = 30
+        ws_scores.column_dimensions['B'].width = 25
+        
+        # Highlight normalized score
+        score_cell = ws_scores.cell(4, 2)  # Row 4 is normalized score
+        score_val = optimization_scores.get('normalized_score', 0)
+        if score_val >= 80:
+            score_cell.fill = PatternFill("solid", fgColor="90EE90")  # Light green
+        elif score_val >= 60:
+            score_cell.fill = PatternFill("solid", fgColor="FFFF99")  # Light yellow
+        else:
+            score_cell.fill = PatternFill("solid", fgColor="FFB6C1")  # Light red
     # Save
     wb.save(output_path)
     print(f"Report generated: {output_path}")
@@ -931,11 +962,22 @@ if __name__ == "__main__":
     
     solution_file = args.input if args.input else os.path.join(base_dir, 'resultat', 'planning_solution.csv')
     output_file = args.output if args.output else os.path.join(base_dir, 'resultat', 'statistiques_solution.xlsx')
+    scores_file = os.path.join(base_dir, 'resultat', 'optimization_scores.json')
+    
+    # Load optimization scores if available
+    optimization_scores = None
+    if os.path.exists(scores_file):
+        try:
+            with open(scores_file, 'r', encoding='utf-8') as f:
+                optimization_scores = json.load(f)
+            print(f"Scores d'optimisation chargés depuis {scores_file}")
+        except Exception as e:
+            print(f"Impossible de charger les scores : {e}")
     
     disc_map, eleves, stages = load_data()
     if disc_map and eleves:
         print("Analyzing solution...")
         df, binome_stats, df_constraints, df_occupancy = analyze_solution(solution_file, disc_map, eleves, stages)
         if df is not None:
-            generate_report(df, output_file, binome_stats, df_constraints, df_occupancy)
+            generate_report(df, output_file, binome_stats, df_constraints, df_occupancy, optimization_scores)
             print("Done.")

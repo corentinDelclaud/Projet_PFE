@@ -1,6 +1,7 @@
 import sys
 import os
 import csv
+import json
 import collections
 import argparse
 
@@ -781,6 +782,21 @@ if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                     ])
             writer.writerows(rows_buffer)
         print(f"Données sauvegardées.")
+        
+        # Save optimization scores to JSON file
+        scores_file = os.path.join(output_dir, 'optimization_scores.json')
+        try:
+            with open(scores_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "raw_score": raw_score,
+                    "max_theoretical_score": max_theoretical_score,
+                    "normalized_score": normalized_score,
+                    "status": "OPTIMAL" if status == cp_model.OPTIMAL else "FEASIBLE"
+                }, f, indent=2)
+            print(f"Scores sauvegardés dans {scores_file}")
+        except Exception as e:
+            print(f"Erreur lors de l'écriture des scores : {e}")
+            
     except Exception as e:
         print(f"Erreur lors de l'écriture du fichier : {e}")
 
