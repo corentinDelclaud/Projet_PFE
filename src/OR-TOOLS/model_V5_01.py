@@ -6,7 +6,7 @@ import argparse
 
 # Parse arguments for batch execution
 parser = argparse.ArgumentParser(description="Run optimization model.")
-parser.add_argument("--time_limit", type=int, default=600, help="Max time in seconds for the solver.")
+parser.add_argument("--time_limit", type=int, default=3500, help="Max time in seconds for the solver.")
 parser.add_argument("--output", type=str, default=None, help="Path to the output CSV file.")
 args, unknown = parser.parse_known_args()
 
@@ -78,6 +78,7 @@ odf.modif_repartition_semestrielle([2,2])  # 4 total, 2 in each semester
 
 pedo_soins.modif_frequence_vacations(2)  # Une semaine sur deux
 pedo_soins.modif_priorite_niveau([5,6,4])  # 1st prio 5A, 2nd prio 6A, 3rd prio 4A
+pedo_soins.modif_meme_jour(True)
 
 paro.modif_mixite_groupes(2) # au moins 2 niveaux différents par vacation
 
@@ -98,11 +99,16 @@ with open(eleves_csv_path, mode='r', encoding='utf-8') as f:
     reader = csv.DictReader(f)
     for row in reader:
         try:
+            # Convertir jour_similaire (0-9) en jour (1-5) : 0,1→1(lundi), 2,3→2(mardi), etc.
+            jour_similaire_val = int(row.get("jour_similaire", 0))
+            meme_jour_converted = (jour_similaire_val // 2) + 1  # Conversion en jour 1-5
+            
             new_eleve = eleve(
                 id_eleve=int(row["id_eleve"]),
                 id_binome=int(row["id_binome"]),
                 jour_preference=jour_pref[row["jour_preference"]],
-                annee=niveau[row["annee"]]
+                annee=niveau[row["annee"]],
+                meme_jour=meme_jour_converted  # Stocker le jour similaire converti
             )
             new_eleve.periode_stage = int(row.get("periode_stage", 0))
             eleves.append(new_eleve)
@@ -501,35 +507,42 @@ for disc in disciplines:
                              model.Add(sum(vars_to) >= min_required)
 
 # Même Jour : (Soft Constraint)
-# Les vacations doivent être planifiées le plus possible le même jour (meme_jour=1..5) ou adjacent
-print("Ajout contrainte: Même Jour (Discipline)...")
+# Les vacations doivent être planifiées le plus possible le même jour similaire de l'élève (ou jour adjacent)
+print("Ajout contrainte: Même Jour (Élève)...")
 for disc in disciplines:
-    if disc.meme_jour > 0:
-        # Calculate theoretical max for same day bonus
+    if disc.meme_jour:  # Si la discipline active cette contrainte
         for el in eleves:
             if el.annee.value not in disc.annee: continue
+            if el.meme_jour == 0: continue  # Pas de jour similaire défini
+            
+            # Calculer le score théorique maximum pour cet élève
             try:
                 adx = disc.annee.index(el.annee.value)
                 quota_disc = disc.quota[adx]
                 # Best case: all assignments on target day
                 max_theoretical_score += quota_disc * 20  # 20 points per assignment on target day
             except (ValueError, IndexError):
-                pass
-        
-        target_day_idx = disc.meme_jour - 1 # 1=Lundi(0)
-        
-        for v_idx, vac in enumerate(vacations):
-            d = vac.jour
-            w = 0
-            if d == target_day_idx:
-                w = 20 # Strong Preference
-            elif abs(d - target_day_idx) == 1:
-                w = 10 # Adjacent Preference
+                continue
             
-            if w > 0:
-                # Apply bonus to all assignments in this vacation for this discipline
-                vars_list = vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
-                for var in vars_list:
+            target_day_idx = el.meme_jour - 1  # 1=Lundi(0), 2=Mardi(1), etc.
+            
+            # Pour chaque vacation de cette discipline
+            for v_idx, vac in enumerate(vacations):
+                # Vérifier si cette vacation existe pour cet élève
+                var_key = (el.id_eleve, disc.id_discipline, v_idx)
+                if var_key not in assignments:
+                    continue
+                
+                var = assignments[var_key]
+                d = vac.jour
+                w = 0
+                
+                if d == target_day_idx:
+                    w = 20  # Forte préférence pour le jour similaire
+                elif abs(d - target_day_idx) == 1:
+                    w = 10  # Préférence pour jour adjacent
+                
+                if w > 0:
                     obj_terms.append(var)
                     weights.append(w)
 
