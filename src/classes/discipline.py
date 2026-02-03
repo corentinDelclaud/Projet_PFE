@@ -16,7 +16,7 @@ class discipline:
     remplacement_niveau : list[(int,int,int)]   # [X,Y,Z] with X année absente, Y année remplacement et Z quota en %  X,Y -> (4A, 5A, 6A)  quota -> number of students to replace at the vacation
     take_jour_pref : bool = False  # Prendre en compte les jours préférentiels de l'élève
     be_filled : bool = False  # Discipline impérativement remplie sur ces vacations
-    meme_jour : int = 0  # Les vacations de cette discipline doivent être planifiées le plus possible le même jour ou un jour adjacent pour un élève donné (0 : pas de contrainte, 1 : lundi, 2 : mardi, 3 : mercredi, 4 : jeudi, 5 : vendredi) 
+    meme_jour : bool = False  # Les vacations de cette discipline doivent être planifiées le plus possible le même jour ou un jour adjacent pour un élève donné qui lui à l'information de son jour
     def __init__(self, id_discipline: int, nom_discipline: str, nb_eleve: list[int], en_binome: bool, quota: list[int], presence: list[bool] = None, annee: list[int] = None, **kwargs):
         self.id_discipline = id_discipline
         self.nom_discipline = nom_discipline
@@ -143,3 +143,6 @@ class discipline:
         self.take_jour_pref = take
     def modif_fill_requirement(self, be_filled: bool):
         self.be_filled = be_filled
+        
+    def modif_meme_jour(self, meme_jour: bool):
+        self.meme_jour = meme_jour
