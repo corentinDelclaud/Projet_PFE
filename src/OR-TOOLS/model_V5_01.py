@@ -118,9 +118,18 @@ if os.path.exists(stages_csv_path):
     with open(stages_csv_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            stages_lookup[(row["pour_niveau"], int(row["periode"]))].append({
-                 "nom": row["nom_stage"], "debut": int(row["deb_semaine"]), "fin": int(row["fin_semaine"]), "niveau_obj": niveau[row["pour_niveau"]]
-            })
+            # Skip rows with empty week values
+            if not row.get("deb_semaine") or not row.get("fin_semaine"):
+                continue
+            try:
+                stages_lookup[(row["pour_niveau"], int(row["periode"]))].append({
+                    "nom": row["nom_stage"], 
+                    "debut": int(float(row["deb_semaine"])), 
+                    "fin": int(float(row["fin_semaine"])), 
+                    "niveau_obj": niveau[row["pour_niveau"]]
+                })
+            except (ValueError, KeyError):
+                continue
 
 stages_eleves = {}
 for el in eleves:
@@ -238,6 +247,9 @@ for v_idx in range(len(vacations)):
 obj_terms = []
 weights = []
 
+max_theoretical_score = 0  # Track maximum possible score for normalization
+
+
 # NB VACATIONS PAR SEMAINE (Hard)
 print("Ajout contrainte: Max Vacations/Semaine...")
 for disc in disciplines:
@@ -255,6 +267,17 @@ for disc in disciplines:
 print("Ajout contrainte: Paires de Jours (Soft)...")
 for disc in disciplines:
     if disc.paire_jours:
+        # Calculate theoretical max for pair bonus
+        for el in eleves:
+            if el.annee.value not in disc.annee: continue
+            try:
+                adx = disc.annee.index(el.annee.value)
+                quota_disc = disc.quota[adx]
+                # Best case: all weeks have a pair
+                max_theoretical_score += 52 * 50  # 50 points per pair per week (approximate)
+            except (ValueError, IndexError):
+                pass
+        
         for el in eleves:
             if el.annee.value not in disc.annee: continue
             for s in range(1, 53):
@@ -445,25 +468,70 @@ for disc in disciplines:
                     model.Add(sum(vars_in_group) <= limit)
 
 #Remplacement de niveau : Permettre à un niveau spécifique de remplacer un autre niveau (exemple 5A par 6A)
-print("Ajout contrainte: Remplacement de Niveau...")
+# Si le niveau X est absent (aucune variable d'affectation disponible), le niveau Y doit remplir P% de la capacité
+print("Ajout contrainte: Remplacement de Niveau (% Capacity)...")
 for disc in disciplines:
     if disc.remplacement_niveau:
-        for (niv_from, niv_to, nb_eleves) in disc.remplacement_niveau: # si quota nb_elevèes en % ? 
-            eleves_from = [e for e in eleves if e.annee.value == niv_from]
-            eleves_to = [e for e in eleves if e.annee.value == niv_to]
+        for (niv_from_val, niv_to_val, percentage) in disc.remplacement_niveau:
+            try:
+                # Ensure we have the enum objects for key lookup
+                niv_from = niveau(niv_from_val)
+                niv_to = niveau(niv_to_val)
+            except ValueError:
+                continue
+
             for v_idx, vac in enumerate(vacations):
                 slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
-                vars_from = []
-                vars_to = []
-                for el in eleves_from:
-                    vars_entries = vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, vac.semaine), [])
-                    vars_from.extend([v[1] for v in vars_entries])
-                for el in eleves_to:
-                    vars_entries = vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, vac.semaine), [])
-                    vars_to.extend([v[1] for v in vars_entries])
-                if vars_from and vars_to:
-                    denom = max(1, len(eleves_from))
-                    model.Add(sum(vars_to) * denom >= sum(vars_from) * nb_eleves)
+                
+                # Check if From Level is present (has created variables)
+                vars_from = vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv_from), [])
+                
+                if not vars_from:
+                    # Level is absent, enforce replacement
+                    vars_to = vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv_to), [])
+                    capacity = disc.nb_eleve[slot_idx]
+                    
+                    if capacity > 0 and vars_to:
+                         min_required = int(capacity * percentage / 100)
+                         # Safe ceiling/floor logic? "Au moins Y%" implies floor or ceil?
+                         # Usually 50% of 10 is 5. 50% of 1 is 0.5 -> 0 or 1?
+                         # "Au moins" usually implies ceiling if strict, but int() floors.
+                         # Let's use standard integer arithmetic (floor).
+                         if min_required > 0:
+                             model.Add(sum(vars_to) >= min_required)
+
+# Même Jour : (Soft Constraint)
+# Les vacations doivent être planifiées le plus possible le même jour (meme_jour=1..5) ou adjacent
+print("Ajout contrainte: Même Jour (Discipline)...")
+for disc in disciplines:
+    if disc.meme_jour > 0:
+        # Calculate theoretical max for same day bonus
+        for el in eleves:
+            if el.annee.value not in disc.annee: continue
+            try:
+                adx = disc.annee.index(el.annee.value)
+                quota_disc = disc.quota[adx]
+                # Best case: all assignments on target day
+                max_theoretical_score += quota_disc * 20  # 20 points per assignment on target day
+            except (ValueError, IndexError):
+                pass
+        
+        target_day_idx = disc.meme_jour - 1 # 1=Lundi(0)
+        
+        for v_idx, vac in enumerate(vacations):
+            d = vac.jour
+            w = 0
+            if d == target_day_idx:
+                w = 20 # Strong Preference
+            elif abs(d - target_day_idx) == 1:
+                w = 10 # Adjacent Preference
+            
+            if w > 0:
+                # Apply bonus to all assignments in this vacation for this discipline
+                vars_list = vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
+                for var in vars_list:
+                    obj_terms.append(var)
+                    weights.append(w)
 
 # =============================================================================
 
@@ -478,6 +546,7 @@ for (e_id, d_id, _), var in assignments.items():
 
 # A. Maximiser le nombre d'affectations jusqu'au Quota
 # (Les affectations au-delà du quota ne rapportent pas de points)
+
 for disc in disciplines:
     # List to track individual success for this discipline for the "All Quota" bonus
     discipline_success_vars = []
@@ -510,6 +579,9 @@ for disc in disciplines:
                 w_fill = 600      # Incitation forte au remplissage
                 w_excess = -800   # Malus adapté pour éviter le dépassement malgré le fort w_fill
                 w_success = 30000 # Priorité critique pour atteindre le quota global
+
+            # Calculate theoretical max (perfect scenario: quota met, no excess)
+            max_theoretical_score += quota * w_fill + w_success
 
             # 1. INCITATION AU REMPLISSAGE (Jusqu'au Quota)
             sat_var = model.NewIntVar(0, quota, f"sat_e{el.id_eleve}_d{disc.id_discipline}")
@@ -558,11 +630,24 @@ for disc in disciplines:
         if disc.nom_discipline == "Polyclinique":
              w_grand_slam = 5000000 # 5 Millions points for Poly
 
+        max_theoretical_score += w_grand_slam
+
         obj_terms.append(all_success_var)
         weights.append(w_grand_slam)
 
 # B. Respect des Préférences (Jour Préféré)
 if poly.take_jour_pref: # Seulement pour Poly ou configurable globalement
+    # Count theoretical max for preference bonus
+    for el in eleves:
+        if el.annee.value not in poly.annee: continue
+        try:
+            adx = poly.annee.index(el.annee.value)
+            quota_poly = poly.quota[adx]
+            # In best case, all poly assignments are on preferred day
+            max_theoretical_score += quota_poly * 100
+        except (ValueError, IndexError):
+            pass
+    
     for k, var in assignments.items():
         if k[1] == poly.id_discipline: # Si c'est poly
             el = eleve_dict[k[0]]
@@ -584,6 +669,19 @@ for disc in disciplines:
         if len(disc.priorite_niveau) > 0: prio_map[disc.priorite_niveau[0]] = 50  # Prio 1
         if len(disc.priorite_niveau) > 1: prio_map[disc.priorite_niveau[1]] = 20  # Prio 2
         if len(disc.priorite_niveau) > 2: prio_map[disc.priorite_niveau[2]] = 5   # Prio 3
+        
+        # Calculate theoretical max for priority bonus (highest priority gets all quotas)
+        if len(disc.priorite_niveau) > 0:
+            top_prio_year = disc.priorite_niveau[0]
+            if top_prio_year in disc.annee:
+                try:
+                    adx = disc.annee.index(top_prio_year)
+                    quota_prio = disc.quota[adx]
+                    # Count students in top priority year
+                    nb_students_prio = len([e for e in eleves if e.annee.value == top_prio_year])
+                    max_theoretical_score += nb_students_prio * quota_prio * 50  # 50 points per top priority assignment
+                except (ValueError, IndexError):
+                    pass
         
         # Il est plus efficace d'itérer sur les variables pré-triées par discipline si possible, 
         # C'est ce que nous faisons ici grâce au dictionnaire vars_by_student_disc_all
@@ -628,7 +726,19 @@ except KeyboardInterrupt:
     status = cp_model.FEASIBLE if solver.ObjectiveValue() > 0 else cp_model.UNKNOWN # Tentative de récupération
 
 if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-    print(f"Terminé. Meilleure solution : {solver.ObjectiveValue()}")
+    raw_score = solver.ObjectiveValue()
+    
+    # Normalize score to 0-100 scale
+    normalized_score = 0.0
+    if max_theoretical_score > 0:
+        normalized_score = (raw_score / max_theoretical_score) * 100
+        # Cap at 100 (in case bonus weights push it over)
+        normalized_score = min(100.0, max(0.0, normalized_score))
+    
+    print(f"Terminé.")
+    print(f"Score brut : {raw_score:,.0f}")
+    print(f"Score maximum théorique : {max_theoretical_score:,.0f}")
+    print(f"Score normalisé : {normalized_score:.2f}/100")
     print(f"Ecriture des résultats dans {output_csv}...")
     
     try:
