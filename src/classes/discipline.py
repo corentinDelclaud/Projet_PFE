@@ -13,9 +13,10 @@ class discipline:
     mixite_groupes : int = 0  # Composition des groupes Mixité des niveaux  0 = Pas de contrainte, 1 = Exactement 1 élève de chaque niveau, 2 = Au moins 2 niveaux différents par vacation, 3 = Tous du même niveau
     repetition_continuite : tuple[int,int] = (0,0)  # Contrainte de continuité (X,Y)  X : Éviter répétitions : 0 = Pas de contrainte 1 = Pas 2 fois de suite 2 = Pas 3 fois de suite 3 = Jamais plus de X fois (préciser X)  Y : distance en semaines pour la contrainte de continuité (ex: 12 semaines = 3 mois)
     priorite_niveau : list[int] | None = None # index 0 1st prio , index 1 2nd prio, index 2 3eme prio ( value 4,5,6 for year)
-    remplacement_niveau : list[(int,int,int)]   # [X,Y,Z] with X année absente, Y année remplacement et Z quota  X,Y -> (4A, 5A, 6A)  quota -> number of students to replace at the vacation
+    remplacement_niveau : list[(int,int,int)]   # [X,Y,Z] with X année absente, Y année remplacement et Z quota en %  X,Y -> (4A, 5A, 6A)  quota -> number of students to replace at the vacation
     take_jour_pref : bool = False  # Prendre en compte les jours préférentiels de l'élève
     be_filled : bool = False  # Discipline impérativement remplie sur ces vacations
+    meme_jour : int = 0  # Les vacations de cette discipline doivent être planifiées le plus possible le même jour ou un jour adjacent pour un élève donné (0 : pas de contrainte, 1 : lundi, 2 : mardi, 3 : mercredi, 4 : jeudi, 5 : vendredi) 
     def __init__(self, id_discipline: int, nom_discipline: str, nb_eleve: list[int], en_binome: bool, quota: list[int], presence: list[bool] = None, annee: list[int] = None, **kwargs):
         self.id_discipline = id_discipline
         self.nom_discipline = nom_discipline
@@ -34,7 +35,9 @@ class discipline:
         self.repetition_continuite = kwargs.get('repetition_continuite', 0)
         self.priorite_niveau = kwargs.get('priorite_niveau', None)
         self.remplacement_niveau = kwargs.get('remplacement_niveau', [])
-        
+        self.take_jour_pref = kwargs.get('take_jour_pref', False)
+        self.be_filled = kwargs.get('be_filled', False)
+        self.meme_jour = kwargs.get('meme_jour', False)
     def __repr__(self):
         return f"UIC(id_discipline={self.id_discipline}, nom='{self.nom_discipline}', fauteuil={self.nb_eleve}, binome={self.en_binome}, presence={self.presence}, quota={self.quota}, annee={self.annee}, frequence_vacations={self.frequence_vacations}, nb_vacations_par_semaine={self.nb_vacations_par_semaine}, repartition_semestrielle={self.repartition_semestrielle}, paire_jours={self.paire_jours}, mixite_groupes={self.mixite_groupes}, repetition_continuite={self.repetition_continuite}, priorite_niveau={self.priorite_niveau}, remplacement_niveau={self.remplacement_niveau})"
     
