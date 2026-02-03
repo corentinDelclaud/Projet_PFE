@@ -197,7 +197,6 @@ def analyze_solution(solution_path, disc_map, eleves, stages):
     if not csv_df.empty:
         # Pre-calculation for "Apres-Midi" boolean if it's string
         # Assuming CSV has "True" or "False" strings or just checking uniqueness
-        pass
 
         # 1. Max Vacations / Semaine
         for disc_name, disc in disc_map.items():
@@ -276,8 +275,6 @@ def analyze_solution(solution_path, disc_map, eleves, stages):
                         # Let's slide a window of size 'window' across the student's timeline
                         if not weeks: continue
                         
-                        min_w = min(weeks)
-                        max_w = max(weeks)
                         
                         # We only need to check windows starting at an assigned week (optimization)
                         for start_w in weeks:
@@ -399,7 +396,7 @@ def analyze_solution(solution_path, disc_map, eleves, stages):
                 # Iterate all theoretical slots
                 for s in range(1, 53):
                     for j_idx, j_str in enumerate(jours):
-                        for am in [0, 1]: # 0=Matin, 1=Apres-Midi
+                        for am in [0, 1]: 
                             am_str = str(am) # CSV stores as string
                             slot_idx = j_idx * 2 + am
                             
