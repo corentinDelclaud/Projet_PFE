@@ -101,8 +101,9 @@ with st.form("ajout_discipline", clear_on_submit=True):
 
     # Informations générales
     nom_discipline = st.text_input("Nom de la discipline", placeholder="Ex: Prothèse, Parodontologie...")
-    en_binome = st.checkbox("Être en binôme")
+    en_binome = st.checkbox("Être en binôme") 
     jour_pref = st.checkbox("Considérer le jour préféré")
+    meme_jour_semaine = st.checkbox("Même jour chaque semaine") # Garder le même jour pour chaque semaine
     remplissage_salle = st.checkbox("Remplir complètement les salles")
     st.markdown("**Configuration des vacations** (demi-journées 1 à 10)")
     st.caption("Pour chaque vacation, indiquez si l'UIC est présent, le nom de la salle et le nombre d'élèves nécessaires.")
@@ -359,7 +360,7 @@ with st.form("ajout_discipline", clear_on_submit=True):
             use_remplacement = st.checkbox("Activer", key="use_remplacement")
         
         # Règles de remplacement (ex: si un élève DFAS01 est indisponible, il peut être remplacé par un DFAS02, puis DFTCC il faut indiquer aussi le nombre d'élèves maximum par niveau qui peuvent remplacer)
-        st.caption("Règles de remplacement")
+        st.caption("Règles de remplacement des niveaux")
 
         col_niveau_absent, col_niveau_remplacant, col_quota = st.columns(3)
         with col_niveau_absent:
@@ -367,7 +368,7 @@ with st.form("ajout_discipline", clear_on_submit=True):
         with col_niveau_remplacant:
             st.write("**Remplacer par**")
         with col_quota:
-            st.write("**Quota**")
+            st.write("**Quota (%)**")
 
         regles_remplacement = {}
 
@@ -430,7 +431,8 @@ if submitted_discipline:
             "priorite_niveau": ordre_niveaux,
             "remplacement_niveau": regles_remplacement,
             "take_jour_pref": jour_pref,
-            "be_filled": remplissage_salle
+            "be_filled": remplissage_salle,
+            "meme_jour_semaine": meme_jour_semaine
         })
 
         # Sauvegarde dans le CSV
@@ -445,13 +447,15 @@ if st.session_state.disciplines:
     for idx, d in enumerate(st.session_state.disciplines):
         with st.expander(f"**{d['id_discipline']}. {d['nom_discipline']}**"):
             # Informations générales
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             with col1:
                 st.write(f"**Travail en binôme:** {'Oui' if d['en_binome'] else 'Non'}")
             with col2:
                 st.write(f"**Jour préféré:** {'Oui' if d['take_jour_pref'] else 'Non'}")
             with col3:
                 st.write(f"**Remplir salles:** {'Oui' if d['be_filled'] else 'Non'}")
+            with col4:
+                st.write(f"**Même jour chaque semaine:** {'Oui' if d.get('meme_jour_semaine', False) else 'Non'}")
 
             # Configuration des vacations
             vacation_data = []
@@ -623,7 +627,7 @@ if st.session_state.disciplines:
                     for niveau, regle in remplacement.items():
                         if isinstance(regle, dict):
                             st.write(f"  - {niveau} → {regle.get('niveau_remplacant', 'N/A')} (quota: {regle.get('quota', 0)})")
-            with col4:
+            with col5:
                 if st.button("Supprimer", key=f"delete_{idx}", type="primary"):
                     st.session_state.disciplines.pop(idx)
                     save_disciplines_to_csv()

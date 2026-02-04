@@ -46,7 +46,7 @@ checks = {
     "Configuration des disciplines": DATA_DIR / "disciplines.csv",
     "Configuration des périodes": DATA_DIR / "periodes.csv",
     "Configuration des stages": DATA_DIR / "stages.csv",
-    "Import des élèves": DATA_DIR / "eleves_with_code.csv",
+    "Nombre d'élèves": DATA_DIR / "eleves.csv"
 }
 
 all_valid = True
@@ -70,6 +70,45 @@ if not all_valid:
     st.info("Complétez le(s) étape(s) suivante(s):\n\n" + "\n".join([f"- {item}" for item in missing_items]))
 
 st.markdown("---")
+st.subheader("Génération des liste d'éleves")
+# Button to generate student lists with codes generate_student_code.py
+if st.button("Générer les listes d'élèves avec codes", use_container_width=True):
+    try:
+
+        data_dir_generation = Path(__file__).parent.parent.parent / "data"
+        sys.path.insert(0, str(data_dir_generation))
+                    
+        from generate_student_code import generate_student_data
+                    
+        eleves_csv = DATA_DIR / "eleves.csv"
+        eleves_df = pd.read_csv(eleves_csv)
+        nombre_eleves_DFAS01 = eleves_df['DFAS01'].sum()
+        nombre_eleves_DFAS02 = eleves_df['DFAS02'].sum()
+        nombre_eleves_DFTCC = eleves_df['DFTCC'].sum()
+
+        # verifie si colonne meme_jour_semaine est vrai pour une discipline prendre la liste des presence uic si vrai
+        discipline_csv = DATA_DIR / "disciplines.csv"
+        disciplines_df = pd.read_csv(discipline_csv)
+        zlist = [] # liste des presences uic si meme_jour_semaine est vrai
+        for index, row in disciplines_df.iterrows():
+            if 'meme_jour_semaine' in row and row['meme_jour_semaine'] == True:
+                try:
+                    import ast
+                    presence_dict = ast.literal_eval(row['presence'])
+                    presence_list = [i-1 for i, val in presence_dict.items() if val]
+                    liste_presence_uic = {}
+                    liste_presence_uic[row['nom_discipline']] = presence_list
+                except (ValueError, SyntaxError, AttributeError):
+                    # Skip if parsing fails
+                    continue
+        zlist = sorted(set(val for plist in liste_presence_uic.values() for val in plist))
+        generate_student_data(nombre_eleves_DFAS01, nombre_eleves_DFAS02, nombre_eleves_DFTCC, zlist)
+        
+        st.success("Listes d'élèves générées avec succès!")
+    except Exception as e:
+        st.error(f"Erreur lors de la génération des listes d'élèves: {str(e)}")
+
+st.markdown("---")
 
 st.subheader("Génération du planning")
 
@@ -84,6 +123,7 @@ if 'model_running' not in st.session_state:
     st.session_state['model_running'] = False
 if 'optimization_result' not in st.session_state:
     st.session_state['optimization_result'] = None
+
 
 # Button to launch optimization
 col1, col2 = st.columns([3, 1])
