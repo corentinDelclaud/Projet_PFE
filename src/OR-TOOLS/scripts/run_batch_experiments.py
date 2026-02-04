@@ -8,21 +8,22 @@ from pathlib import Path
 # ================= Configuration =================
 # Define the models to test (filename without .py)
 MODELS = [
-    "model_V5_01_OK"
+    "model_V5_01_OK",
+    "model_V5_02",
 ]
 
 # Define the time limits to test (in seconds)
-TIME_LIMITS = [600]  # 10 minutes
+TIME_LIMITS = [3600]  # 60 minutes
 
 # Define how many times to run each configuration
-ITERATIONS = 1
+ITERATIONS = 10
 
 # Define relative paths using pathlib for better cross-platform compatibility
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 MODEL_DIR = PROJECT_ROOT / "src" / "OR-TOOLS"
 STATS_SCRIPT = PROJECT_ROOT / "src" / "analysis" / "generate_statistics.py"
 BATCH_STATS_SCRIPT = PROJECT_ROOT / "src" / "OR-TOOLS" / "scripts" / "generate_batch_stats.py"
-OUTPUT_BASE_DIR = PROJECT_ROOT / "resultat" / "batch_experiments"
+OUTPUT_BASE_DIR = PROJECT_ROOT / "batch_experiments"
 
 # =================================================
 
@@ -62,6 +63,20 @@ def run_experiment():
         print(f"{'=' * 70}")
         
         for time_limit in TIME_LIMITS:
+            # Create organized folder structure upfront
+            date_folder = OUTPUT_BASE_DIR / datetime.now().strftime("%Y_%m_%d")
+            time_folder = date_folder / f"T{time_limit}"
+            model_folder = time_folder / model_name.replace("model_", "").replace("_OK", "")
+            
+            iters_folder = model_folder / "iters"
+            logs_folder = model_folder / "logs"
+            stats_folder = model_folder / "stats"
+            
+            # Create all folders
+            iters_folder.mkdir(parents=True, exist_ok=True)
+            logs_folder.mkdir(parents=True, exist_ok=True)
+            stats_folder.mkdir(parents=True, exist_ok=True)
+            
             # Track results for this specific configuration
             config_results = []
             
@@ -69,13 +84,13 @@ def run_experiment():
                 current_run += 1
                 print(f"\n[Run {current_run}/{total_runs}] Model={model_name}, TimeLimit={time_limit}s, Iteration={iteration}")
                 
-                # Construct filenames
+                # Construct filenames with organized paths
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 base_name = f"{model_name}_t{time_limit}_iter{iteration:02d}_{timestamp}"
                 
-                sol_file = OUTPUT_BASE_DIR / f"{base_name}.csv"
-                stats_file = OUTPUT_BASE_DIR / f"stats_{base_name}.xlsx"
-                log_file = OUTPUT_BASE_DIR / f"log_{base_name}.txt"
+                sol_file = iters_folder / f"{base_name}.csv"
+                stats_file = stats_folder / f"stats_{base_name}.xlsx"
+                log_file = logs_folder / f"log_{base_name}.txt"
 
                 # 1. Run Solver
                 print(f"  → Launching solver...")
@@ -173,68 +188,24 @@ def run_experiment():
             print(f"Generating batch statistics for {model_name} T{time_limit}...")
             print(f"{'=' * 70}")
             
-            # Determine the output folder structure based on actual files
-            # Find where the files were actually saved
+            # Run batch statistics on the organized folder
             if config_results:
-                # Use the parent directory of the first file to determine structure
-                first_file = config_results[0]
-                if first_file.exists():
-                    # Files are in OUTPUT_BASE_DIR directly, need to organize them
-                    # Create organized structure: date/Txxx/model/
-                    date_folder = OUTPUT_BASE_DIR.parent.parent / "batch_experiments" / datetime.now().strftime("%Y_%m_%d")
-                    time_folder = date_folder / f"T{time_limit}"
-                    model_folder = time_folder / model_name.replace("model_", "").replace("_OK", "")
-                    
-                    # Create folders
-                    iters_folder = model_folder / "iters"
-                    logs_folder = model_folder / "logs"
-                    stats_folder = model_folder / "stats"
-                    
-                    iters_folder.mkdir(parents=True, exist_ok=True)
-                    logs_folder.mkdir(parents=True, exist_ok=True)
-                    stats_folder.mkdir(parents=True, exist_ok=True)
-                    
-                    # Move files to organized structure
-                    moved_count = 0
-                    for result in config_results:
-                        if result.exists():
-                            # Move CSV
-                            csv_dest = iters_folder / result.name
-                            result.rename(csv_dest)
-                            moved_count += 1
-                            
-                            # Move log
-                            log_src = result.parent / f"log_{result.stem}.txt"
-                            if log_src.exists():
-                                log_dest = logs_folder / log_src.name
-                                log_src.rename(log_dest)
-                            
-                            # Move stats if exists
-                            stats_src = result.parent / f"stats_{result.stem}.xlsx"
-                            if stats_src.exists():
-                                stats_dest = stats_folder / stats_src.name
-                                stats_src.rename(stats_dest)
-                    
-                    if moved_count > 0:
-                        print(f"  → {moved_count} fichiers organisés dans {model_folder}")
-                        
-                        # Now run batch statistics
-                        try:
-                            cmd_batch_stats = [
-                                sys.executable,
-                                str(BATCH_STATS_SCRIPT),
-                                str(model_folder)
-                            ]
-                            subprocess.run(
-                                cmd_batch_stats,
-                                check=True,
-                                cwd=str(PROJECT_ROOT)
-                            )
-                            print(f"  ✓ Statistiques batch générées pour {model_name} T{time_limit}")
-                        except subprocess.CalledProcessError as e:
-                            print(f"  ✗ Erreur lors de la génération des statistiques batch")
-                        except Exception as e:
-                            print(f"  ✗ Erreur inattendue: {e}")
+                try:
+                    cmd_batch_stats = [
+                        sys.executable,
+                        str(BATCH_STATS_SCRIPT),
+                        str(model_folder)
+                    ]
+                    subprocess.run(
+                        cmd_batch_stats,
+                        check=True,
+                        cwd=str(PROJECT_ROOT)
+                    )
+                    print(f"  ✓ Statistiques batch générées pour {model_name} T{time_limit}")
+                except subprocess.CalledProcessError as e:
+                    print(f"  ✗ Erreur lors de la génération des statistiques batch")
+                except Exception as e:
+                    print(f"  ✗ Erreur inattendue: {e}")
             
             # Reset for next configuration
             config_results = []
@@ -251,8 +222,9 @@ def run_experiment():
     print(f"Successful runs: {success_count}")
     print(f"Failed runs: {failed_count}")
     
-    # Save summary to file
-    summary_file = OUTPUT_BASE_DIR / f"experiment_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    # Save summary to file in the date folder
+    date_folder = OUTPUT_BASE_DIR / datetime.now().strftime("%Y_%m_%d")
+    summary_file = date_folder / f"experiment_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     with open(summary_file, "w", encoding="utf-8") as f:
         f.write("=" * 70 + "\n")
         f.write("BATCH EXPERIMENT SUMMARY\n")
