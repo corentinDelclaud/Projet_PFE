@@ -724,11 +724,23 @@ solver.parameters.num_workers = 8 # Réduit à 8 pour ménager le CPU et éviter
 if args.output:
     output_csv = args.output
     # Ensure dir exists
-    out_dir = os.path.dirname(output_csv)
-    if out_dir and not os.path.exists(out_dir): os.makedirs(out_dir)
+    output_dir = os.path.dirname(output_csv)
+    if output_dir and not os.path.exists(output_dir): os.makedirs(output_dir)
 else:
     output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'resultat')
-    if not os.path.exists(output_dir): os.makedirs(output_dir)
+    if not os.path.exists# Save optimization scores to JSON file
+        scores_file = os.path.join(output_dir, 'optimization_scores.json')
+        try:
+            with open(scores_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "raw_score": raw_score,
+                    "max_theoretical_score": max_theoretical_score,
+                    "normalized_score": normalized_score,
+                    "status": "OPTIMAL" if status == cp_model.OPTIMAL else "FEASIBLE"
+                }, f, indent=2)
+            print(f"Scores sauvegardés dans {scores_file}")
+        except Exception as e:
+            print(f"Erreur lors de l'écriture des scores : {e}")(output_dir): os.makedirs(output_dir)
     output_csv = os.path.join(output_dir, 'planning_solution.csv')
 
 # Résolution directe
@@ -783,19 +795,7 @@ if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             writer.writerows(rows_buffer)
         print(f"Données sauvegardées.")
         
-        # Save optimization scores to JSON file
-        scores_file = os.path.join(output_dir, 'optimization_scores.json')
-        try:
-            with open(scores_file, 'w', encoding='utf-8') as f:
-                json.dump({
-                    "raw_score": raw_score,
-                    "max_theoretical_score": max_theoretical_score,
-                    "normalized_score": normalized_score,
-                    "status": "OPTIMAL" if status == cp_model.OPTIMAL else "FEASIBLE"
-                }, f, indent=2)
-            print(f"Scores sauvegardés dans {scores_file}")
-        except Exception as e:
-            print(f"Erreur lors de l'écriture des scores : {e}")
+        
             
     except Exception as e:
         print(f"Erreur lors de l'écriture du fichier : {e}")

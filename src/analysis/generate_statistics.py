@@ -962,17 +962,32 @@ if __name__ == "__main__":
     
     solution_file = args.input if args.input else os.path.join(base_dir, 'resultat', 'planning_solution.csv')
     output_file = args.output if args.output else os.path.join(base_dir, 'resultat', 'statistiques_solution.xlsx')
-    scores_file = os.path.join(base_dir, 'resultat', 'optimization_scores.json')
     
     # Load optimization scores if available
+    # Try multiple locations: same folder as CSV, or default resultat folder
     optimization_scores = None
-    if os.path.exists(scores_file):
-        try:
-            with open(scores_file, 'r', encoding='utf-8') as f:
-                optimization_scores = json.load(f)
-            print(f"Scores d'optimisation chargés depuis {scores_file}")
-        except Exception as e:
-            print(f"Impossible de charger les scores : {e}")
+    scores_locations = []
+    
+    if args.input:
+        # Si input fourni, chercher le JSON dans le même dossier
+        input_dir = os.path.dirname(os.path.abspath(args.input))
+        input_basename = os.path.basename(args.input).replace('.csv', '')
+        scores_locations.append(os.path.join(input_dir, 'optimization_scores.json'))
+        scores_locations.append(os.path.join(input_dir, f'{input_basename}_scores.json'))
+    
+    # Toujours ajouter le dossier par défaut
+    scores_locations.append(os.path.join(base_dir, 'resultat', 'optimization_scores.json'))
+    
+    # Essayer chaque emplacement
+    for scores_file in scores_locations:
+        if os.path.exists(scores_file):
+            try:
+                with open(scores_file, 'r', encoding='utf-8') as f:
+                    optimization_scores = json.load(f)
+                print(f"Scores d'optimisation chargés depuis {scores_file}")
+                break
+            except Exception as e:
+                print(f"Erreur lors du chargement de {scores_file} : {e}")
     
     disc_map, eleves, stages = load_data()
     if disc_map and eleves:
@@ -980,4 +995,15 @@ if __name__ == "__main__":
         df, binome_stats, df_constraints, df_occupancy = analyze_solution(solution_file, disc_map, eleves, stages)
         if df is not None:
             generate_report(df, output_file, binome_stats, df_constraints, df_occupancy, optimization_scores)
+            
+            # Sauvegarder les scores dans un fichier JSON à côté de l'Excel
+            if optimization_scores:
+                json_output = output_file.replace('.xlsx', '_scores.json')
+                try:
+                    with open(json_output, 'w', encoding='utf-8') as f:
+                        json.dump(optimization_scores, f, indent=2)
+                    print(f"Scores sauvegardés dans: {json_output}")
+                except Exception as e:
+                    print(f"Erreur lors de la sauvegarde des scores JSON : {e}")
+            
             print("Done.")
