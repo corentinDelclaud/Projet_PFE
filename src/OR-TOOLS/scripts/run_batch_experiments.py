@@ -8,20 +8,20 @@ from pathlib import Path
 # ================= Configuration =================
 # Define the models to test (filename without .py)
 MODELS = [
-    "model_V5_01_OK",
-    "model_V5_02"
+    "model_V5_01_OK"
 ]
 
 # Define the time limits to test (in seconds)
-TIME_LIMITS = [1200, 1800]  # 20 and 30 minutes
+TIME_LIMITS = [600]  # 10 minutes
 
 # Define how many times to run each configuration
-ITERATIONS = 10
+ITERATIONS = 1
 
 # Define relative paths using pathlib for better cross-platform compatibility
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 MODEL_DIR = PROJECT_ROOT / "src" / "OR-TOOLS"
 STATS_SCRIPT = PROJECT_ROOT / "src" / "analysis" / "generate_statistics.py"
+BATCH_STATS_SCRIPT = PROJECT_ROOT / "src" / "OR-TOOLS" / "scripts" / "generate_batch_stats.py"
 OUTPUT_BASE_DIR = PROJECT_ROOT / "resultat" / "batch_experiments"
 
 # =================================================
@@ -62,6 +62,9 @@ def run_experiment():
         print(f"{'=' * 70}")
         
         for time_limit in TIME_LIMITS:
+            # Track results for this specific configuration
+            config_results = []
+            
             for iteration in range(1, ITERATIONS + 1):
                 current_run += 1
                 print(f"\n[Run {current_run}/{total_runs}] Model={model_name}, TimeLimit={time_limit}s, Iteration={iteration}")
@@ -119,6 +122,7 @@ def run_experiment():
                             "duration": duration,
                             "log_file": str(log_file)
                         })
+                        config_results.append(sol_file)
                         continue
                     except Exception as e:
                         duration = time.time() - start_time
@@ -133,52 +137,27 @@ def run_experiment():
                             "duration": duration,
                             "log_file": str(log_file)
                         })
+                        config_results.append(sol_file)
                         continue
                 
-                # 2. Run Statistics
+                # 2. Run Statistics (Individual - now skipped, done in batch later)
+                # Keeping track of the solution file
+                config_results.append(sol_file)
+                
                 if sol_file.exists():
-                    print(f"  → Generating statistics...")
-                    try:
-                        cmd_stats = [
-                            sys.executable,
-                            str(STATS_SCRIPT),
-                            "--input", str(sol_file),
-                            "--output", str(stats_file)
-                        ]
-                        subprocess.run(
-                            cmd_stats, 
-                            check=True, 
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                            cwd=str(PROJECT_ROOT)
-                        )
-                        print(f"  ✓ Stats generated: {stats_file.name}")
-                        
-                        results_summary.append({
-                            "model": model_name,
-                            "time_limit": time_limit,
-                            "iteration": iteration,
-                            "status": status,
-                            "duration": duration,
-                            "solution_file": str(sol_file),
-                            "stats_file": str(stats_file),
-                            "log_file": str(log_file)
-                        })
-                        
-                    except subprocess.CalledProcessError:
-                        print(f"  ✗ ERROR: Statistics generation failed.")
-                        results_summary.append({
-                            "model": model_name,
-                            "time_limit": time_limit,
-                            "iteration": iteration,
-                            "status": status,
-                            "duration": duration,
-                            "solution_file": str(sol_file),
-                            "log_file": str(log_file),
-                            "stats_error": True
-                        })
+                    # Stats will be generated in batch after all iterations
+                    print(f"  ✓ Solution saved: {sol_file.name}")
+                    results_summary.append({
+                        "model": model_name,
+                        "time_limit": time_limit,
+                        "iteration": iteration,
+                        "status": status,
+                        "duration": duration,
+                        "solution_file": str(sol_file),
+                        "log_file": str(log_file)
+                    })
                 else:
-                    print(f"  ⚠ WARNING: Solution file was not created. Skipping stats.")
+                    print(f"  ⚠ WARNING: Solution file was not created.")
                     results_summary.append({
                         "model": model_name,
                         "time_limit": time_limit,
@@ -187,6 +166,78 @@ def run_experiment():
                         "duration": duration,
                         "log_file": str(log_file)
                     })
+                    config_results.append(sol_file)
+            
+            # After all iterations for this configuration, generate batch statistics
+            print(f"\n{'=' * 70}")
+            print(f"Generating batch statistics for {model_name} T{time_limit}...")
+            print(f"{'=' * 70}")
+            
+            # Determine the output folder structure based on actual files
+            # Find where the files were actually saved
+            if config_results:
+                # Use the parent directory of the first file to determine structure
+                first_file = config_results[0]
+                if first_file.exists():
+                    # Files are in OUTPUT_BASE_DIR directly, need to organize them
+                    # Create organized structure: date/Txxx/model/
+                    date_folder = OUTPUT_BASE_DIR.parent.parent / "batch_experiments" / datetime.now().strftime("%Y_%m_%d")
+                    time_folder = date_folder / f"T{time_limit}"
+                    model_folder = time_folder / model_name.replace("model_", "").replace("_OK", "")
+                    
+                    # Create folders
+                    iters_folder = model_folder / "iters"
+                    logs_folder = model_folder / "logs"
+                    stats_folder = model_folder / "stats"
+                    
+                    iters_folder.mkdir(parents=True, exist_ok=True)
+                    logs_folder.mkdir(parents=True, exist_ok=True)
+                    stats_folder.mkdir(parents=True, exist_ok=True)
+                    
+                    # Move files to organized structure
+                    moved_count = 0
+                    for result in config_results:
+                        if result.exists():
+                            # Move CSV
+                            csv_dest = iters_folder / result.name
+                            result.rename(csv_dest)
+                            moved_count += 1
+                            
+                            # Move log
+                            log_src = result.parent / f"log_{result.stem}.txt"
+                            if log_src.exists():
+                                log_dest = logs_folder / log_src.name
+                                log_src.rename(log_dest)
+                            
+                            # Move stats if exists
+                            stats_src = result.parent / f"stats_{result.stem}.xlsx"
+                            if stats_src.exists():
+                                stats_dest = stats_folder / stats_src.name
+                                stats_src.rename(stats_dest)
+                    
+                    if moved_count > 0:
+                        print(f"  → {moved_count} fichiers organisés dans {model_folder}")
+                        
+                        # Now run batch statistics
+                        try:
+                            cmd_batch_stats = [
+                                sys.executable,
+                                str(BATCH_STATS_SCRIPT),
+                                str(model_folder)
+                            ]
+                            subprocess.run(
+                                cmd_batch_stats,
+                                check=True,
+                                cwd=str(PROJECT_ROOT)
+                            )
+                            print(f"  ✓ Statistiques batch générées pour {model_name} T{time_limit}")
+                        except subprocess.CalledProcessError as e:
+                            print(f"  ✗ Erreur lors de la génération des statistiques batch")
+                        except Exception as e:
+                            print(f"  ✗ Erreur inattendue: {e}")
+            
+            # Reset for next configuration
+            config_results = []
 
     # Print summary
     print("\n" + "=" * 70)
