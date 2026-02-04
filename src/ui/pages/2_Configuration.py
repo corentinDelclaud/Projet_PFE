@@ -18,6 +18,7 @@ DATA_DIR.mkdir(exist_ok=True)
 STAGES_CSV = DATA_DIR / "stages.csv"
 PERIODES_CSV = DATA_DIR / "periodes.csv"
 DISCIPLINES_CSV = DATA_DIR / "disciplines.csv"
+ELEVES_CSV = DATA_DIR / "eleves.csv"
 
 # Initialisation du state pour stocker les disciplines et les stages
 if "disciplines" not in st.session_state:
@@ -41,6 +42,46 @@ if "periodes" not in st.session_state:
         st.session_state.periodes = df_periodes.to_dict('records')
     else:
         st.session_state.periodes = []
+if "eleves" not in st.session_state:
+    # Charger les élèves existants depuis le CSV s'il existe
+    if ELEVES_CSV.exists():
+        df_eleves = pd.read_csv(ELEVES_CSV)
+        st.session_state.eleves = df_eleves.to_dict('records')
+    else:
+        st.session_state.eleves = []
+
+
+def save_eleves_to_csv():
+    if st.session_state.eleves:
+        df = pd.DataFrame(st.session_state.eleves)
+        df = df[['DFAS01','DFAS02','DFTCC']] 
+        df.to_csv(ELEVES_CSV, index=False)
+    else:
+        df = pd.DataFrame(columns=['DFAS01','DFAS02','DFTCC'])
+        df.to_csv(ELEVES_CSV, index=False)
+
+st.subheader("1. Gestion des élèves")
+st.caption("Indiquer le nombre d'élèves par année")
+with st.form("ajout_eleve",clear_on_submit=True):
+    st.markdown("##### Indiquer le nombre d'élèves pour chaque année universitaire")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        nb_dfas01 = st.number_input("Nombre d'élèves DFAS01", min_value=0, step=1, value=0)
+    with col2:
+        nb_dfas02 = st.number_input("Nombre d'élèves DFAS02", min_value=0, step=1, value=0)
+    with col3:
+        nb_dftcc = st.number_input("Nombre d'élèves DFTCC", min_value=0, step=1, value=0)
+    submitted_eleve = st.form_submit_button("Soumettre le nombre d'élèves")
+
+if submitted_eleve:
+    st.session_state.eleves = [{
+        'DFAS01': nb_dfas01,
+        'DFAS02': nb_dfas02,
+        'DFTCC': nb_dftcc
+    }]
+    save_eleves_to_csv()
+    st.success("Nombre d'élèves mis à jour avec succès !")
+
 
 def save_disciplines_to_csv():
     if st.session_state.disciplines:
