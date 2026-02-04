@@ -275,15 +275,15 @@ print("Ajout contrainte: Paires de Jours (Soft)...")
 for disc in disciplines:
     if disc.paire_jours:
         # Calculate theoretical max for pair bonus
+        pair_count = 0
         for el in eleves:
             if el.annee.value not in disc.annee: continue
-            try:
-                adx = disc.annee.index(el.annee.value)
-                quota_disc = disc.quota[adx]
-                # Best case: all weeks have a pair
-                max_theoretical_score += 52 * 50  # 50 points per pair per week (approximate)
-            except (ValueError, IndexError):
-                pass
+            pair_count += 1
+        
+        # Maximum theoretical: all eligible students get pairs in all weeks
+        # But we only count actual pair bonus additions (see below in loop)
+        # Best case: each student-week-pair combination = 50 points
+        max_theoretical_score += pair_count * 52 * len(disc.paire_jours) * 50
         
         for el in eleves:
             if el.annee.value not in disc.annee: continue
@@ -512,6 +512,7 @@ for disc in disciplines:
 print("Ajout contrainte: Même Jour (Élève)...")
 for disc in disciplines:
     if disc.meme_jour:  # Si la discipline active cette contrainte
+        # Calculate theoretical max ONCE for this discipline
         for el in eleves:
             if el.annee.value not in disc.annee: continue
             if el.meme_jour == 0: continue  # Pas de jour similaire défini
@@ -523,7 +524,11 @@ for disc in disciplines:
                 # Best case: all assignments on target day
                 max_theoretical_score += quota_disc * 20  # 20 points per assignment on target day
             except (ValueError, IndexError):
-                continue
+                pass
+        
+        for el in eleves:
+            if el.annee.value not in disc.annee: continue
+            if el.meme_jour == 0: continue  # Pas de jour similaire défini
             
             target_day_idx = el.meme_jour - 1  # 1=Lundi(0), 2=Mardi(1), etc.
             
@@ -684,16 +689,15 @@ for disc in disciplines:
         if len(disc.priorite_niveau) > 1: prio_map[disc.priorite_niveau[1]] = 20  # Prio 2
         if len(disc.priorite_niveau) > 2: prio_map[disc.priorite_niveau[2]] = 5   # Prio 3
         
-        # Calculate theoretical max for priority bonus (highest priority gets all quotas)
-        if len(disc.priorite_niveau) > 0:
-            top_prio_year = disc.priorite_niveau[0]
-            if top_prio_year in disc.annee:
+        # Calculate theoretical max for priority bonus (all priority levels get their quotas with their weights)
+        for prio_year, weight in prio_map.items():
+            if prio_year in disc.annee:
                 try:
-                    adx = disc.annee.index(top_prio_year)
+                    adx = disc.annee.index(prio_year)
                     quota_prio = disc.quota[adx]
-                    # Count students in top priority year
-                    nb_students_prio = len([e for e in eleves if e.annee.value == top_prio_year])
-                    max_theoretical_score += nb_students_prio * quota_prio * 50  # 50 points per top priority assignment
+                    # Count students in this priority year
+                    nb_students_prio = len([e for e in eleves if e.annee.value == prio_year])
+                    max_theoretical_score += nb_students_prio * quota_prio * weight
                 except (ValueError, IndexError):
                     pass
         
@@ -749,7 +753,7 @@ if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         # Cap at 100 (in case bonus weights push it over)
         normalized_score = min(100.0, max(0.0, normalized_score))
     
-    print(f"Terminé.")
+    print("Terminé.")
     print(f"Score brut : {raw_score:,.0f}")
     print(f"Score maximum théorique : {max_theoretical_score:,.0f}")
     print(f"Score normalisé : {normalized_score:.2f}/100")
@@ -781,7 +785,7 @@ if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
                         el.annee.name
                     ])
             writer.writerows(rows_buffer)
-        print(f"Données sauvegardées.")
+        print("Données sauvegardées.")
         
         # Save optimization scores to JSON file
         scores_file = os.path.join(output_dir, 'optimization_scores.json')
