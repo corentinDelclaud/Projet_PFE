@@ -194,6 +194,100 @@ def generate_stats_for_iterations(base_folder):
     print(f"Terminé: {success_count} réussis, {failed_count} échoués")
     print(f"Statistiques sauvegardées dans: {stats_folder}")
     print("=" * 70)
+    
+    # Générer la synthèse des scores
+    generate_scores_summary(stats_folder, base_path)
+
+def generate_scores_summary(stats_folder, base_path):
+    """
+    Génère un fichier de synthèse avec les statistiques des scores (moyenne, min, max, écart-type).
+    
+    Args:
+        stats_folder: Dossier contenant les fichiers JSON de scores
+        base_path: Dossier de base pour déterminer le nom de configuration
+    """
+    import statistics
+    
+    # Collecter tous les fichiers JSON de scores
+    json_files = sorted(stats_folder.glob("*_scores.json"))
+    
+    if not json_files:
+        print("\n  ⚠ Aucun fichier de scores trouvé pour la synthèse")
+        return
+    
+    # Collecter les scores
+    scores_data = {
+        "raw_scores": [],
+        "max_theoretical_scores": [],
+        "normalized_scores": [],
+        "statuses": []
+    }
+    
+    for json_file in json_files:
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                scores_data["raw_scores"].append(data["raw_score"])
+                scores_data["max_theoretical_scores"].append(data["max_theoretical_score"])
+                scores_data["normalized_scores"].append(data["normalized_score"])
+                scores_data["statuses"].append(data["status"])
+        except Exception as e:
+            print(f"  ⚠ Erreur lors de la lecture de {json_file.name}: {e}")
+            continue
+    
+    if not scores_data["raw_scores"]:
+        print("\n  ⚠ Aucun score valide trouvé")
+        return
+    
+    # Calculer les statistiques
+    n = len(scores_data["raw_scores"])
+    
+    summary = {
+        "configuration": {
+            "model": base_path.name,  # V5_01, V5_02, etc.
+            "time_limit": base_path.parent.name,  # T1200, T1800, etc.
+            "date": base_path.parent.parent.name,  # Date folder
+            "iterations_count": n
+        },
+        "raw_score": {
+            "mean": round(statistics.mean(scores_data["raw_scores"]), 2),
+            "min": min(scores_data["raw_scores"]),
+            "max": max(scores_data["raw_scores"]),
+            "stdev": round(statistics.stdev(scores_data["raw_scores"]), 2) if n > 1 else 0
+        },
+        "max_theoretical_score": {
+            "mean": round(statistics.mean(scores_data["max_theoretical_scores"]), 2),
+            "min": min(scores_data["max_theoretical_scores"]),
+            "max": max(scores_data["max_theoretical_scores"])
+        },
+        "normalized_score": {
+            "mean": round(statistics.mean(scores_data["normalized_scores"]), 2),
+            "min": round(min(scores_data["normalized_scores"]), 2),
+            "max": round(max(scores_data["normalized_scores"]), 2),
+            "stdev": round(statistics.stdev(scores_data["normalized_scores"]), 2) if n > 1 else 0
+        },
+        "status": {
+            "OPTIMAL": scores_data["statuses"].count("OPTIMAL"),
+            "FEASIBLE": scores_data["statuses"].count("FEASIBLE")
+        }
+    }
+    
+    # Sauvegarder le fichier de synthèse
+    summary_file = stats_folder / "scores_summary.json"
+    try:
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            json.dump(summary, f, indent=2, ensure_ascii=False)
+        print(f"\n  ✓ Synthèse des scores sauvegardée: {summary_file.name}")
+        
+        # Afficher un résumé
+        print(f"\n  📊 Résumé des scores ({n} itérations):")
+        print(f"     Score normalisé moyen: {summary['normalized_score']['mean']:.2f}/100")
+        print(f"     Min: {summary['normalized_score']['min']:.2f}, Max: {summary['normalized_score']['max']:.2f}")
+        print(f"     Écart-type: {summary['normalized_score']['stdev']:.2f}")
+        print(f"     Solutions OPTIMAL: {summary['status']['OPTIMAL']}, FEASIBLE: {summary['status']['FEASIBLE']}")
+        
+    except Exception as e:
+        print(f"\n  ✗ Erreur lors de la sauvegarde de la synthèse: {e}")
 
 def main():
     import argparse
