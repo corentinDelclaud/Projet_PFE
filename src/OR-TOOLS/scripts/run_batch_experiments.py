@@ -13,7 +13,7 @@ MODELS = [
 ]
 
 # Define the time limits to test (in seconds)
-TIME_LIMITS = [3600]  # 60 minutes
+TIME_LIMITS = [7200]  # 60 minutes
 
 # Define how many times to run each configuration
 ITERATIONS = 10
@@ -43,6 +43,11 @@ def run_experiment():
     # Create output directory if it doesn't exist
     OUTPUT_BASE_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Define date folder once at the start to prevent multiple folders if experiment spans multiple days
+    experiment_date = datetime.now().strftime("%Y_%m_%d")
+    date_folder = OUTPUT_BASE_DIR / experiment_date
+    date_folder.mkdir(parents=True, exist_ok=True)
+
     total_runs = len(MODELS) * len(TIME_LIMITS) * ITERATIONS
     current_run = 0
     
@@ -63,8 +68,7 @@ def run_experiment():
         print(f"{'=' * 70}")
         
         for time_limit in TIME_LIMITS:
-            # Create organized folder structure upfront
-            date_folder = OUTPUT_BASE_DIR / datetime.now().strftime("%Y_%m_%d")
+            # Create organized folder structure upfront using the experiment date
             time_folder = date_folder / f"T{time_limit}"
             model_folder = time_folder / model_name.replace("model_", "").replace("_OK", "")
             
@@ -222,8 +226,7 @@ def run_experiment():
     print(f"Successful runs: {success_count}")
     print(f"Failed runs: {failed_count}")
     
-    # Save summary to file in the date folder
-    date_folder = OUTPUT_BASE_DIR / datetime.now().strftime("%Y_%m_%d")
+    # Save summary to file in the date folder (already defined at start)
     summary_file = date_folder / f"experiment_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     with open(summary_file, "w", encoding="utf-8") as f:
         f.write("=" * 70 + "\n")
