@@ -47,9 +47,13 @@ def parse_scores_from_log(log_file):
             norm_score = float(norm_match.group(1))
             
             # Détecter le statut (OPTIMAL ou FEASIBLE)
+            # Chercher "status: OPTIMAL" ou "status: FEASIBLE" (format exact du log)
             status = "FEASIBLE"
-            if "OPTIMAL" in content:
-                status = "OPTIMAL"
+            status_pattern = r"status:\s*(OPTIMAL|FEASIBLE)"
+            status_match = re.search(status_pattern, content, re.IGNORECASE)
+            
+            if status_match:
+                status = status_match.group(1).upper()
             
             return {
                 "raw_score": raw_score,
