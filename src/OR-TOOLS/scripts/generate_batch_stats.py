@@ -201,38 +201,52 @@ def generate_stats_for_iterations(base_folder):
 def generate_scores_summary(stats_folder, base_path):
     """
     Génère un fichier de synthèse avec les statistiques des scores (moyenne, min, max, écart-type).
+    Collecte les scores depuis les logs et génère des fichiers JSON et Excel de synthèse.
     
     Args:
-        stats_folder: Dossier contenant les fichiers JSON de scores
+        stats_folder: Dossier contenant les fichiers de stats
         base_path: Dossier de base pour déterminer le nom de configuration
     """
     import statistics
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.chart import BarChart, LineChart, Reference
     
-    # Collecter tous les fichiers JSON de scores
-    json_files = sorted(stats_folder.glob("*_scores.json"))
+    # Trouver le dossier logs
+    logs_folder = base_path / "logs"
     
-    if not json_files:
-        print("\n  ⚠ Aucun fichier de scores trouvé pour la synthèse")
+    if not logs_folder.exists():
+        print("\n  ⚠ Dossier logs introuvable pour la synthèse")
         return
     
-    # Collecter les scores
+    # Collecter les scores depuis les logs
     scores_data = {
         "raw_scores": [],
         "max_theoretical_scores": [],
         "normalized_scores": [],
-        "statuses": []
+        "statuses": [],
+        "iterations": []
     }
     
-    for json_file in json_files:
+    log_files = sorted(logs_folder.glob("log_*.txt"))
+    
+    if not log_files:
+        print("\n  ⚠ Aucun fichier log trouvé pour la synthèse")
+        return
+    
+    print(f"\n  📊 Collecte des scores depuis {len(log_files)} fichiers logs...")
+    
+    for idx, log_file in enumerate(log_files, 1):
         try:
-            with open(json_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                scores_data["raw_scores"].append(data["raw_score"])
-                scores_data["max_theoretical_scores"].append(data["max_theoretical_score"])
-                scores_data["normalized_scores"].append(data["normalized_score"])
-                scores_data["statuses"].append(data["status"])
+            optimization_scores = parse_scores_from_log(log_file)
+            if optimization_scores:
+                scores_data["raw_scores"].append(optimization_scores["raw_score"])
+                scores_data["max_theoretical_scores"].append(optimization_scores["max_theoretical_score"])
+                scores_data["normalized_scores"].append(optimization_scores["normalized_score"])
+                scores_data["statuses"].append(optimization_scores["status"])
+                scores_data["iterations"].append(idx)
         except Exception as e:
-            print(f"  ⚠ Erreur lors de la lecture de {json_file.name}: {e}")
+            print(f"  ⚠ Erreur lors de la lecture de {log_file.name}: {e}")
             continue
     
     if not scores_data["raw_scores"]:
@@ -251,17 +265,20 @@ def generate_scores_summary(stats_folder, base_path):
         },
         "raw_score": {
             "mean": round(statistics.mean(scores_data["raw_scores"]), 2),
+            "median": round(statistics.median(scores_data["raw_scores"]), 2),
             "min": min(scores_data["raw_scores"]),
             "max": max(scores_data["raw_scores"]),
             "stdev": round(statistics.stdev(scores_data["raw_scores"]), 2) if n > 1 else 0
         },
         "max_theoretical_score": {
             "mean": round(statistics.mean(scores_data["max_theoretical_scores"]), 2),
+            "median": round(statistics.median(scores_data["max_theoretical_scores"]), 2),
             "min": min(scores_data["max_theoretical_scores"]),
             "max": max(scores_data["max_theoretical_scores"])
         },
         "normalized_score": {
             "mean": round(statistics.mean(scores_data["normalized_scores"]), 2),
+            "median": round(statistics.median(scores_data["normalized_scores"]), 2),
             "min": round(min(scores_data["normalized_scores"]), 2),
             "max": round(max(scores_data["normalized_scores"]), 2),
             "stdev": round(statistics.stdev(scores_data["normalized_scores"]), 2) if n > 1 else 0
@@ -269,25 +286,205 @@ def generate_scores_summary(stats_folder, base_path):
         "status": {
             "OPTIMAL": scores_data["statuses"].count("OPTIMAL"),
             "FEASIBLE": scores_data["statuses"].count("FEASIBLE")
-        }
+        },
+        "detailed_iterations": [
+            {
+                "iteration": i,
+                "raw_score": r,
+                "max_theoretical": m,
+                "normalized_score": n,
+                "status": s
+            }
+            for i, r, m, n, s in zip(
+                scores_data["iterations"],
+                scores_data["raw_scores"],
+                scores_data["max_theoretical_scores"],
+                scores_data["normalized_scores"],
+                scores_data["statuses"]
+            )
+        ]
     }
     
-    # Sauvegarder le fichier de synthèse
-    summary_file = stats_folder / "scores_summary.json"
+    # Sauvegarder le fichier JSON de synthèse
+    summary_file = base_path / "scores_summary.json"
     try:
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
-        print(f"\n  ✓ Synthèse des scores sauvegardée: {summary_file.name}")
+        print(f"\n  ✓ Synthèse JSON sauvegardée: {summary_file.name}")
+    except Exception as e:
+        print(f"\n  ✗ Erreur lors de la sauvegarde de la synthèse JSON: {e}")
+        return
+    
+    # Générer un fichier Excel de synthèse
+    excel_summary_file = base_path / "scores_summary.xlsx"
+    try:
+        wb = Workbook()
         
-        # Afficher un résumé
-        print(f"\n  📊 Résumé des scores ({n} itérations):")
-        print(f"     Score normalisé moyen: {summary['normalized_score']['mean']:.2f}/100")
-        print(f"     Min: {summary['normalized_score']['min']:.2f}, Max: {summary['normalized_score']['max']:.2f}")
-        print(f"     Écart-type: {summary['normalized_score']['stdev']:.2f}")
-        print(f"     Solutions OPTIMAL: {summary['status']['OPTIMAL']}, FEASIBLE: {summary['status']['FEASIBLE']}")
+        # === FEUILLE 1: Vue d'ensemble ===
+        ws_overview = wb.active
+        ws_overview.title = "Vue d'ensemble"
+        
+        # Style headers
+        header_font = Font(bold=True, size=12, color="FFFFFF")
+        header_fill = PatternFill("solid", fgColor="366092")
+        title_font = Font(bold=True, size=14, color="1F4E78")
+        
+        # Configuration
+        ws_overview.append(["SYNTHÈSE DES SCORES D'OPTIMISATION"])
+        ws_overview["A1"].font = Font(bold=True, size=16, color="1F4E78")
+        ws_overview.append([])
+        
+        ws_overview.append(["Configuration"])
+        ws_overview["A3"].font = title_font
+        ws_overview.append(["Modèle", summary["configuration"]["model"]])
+        ws_overview.append(["Limite de temps", summary["configuration"]["time_limit"]])
+        ws_overview.append(["Date", summary["configuration"]["date"]])
+        ws_overview.append(["Nombre d'itérations", summary["configuration"]["iterations_count"]])
+        ws_overview.append([])
+        
+        # Statistiques Score Normalisé
+        ws_overview.append(["Score Normalisé (/100)"])
+        ws_overview["A9"].font = title_font
+        ws_overview.append(["Métrique", "Valeur"])
+        ws_overview["A10"].font = header_font
+        ws_overview["A10"].fill = header_fill
+        ws_overview["B10"].font = header_font
+        ws_overview["B10"].fill = header_fill
+        
+        ws_overview.append(["Moyenne", summary["normalized_score"]["mean"]])
+        ws_overview.append(["Médiane", summary["normalized_score"]["median"]])
+        ws_overview.append(["Minimum", summary["normalized_score"]["min"]])
+        ws_overview.append(["Maximum", summary["normalized_score"]["max"]])
+        ws_overview.append(["Écart-type", summary["normalized_score"]["stdev"]])
+        ws_overview.append([])
+        
+        # Statistiques Score Brut
+        ws_overview.append(["Score Brut"])
+        ws_overview["A17"].font = title_font
+        ws_overview.append(["Métrique", "Valeur"])
+        ws_overview["A18"].font = header_font
+        ws_overview["A18"].fill = header_fill
+        ws_overview["B18"].font = header_font
+        ws_overview["B18"].fill = header_fill
+        
+        ws_overview.append(["Moyenne", f"{summary['raw_score']['mean']:,.2f}"])
+        ws_overview.append(["Médiane", f"{summary['raw_score']['median']:,.2f}"])
+        ws_overview.append(["Minimum", f"{summary['raw_score']['min']:,}"])
+        ws_overview.append(["Maximum", f"{summary['raw_score']['max']:,}"])
+        ws_overview.append(["Écart-type", f"{summary['raw_score']['stdev']:,.2f}"])
+        ws_overview.append([])
+        
+        # Statut des solutions
+        ws_overview.append(["Statut des Solutions"])
+        ws_overview["A25"].font = title_font
+        ws_overview.append(["Statut", "Nombre"])
+        ws_overview["A26"].font = header_font
+        ws_overview["A26"].fill = header_fill
+        ws_overview["B26"].font = header_font
+        ws_overview["B26"].fill = header_fill
+        
+        ws_overview.append(["OPTIMAL", summary["status"]["OPTIMAL"]])
+        ws_overview.append(["FEASIBLE", summary["status"]["FEASIBLE"]])
+        
+        # Colorer les cellules selon le score moyen
+        mean_score = summary["normalized_score"]["mean"]
+        mean_cell = ws_overview["B11"]
+        if mean_score >= 80:
+            mean_cell.fill = PatternFill("solid", fgColor="90EE90")  # Vert
+        elif mean_score >= 60:
+            mean_cell.fill = PatternFill("solid", fgColor="FFFF99")  # Jaune
+        else:
+            mean_cell.fill = PatternFill("solid", fgColor="FFB6C1")  # Rouge
+        
+        # Largeur des colonnes
+        ws_overview.column_dimensions['A'].width = 30
+        ws_overview.column_dimensions['B'].width = 20
+        
+        # === FEUILLE 2: Détail des itérations ===
+        ws_detail = wb.create_sheet("Détail Itérations")
+        
+        ws_detail.append(["Itération", "Score Brut", "Score Max Théorique", "Score Normalisé", "Statut"])
+        for cell in ws_detail[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+        
+        for iteration in summary["detailed_iterations"]:
+            ws_detail.append([
+                iteration["iteration"],
+                iteration["raw_score"],
+                iteration["max_theoretical"],
+                iteration["normalized_score"],
+                iteration["status"]
+            ])
+            
+            # Colorer la cellule du score normalisé
+            row_idx = ws_detail.max_row
+            score_cell = ws_detail.cell(row_idx, 4)
+            score_val = iteration["normalized_score"]
+            
+            if score_val >= 80:
+                score_cell.fill = PatternFill("solid", fgColor="90EE90")
+            elif score_val >= 60:
+                score_cell.fill = PatternFill("solid", fgColor="FFFF99")
+            else:
+                score_cell.fill = PatternFill("solid", fgColor="FFB6C1")
+        
+        # Largeur des colonnes
+        ws_detail.column_dimensions['A'].width = 12
+        ws_detail.column_dimensions['B'].width = 18
+        ws_detail.column_dimensions['C'].width = 20
+        ws_detail.column_dimensions['D'].width = 18
+        ws_detail.column_dimensions['E'].width = 12
+        
+        # === FEUILLE 3: Graphiques ===
+        ws_charts = wb.create_sheet("Graphiques")
+        
+        # Graphique en barres des scores normalisés par itération
+        chart1 = BarChart()
+        chart1.title = "Score Normalisé par Itération"
+        chart1.y_axis.title = "Score (/100)"
+        chart1.x_axis.title = "Itération"
+        
+        # Références aux données
+        data = Reference(ws_detail, min_col=4, min_row=1, max_row=len(summary["detailed_iterations"]) + 1)
+        cats = Reference(ws_detail, min_col=1, min_row=2, max_row=len(summary["detailed_iterations"]) + 1)
+        chart1.add_data(data, titles_from_data=True)
+        chart1.set_categories(cats)
+        chart1.height = 12
+        chart1.width = 24
+        
+        ws_charts.add_chart(chart1, "A2")
+        
+        # Graphique en ligne de l'évolution
+        chart2 = LineChart()
+        chart2.title = "Évolution du Score Normalisé"
+        chart2.y_axis.title = "Score (/100)"
+        chart2.x_axis.title = "Itération"
+        chart2.add_data(data, titles_from_data=True)
+        chart2.set_categories(cats)
+        chart2.height = 12
+        chart2.width = 24
+        
+        ws_charts.add_chart(chart2, "A28")
+        
+        wb.save(excel_summary_file)
+        print(f"  ✓ Synthèse Excel sauvegardée: {excel_summary_file.name}")
         
     except Exception as e:
-        print(f"\n  ✗ Erreur lors de la sauvegarde de la synthèse: {e}")
+        print(f"\n  ✗ Erreur lors de la création du fichier Excel: {e}")
+    
+    # Afficher un résumé dans le terminal
+    print(f"\n  📊 RÉSUMÉ DES SCORES ({n} itérations):")
+    print(f"     ═══════════════════════════════════════")
+    print(f"     Score normalisé moyen    : {summary['normalized_score']['mean']:.2f}/100")
+    print(f"     Score normalisé médian   : {summary['normalized_score']['median']:.2f}/100")
+    print(f"     Plage                    : [{summary['normalized_score']['min']:.2f}, {summary['normalized_score']['max']:.2f}]")
+    print(f"     Écart-type              : {summary['normalized_score']['stdev']:.2f}")
+    print(f"     ───────────────────────────────────────")
+    print(f"     Solutions OPTIMAL       : {summary['status']['OPTIMAL']}")
+    print(f"     Solutions FEASIBLE      : {summary['status']['FEASIBLE']}")
+    print(f"     ═══════════════════════════════════════")
 
 def main():
     import argparse
