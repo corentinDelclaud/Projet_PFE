@@ -74,7 +74,9 @@ def load_data():
 
     # --- 2. Load Students ---
     eleves = {}
-    eleves_csv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'eleves_with_code.csv')
+    # Use absolute path from PROJECT_ROOT to avoid path issues
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    eleves_csv = os.path.join(project_root, 'data', 'eleves_with_code.csv')
     try:
         with open(eleves_csv, mode='r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
@@ -90,14 +92,24 @@ def load_data():
                         "jour_preference": row.get("jour_preference", "").strip().capitalize(),
                         "periode_stage": int(row["periode_stage"]) if row.get("periode_stage") else 0
                     }
-                except KeyError: continue
+                except KeyError as e:
+                    # Log the error but continue
+                    print(f"  ⚠ Warning: Skipping row due to missing key: {e}")
+                    continue
+                except Exception as e:
+                    print(f"  ⚠ Warning: Skipping row due to error: {e}")
+                    continue
     except FileNotFoundError:
         print(f"Error: {eleves_csv} not found.")
-        return None, None
+        return None, None, None
+    
+    if not eleves:
+        print(f"Error: No students loaded from {eleves_csv}")
+        return None, None, None
     
     # --- 3. Load Stages ---
     stages = {} # Key: (nom_annee, periode_id) -> (start_week, end_week)
-    stages_csv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'stages.csv')
+    stages_csv = os.path.join(project_root, 'data', 'stages.csv')
     try:
         with open(stages_csv, mode='r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
@@ -183,6 +195,11 @@ def analyze_solution(solution_path, disc_map, eleves, stages):
     # Assignments DF
     data_list = []
     for (sem, jour, am, disc_name, sid) in detailed_assignments:
+        # Skip if student ID is not in eleves dictionary
+        if sid not in eleves:
+            print(f"⚠ Warning: Student ID {sid} not found in eleves data, skipping this assignment")
+            continue
+            
         data_list.append({
             "Semaine": sem,
             "Jour": jour,
