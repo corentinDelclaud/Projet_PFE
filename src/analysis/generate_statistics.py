@@ -986,11 +986,20 @@ if __name__ == "__main__":
     scores_locations = []
     
     if args.input:
-        # Si input fourni, chercher le JSON dans le même dossier
+        # Si input fourni, chercher le JSON dans plusieurs emplacements
         input_dir = os.path.dirname(os.path.abspath(args.input))
         input_basename = os.path.basename(args.input).replace('.csv', '')
-        scores_locations.append(os.path.join(input_dir, 'optimization_scores.json'))
+        
+        # 1. Priorité: dossier stats/ (fichiers définitifs générés par generate_statistics.py)
+        stats_dir = os.path.join(os.path.dirname(input_dir), 'stats')
+        if os.path.exists(stats_dir):
+            scores_locations.append(os.path.join(stats_dir, f'stats_{input_basename}_scores.json'))
+        
+        # 2. Fallback: même dossier que le CSV avec le nom basé sur le CSV (généré par les modèles)
         scores_locations.append(os.path.join(input_dir, f'{input_basename}_scores.json'))
+        
+        # 3. Ancien format: optimization_scores.json (pour compatibilité avec anciens runs)
+        scores_locations.append(os.path.join(input_dir, 'optimization_scores.json'))
     
     # Toujours ajouter le dossier par défaut
     scores_locations.append(os.path.join(base_dir, 'resultat', 'optimization_scores.json'))

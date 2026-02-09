@@ -800,8 +800,9 @@ if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             writer.writerows(rows_buffer)
         print("Données sauvegardées.")
         
-        # Save optimization scores to JSON file
-        scores_file = os.path.join(output_dir, 'optimization_scores.json')
+        # Save optimization scores to JSON file with unique name based on CSV
+        csv_basename = os.path.basename(output_csv).replace('.csv', '')
+        scores_file = os.path.join(output_dir, f'{csv_basename}_scores.json')
         try:
             with open(scores_file, 'w', encoding='utf-8') as f:
                 json.dump({

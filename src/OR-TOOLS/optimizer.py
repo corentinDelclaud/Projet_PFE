@@ -26,8 +26,8 @@ class OptimizationResult:
     status: str  # 'OPTIMAL', 'FEASIBLE', 'INFEASIBLE', 'ERROR', 'TIMEOUT'
     objective_value: Optional[float] = None
     solve_time: float = 0.0
-    assignments: Dict = None
-    statistics: Dict = None
+    assignments: Optional[Dict] = None
+    statistics: Optional[Dict] = None
     error_message: Optional[str] = None
     
     def __post_init__(self):
@@ -293,7 +293,7 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ {count_vars} variables créées")
     
-    def _build_indexes(self):
+    def '_build_indexes(self):
         """Build indexing structures for efficient constraint addition"""
         logger.info("Construction des index...")
         
@@ -317,7 +317,7 @@ class ScheduleOptimizer:
         
         logger.info("✓ Index construits")
     
-    def _add_capacity_constraints(self):
+    def _add_capacity_constraints(self): #A modifier pour vrai modele
         """Add capacity constraints for each discipline at each slot"""
         logger.info("Ajout des contraintes de capacité...")
         
@@ -336,7 +336,7 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ {count} contraintes de capacité ajoutées")
     
-    def _add_uniqueness_constraints(self):
+    def _add_uniqueness_constraints(self): #A modifier pour vrai modele
         """Ensure each student is assigned to at most one discipline per slot"""
         logger.info("Ajout des contraintes d'unicité...")
         
@@ -351,13 +351,13 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ {count} contraintes d'unicité ajoutées")
     
-    def _add_quota_constraints(self):
+    def _add_quota_constraints(self): #A modifier pour vrai modele
         """Add soft quota constraints (handled in objective)"""
         # Quotas are handled in the objective function
         # This method is kept for potential hard quota constraints
         logger.info("✓ Quotas gérés dans l'objectif")
     
-    def _add_max_vacations_per_week(self):
+    def _add_max_vacations_per_week(self): #A modifier pour vrai modele
         """Add maximum vacations per week constraints"""
         logger.info("Ajout des contraintes max vacations/semaine...")
         
@@ -382,7 +382,7 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ {count} contraintes max vacations/semaine")
     
-    def _add_fill_requirements(self):
+    def _add_fill_requirements(self): #A modifier pour vrai modele
         """Add constraints to fill slots to capacity"""
         logger.info("Ajout des contraintes de remplissage...")
         
@@ -405,7 +405,7 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ {count} contraintes de remplissage")
     
-    def _add_binome_constraints(self):
+    def _add_binome_constraints(self): #A modifier pour vrai modele
         """Add constraints for paired students (binômes)"""
         logger.info("Ajout des contraintes de binômes...")
         
@@ -449,7 +449,7 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ {count} contraintes de binômes")
     
-    def _add_advanced_constraints(self):
+    def _add_advanced_constraints(self): #A modifier pour vrai modele
         """Add advanced discipline-specific constraints"""
         logger.info("Ajout des contraintes avancées...")
         
@@ -725,7 +725,7 @@ class ScheduleOptimizer:
         self.advanced_obj_terms.extend(obj_terms_pref)
         self.advanced_obj_weights.extend(weights_pref)
     
-    def _set_objective(self):
+    def _set_objective(self): #A modifier pour vrai modele
         """Set the optimization objective"""
         logger.info("Configuration de l'objectif...")
         

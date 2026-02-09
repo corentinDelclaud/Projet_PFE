@@ -205,7 +205,7 @@ def generate_stats_for_iterations(base_folder):
 def generate_scores_summary(stats_folder, base_path):
     """
     Génère un fichier de synthèse avec les statistiques des scores (moyenne, min, max, écart-type).
-    Collecte les scores depuis les logs et génère des fichiers JSON et Excel de synthèse.
+    Collecte les scores depuis les fichiers JSON de stats générés par generate_statistics.py.
     
     Args:
         stats_folder: Dossier contenant les fichiers de stats
@@ -216,14 +216,7 @@ def generate_scores_summary(stats_folder, base_path):
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.chart import BarChart, LineChart, Reference
     
-    # Trouver le dossier logs
-    logs_folder = base_path / "logs"
-    
-    if not logs_folder.exists():
-        print("\n  ⚠ Dossier logs introuvable pour la synthèse")
-        return
-    
-    # Collecter les scores depuis les logs
+    # Collecter les scores depuis les fichiers JSON de stats
     scores_data = {
         "raw_scores": [],
         "max_theoretical_scores": [],
@@ -232,25 +225,30 @@ def generate_scores_summary(stats_folder, base_path):
         "iterations": []
     }
     
-    log_files = sorted(logs_folder.glob("log_*.txt"))
+    # Lire les fichiers JSON de stats au lieu des logs
+    json_files = sorted(stats_folder.glob("*_scores.json"))
     
-    if not log_files:
-        print("\n  ⚠ Aucun fichier log trouvé pour la synthèse")
+    if not json_files:
+        print("\n  ⚠ Aucun fichier de scores JSON trouvé pour la synthèse")
         return
     
-    print(f"\n  📊 Collecte des scores depuis {len(log_files)} fichiers logs...")
+    print(f"\n  📊 Collecte des scores depuis {len(json_files)} fichiers JSON...")
     
-    for idx, log_file in enumerate(log_files, 1):
+    for idx, json_file in enumerate(json_files, 1):
         try:
-            optimization_scores = parse_scores_from_log(log_file)
-            if optimization_scores:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                optimization_scores = json.load(f)
+            
+            if optimization_scores and all(k in optimization_scores for k in ["raw_score", "max_theoretical_score", "normalized_score", "status"]):
                 scores_data["raw_scores"].append(optimization_scores["raw_score"])
                 scores_data["max_theoretical_scores"].append(optimization_scores["max_theoretical_score"])
                 scores_data["normalized_scores"].append(optimization_scores["normalized_score"])
                 scores_data["statuses"].append(optimization_scores["status"])
                 scores_data["iterations"].append(idx)
+            else:
+                print(f"  ⚠ Format invalide dans {json_file.name}")
         except Exception as e:
-            print(f"  ⚠ Erreur lors de la lecture de {log_file.name}: {e}")
+            print(f"  ⚠ Erreur lors de la lecture de {json_file.name}: {e}")
             continue
     
     if not scores_data["raw_scores"]:
