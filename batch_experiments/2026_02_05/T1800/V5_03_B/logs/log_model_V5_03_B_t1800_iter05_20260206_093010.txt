@@ -1,0 +1,1298 @@
+Command: /usr/bin/python3 /home/ubuntu/Bureau/Projet_PFE/src/OR-TOOLS/model_V5_03_B.py --time_limit 1800 --output /home/ubuntu/Bureau/Projet_PFE/batch_experiments/2026_02_05/T1800/V5_03_B/iters/model_V5_03_B_t1800_iter05_20260206_093010.csv
+Working Directory: /home/ubuntu/Bureau/Projet_PFE
+Python Version: 3.12.3 (main, Jan  8 2026, 11:30:50) [GCC 13.3.0]
+======================================================================
+
+
+Starting CP-SAT solver v9.15.6755
+Parameters: max_time_in_seconds: 1800 log_search_progress: true num_workers: 8
+
+Initial optimization model '': (model_fingerprint: 0x1dc1dbca28198431)
+#Variables: 799'643 (#bools: 228'932 #ints: 4'120 in objective) (730'543 primary variables)
+  - 795'523 Booleans in [0,1]
+  - 185 in [0,2]
+  - 280 in [0,3]
+  - 81 in [0,4]
+  - 522 in [0,6]
+  - 81 in [0,8]
+  - 100 in [0,9]
+  - 261 in [0,12]
+  - 261 in [0,20]
+  - 261 in [0,50]
+  - 2'088 in [0,500]
+#kBoolAndClauses: 30'191 (#enforced: 30'191 #multi: 30'191) (#literals: 90'573)
+#kLinMax: 12 (#expressions: 2'088)
+#kLinear0: 780
+#kLinear1: 12'841 (#enforced: 12'777)
+#kLinear2: 206'384 (#enforced: 78'144)
+#kLinear3: 1'139 (#enforced: 588)
+#kLinearN: 134'847 (#enforced: 8'520) (#terms: 4'508'093)
+
+Starting presolve at 0.84s
+  7.21e-01s  0.00e+00d  [DetectDominanceRelations] 
+  3.78e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=3 #num_dual_strengthening=2 
+  2.62e-02s  0.00e+00d  [ExtractEncodingFromLinear] #potential_supersets=107'644 #potential_subsets=104 
+  2.03e-01s  0.00e+00d  [DetectDuplicateColumns] 
+  1.23e-01s  0.00e+00d  [DetectDuplicateConstraints] #duplicates=6'345 
+[Symmetry] Graph for symmetry has 1'574'530 nodes and 5'334'919 arcs.
+[Symmetry] Graph too large. Skipping. You can use symmetry_level:3 or more to force it.
+[SAT presolve] num removable Booleans: 53'069 / 715'153
+[SAT presolve] num trivial clauses: 0
+[SAT presolve] [0s] clauses:324'917 literals:931'660 vars:323'961 one_side_vars:65361 simple_definition:212'601 singleton_clauses:0
+[SAT presolve] [0.0488051s] clauses:324'329 literals:927'544 vars:323'961 one_side_vars:65361 simple_definition:212'601 singleton_clauses:0
+[SAT presolve] [0.211154s] clauses:235'189 literals:756'492 vars:261'236 one_side_vars:93051 simple_definition:166'693 singleton_clauses:0
+  1.12e-01s  0.00e+00d  [DetectDuplicateConstraintsWithDifferentEnforcements] 
+  3.70e+00s  1.02e+00d *[Probe] #probed=156'982 
+  5.60e-01s  6.22e-01d  [MaxClique] Merged 279'824 constraints with 1'225'659 literals into 278'957 constraints with 1'220'864 literals
+  8.26e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.79e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=1 #num_dual_strengthening=1 
+  6.46e-01s  0.00e+00d  [ProcessAtMostOneAndLinear] 
+  1.28e-01s  0.00e+00d  [DetectDuplicateConstraints] 
+  1.16e-01s  0.00e+00d  [DetectDuplicateConstraintsWithDifferentEnforcements] 
+  1.14e+00s  3.64e-02d  [DetectDominatedLinearConstraints] #relevant_constraints=19'016 #num_inclusions=49'190 #num_redundant=1'386 
+  1.45e-02s  0.00e+00d  [DetectDifferentVariables] 
+  2.97e-01s  3.65e-02d  [ProcessSetPPC] #relevant_constraints=357'203 #num_inclusions=189'981 
+  1.51e-01s  4.11e-03d  [TransformClausesToExactlyOne] #num_amos=278'957 #num_clauses=60'616 #num_checked=60'616 
+  1.05e-02s  0.00e+00d  [DetectEncodedComplexDomains] 
+  8.13e-03s  0.00e+00d  [FindAlmostIdenticalLinearConstraints] 
+  5.02e-01s  1.00e+00d *[FindBigAtMostOneAndLinearOverlap] 
+  2.54e-01s  1.00e+00d *[FindBigVerticalLinearOverlap] #blocks=767 #saved_nz=30'082 
+  6.68e-01s  1.00e+00d *[FindBigHorizontalLinearOverlap] #blocks=371 #saved_nz=586'360 #linears=18'066 
+  7.55e-02s  2.04e-03d  [MergeClauses] #num_collisions=27'055 #num_merges=27'055 #num_saved_literals=92'769 
+  7.14e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.90e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=3 #num_dual_strengthening=2 
+  7.11e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.50e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=1 #num_dual_strengthening=1 
+  1.06e-01s  0.00e+00d  [DetectDuplicateColumns] 
+  1.11e-01s  0.00e+00d  [DetectDuplicateConstraints] 
+[Symmetry] Graph for symmetry has 1'435'129 nodes and 4'337'886 arcs.
+[Symmetry] Graph too large. Skipping. You can use symmetry_level:3 or more to force it.
+[SAT presolve] num removable Booleans: 1'198 / 663'282
+[SAT presolve] num trivial clauses: 0
+[SAT presolve] [0s] clauses:235'189 literals:756'492 vars:261'236 one_side_vars:93051 simple_definition:166'693 singleton_clauses:0
+[SAT presolve] [0.0444105s] clauses:235'189 literals:756'492 vars:261'236 one_side_vars:93051 simple_definition:166'693 singleton_clauses:0
+[SAT presolve] [0.0883345s] clauses:235'189 literals:756'492 vars:261'236 one_side_vars:93051 simple_definition:166'693 singleton_clauses:0
+  1.16e-01s  0.00e+00d  [DetectDuplicateConstraintsWithDifferentEnforcements] 
+  3.62e+00s  1.02e+00d *[Probe] #probed=156'766 
+  5.21e-01s  6.22e-01d  [MaxClique] 
+  7.31e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.62e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=1 #num_dual_strengthening=1 
+  5.47e-01s  0.00e+00d  [ProcessAtMostOneAndLinear] 
+  1.34e-01s  0.00e+00d  [DetectDuplicateConstraints] 
+  1.21e-01s  0.00e+00d  [DetectDuplicateConstraintsWithDifferentEnforcements] 
+  7.18e-01s  2.41e-02d  [DetectDominatedLinearConstraints] #relevant_constraints=17'835 #num_inclusions=36'634 
+  1.63e-02s  0.00e+00d  [DetectDifferentVariables] 
+  2.89e-01s  3.40e-02d  [ProcessSetPPC] #relevant_constraints=356'608 #num_inclusions=189'981 
+  1.58e-01s  4.11e-03d  [TransformClausesToExactlyOne] #num_amos=278'957 #num_clauses=60'616 #num_checked=60'616 
+  1.66e+00s  0.00e+00d  [DetectEncodedComplexDomains] 
+  1.31e-02s  0.00e+00d  [FindAlmostIdenticalLinearConstraints] 
+  5.18e-01s  1.00e+00d *[FindBigAtMostOneAndLinearOverlap] 
+  2.15e-01s  1.00e+00d *[FindBigVerticalLinearOverlap] #blocks=431 #saved_nz=26'970 
+  6.77e-01s  1.00e+00d *[FindBigHorizontalLinearOverlap] #linears=16'945 
+  7.73e-02s  2.04e-03d  [MergeClauses] #num_collisions=27'055 #num_merges=27'055 #num_saved_literals=92'769 
+  7.32e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.90e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=3 #num_dual_strengthening=2 
+  7.27e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.52e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=1 #num_dual_strengthening=1 
+  9.66e-02s  0.00e+00d  [DetectDuplicateColumns] 
+  1.15e-01s  0.00e+00d  [DetectDuplicateConstraints] 
+[Symmetry] Graph for symmetry has 1'436'041 nodes and 4'310'966 arcs.
+[Symmetry] Graph too large. Skipping. You can use symmetry_level:3 or more to force it.
+[SAT presolve] num removable Booleans: 1'198 / 663'282
+[SAT presolve] num trivial clauses: 0
+[SAT presolve] [0s] clauses:235'189 literals:756'492 vars:261'236 one_side_vars:93051 simple_definition:166'693 singleton_clauses:0
+[SAT presolve] [0.0449681s] clauses:235'189 literals:756'492 vars:261'236 one_side_vars:93051 simple_definition:166'693 singleton_clauses:0
+[SAT presolve] [0.0884693s] clauses:235'189 literals:756'492 vars:261'236 one_side_vars:93051 simple_definition:166'693 singleton_clauses:0
+  1.18e-01s  0.00e+00d  [DetectDuplicateConstraintsWithDifferentEnforcements] 
+  3.62e+00s  1.02e+00d *[Probe] #probed=157'092 
+  5.12e-01s  6.22e-01d  [MaxClique] 
+  7.30e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.62e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=1 #num_dual_strengthening=1 
+  5.47e-01s  0.00e+00d  [ProcessAtMostOneAndLinear] 
+  1.37e-01s  0.00e+00d  [DetectDuplicateConstraints] 
+  1.24e-01s  0.00e+00d  [DetectDuplicateConstraintsWithDifferentEnforcements] 
+  6.18e-01s  2.21e-02d  [DetectDominatedLinearConstraints] #relevant_constraints=17'885 #num_inclusions=33'586 
+  1.95e-02s  0.00e+00d  [DetectDifferentVariables] 
+  2.92e-01s  3.38e-02d  [ProcessSetPPC] #relevant_constraints=356'658 #num_inclusions=189'981 
+  1.59e-01s  4.11e-03d  [TransformClausesToExactlyOne] #num_amos=278'957 #num_clauses=60'616 #num_checked=60'616 
+  1.65e+00s  0.00e+00d  [DetectEncodedComplexDomains] 
+  1.58e-02s  0.00e+00d  [FindAlmostIdenticalLinearConstraints] 
+  5.21e-01s  1.00e+00d *[FindBigAtMostOneAndLinearOverlap] 
+  1.74e-01s  1.00e+00d *[FindBigVerticalLinearOverlap] #blocks=11 #saved_nz=770 
+  6.85e-01s  1.00e+00d *[FindBigHorizontalLinearOverlap] #linears=16'945 
+  8.75e-02s  2.04e-03d  [MergeClauses] #num_collisions=27'055 #num_merges=27'055 #num_saved_literals=92'769 
+  7.20e-01s  0.00e+00d  [DetectDominanceRelations] 
+  1.83e+00s  0.00e+00d  [PresolveToFixPoint] #num_loops=3 #num_dual_strengthening=2 
+  1.13e-02s  0.00e+00d  [MergeNoOverlap] 
+  1.18e-02s  0.00e+00d  [MergeNoOverlap2D] 
+  1.13e-01s  0.00e+00d  [ExpandObjective] #entries=295'948 #tight_variables=1'863 #tight_constraints=1'684 
+
+Presolve summary:
+  - 72791 affine relations were detected.
+  - rule 'TODO dual: make linear1 equiv' was applied 3'710 times.
+  - rule 'TODO dual: only one blocking constraint?' was applied 821'342 times.
+  - rule 'TODO dual: only one blocking enforced constraint?' was applied 20'548 times.
+  - rule 'TODO dual: only one unspecified blocking constraint?' was applied 1'350'219 times.
+  - rule 'TODO linear inclusion: superset is equality' was applied 3'110 times.
+  - rule 'affine: new relation' was applied 72'791 times.
+  - rule 'at_most_one: removed literals' was applied 6'937 times.
+  - rule 'at_most_one: transformed into max clique' was applied 1 time.
+  - rule 'bool_and: fixed literals' was applied 80 times.
+  - rule 'bool_and: x => x' was applied 12'637 times.
+  - rule 'bool_or: fixed literals' was applied 160 times.
+  - rule 'bool_or: implications' was applied 2'376 times.
+  - rule 'bool_or: only one literal' was applied 70 times.
+  - rule 'bool_or: removed enforcement literal' was applied 56'417 times.
+  - rule 'deductions: 252031 stored' was applied 1 time.
+  - rule 'dual: enforced equivalence' was applied 8'753 times.
+  - rule 'dual: equivalent Boolean in near-duplicate constraints' was applied 62 times.
+  - rule 'dual: reduced domain' was applied 2'331 times.
+  - rule 'duplicate: removed constraint' was applied 6'345 times.
+  - rule 'exactly_one: removed literals' was applied 572 times.
+  - rule 'exactly_one: singleton' was applied 572 times.
+  - rule 'lin_max: rewrite with precedences' was applied 12 times.
+  - rule 'linear inclusion: redundant included constraint' was applied 1'386 times.
+  - rule 'linear matrix: common horizontal rectangle' was applied 371 times.
+  - rule 'linear matrix: common vertical rectangle' was applied 1'209 times.
+  - rule 'linear1: always true' was applied 583 times.
+  - rule 'linear2: convert ax + by != cte to clauses' was applied 54'109 times.
+  - rule 'linear2: implied ax + by = cte has only one solution' was applied 26'411 times.
+  - rule 'linear: always true' was applied 914 times.
+  - rule 'linear: empty' was applied 64'028 times.
+  - rule 'linear: fixed or dup variables' was applied 64'964 times.
+  - rule 'linear: negative reified and' was applied 2'332 times.
+  - rule 'linear: positive at most one' was applied 107'072 times.
+  - rule 'linear: positive clause' was applied 2'492 times.
+  - rule 'linear: positive equal one' was applied 572 times.
+  - rule 'linear: reduced variable domains' was applied 1'423 times.
+  - rule 'linear: reduced variable domains in derived constraint' was applied 30 times.
+  - rule 'linear: remapped using affine relations' was applied 155'854 times.
+  - rule 'linear: small Boolean expression' was applied 588 times.
+  - rule 'objective: variable not used elsewhere' was applied 70 times.
+  - rule 'presolve: 7007 unused variables removed.' was applied 1 time.
+  - rule 'presolve: iteration' was applied 3 times.
+
+Presolved optimization model '': (model_fingerprint: 0x35bc2a2018b242fd)
+#Variables: 668'982 (#bools: 304'165 #ints: 4'120 in objective) (663'282 primary variables)
+  - 663'282 Booleans in [0,1]
+  - 1'394 in [0,2]
+  - 280 in [0,3]
+  - 81 in [0,4]
+  - 522 in [0,6]
+  - 81 in [0,8]
+  - 100 in [0,9]
+  - 261 in [0,12]
+  - 261 in [0,20]
+  - 261 in [0,50]
+  - 17 in [0,73]
+  - 27 in [0,74]
+  - 36 in [0,76]
+  - 55 in [0,89]
+  - 18 in [0,93]
+  - 27 in [0,96]
+  - 27 in [0,103]
+  - 53 in [0,107]
+  - 55 in [0,125]
+  - 27 in [0,126]
+  - 18 in [0,129]
+  - 13 in [0,151]
+  - 14 in [0,152]
+  - 44 in [0,166]
+  - 47 in [0,172]
+  - 2 in [0,173]
+  - 10 in [0,175]
+  - 24 in [0,176]
+  - 36 in [0,178]
+  - 21 in [0,179]
+  - 17 in [0,180]
+  - 8 in [0,182]
+  - 4 in [0,183]
+  - 2 in [0,200]
+  - 6 in [0,203]
+  - 28 in [0,207]
+  - 8 in [0,210]
+  - 18 in [0,211]
+  - 27 in [0,214]
+  - 27 in [0,215]
+  - 14 in [0,235]
+  - 21 in [0,243]
+  - 11 in [0,244]
+  - 78 in [0,248]
+  - 28 in [0,250]
+  - 21 in [0,251]
+  - 21 in [0,252]
+  - 18 in [0,255]
+  - 65 in [0,256]
+  - 27 in [0,257]
+  - 55 in [0,258]
+  - 27 in [0,259]
+  - 30 in [0,265]
+  - 20 in [0,266]
+  - 28 in [0,269]
+  - 27 in [0,270]
+  - 13 in [0,271]
+  - 18 in [0,272]
+  - 31 in [0,275]
+  - 54 in [0,276]
+  - 27 in [0,278]
+  - 27 in [0,282]
+  - 6 in [0,283]
+  - 17 in [0,284]
+  - 19 in [0,288]
+  - 23 in [0,292]
+  - 38 in [0,316]
+  - 17 in [0,320]
+  - 30 in [0,326]
+  - 17 in [0,331]
+  - 27 in [0,335]
+  - 17 in [0,342]
+  - 19 in [0,347]
+  - 17 in [0,351]
+  - 21 in [0,402]
+  - 60 in [0,410]
+  - 17 in [0,416]
+  - 10 in [0,452]
+  - 21 in [0,453]
+  - 21 in [0,459]
+  - 109 in [0,462]
+  - 60 in [0,468]
+  - 21 in [0,490]
+  - 222 in [0,500]
+  - 86 in [0,502]
+  - 81 in [0,508]
+  - 21 in [0,510]
+  - 25 in [0,512]
+  - 60 in [0,520]
+#kAtMostOne: 104'384 (#literals: 871'718)
+#kBoolAnd: 10'598 (#enforced: 10'598) (#literals: 185'171)
+#kBoolAndClauses: 27'055 (#enforced: 27'055 #multi: 27'055) (#literals: 146'879)
+#kBoolOr: 6'506 (#literals: 167'698)
+#kLinear1: 742 (#enforced: 742)
+#kLinear2: 800
+#kLinearN: 17'085 (#enforced: 2'990) (#terms: 2'290'413)
+[Symmetry] Graph for symmetry has 1'303'822 nodes and 4'310'196 arcs.
+[Symmetry] Graph too large. Skipping. You can use symmetry_level:3 or more to force it.
+
+Preloading model.
+#Bound  51.64s best:-inf  next:[-161932800,569362695] initial_domain
+#Model  51.92s var:668982/668982 constraints:167170/167170
+
+Starting search at 51.94s with 8 workers.
+6 full problem subsolvers: [core, default_lp, max_lp, no_lp, quick_restart, reduced_costs]
+2 first solution subsolvers: [fj, fs_random_no_lp]
+9 interleaved subsolvers: [feasibility_pump, graph_arc_lns, graph_cst_lns, graph_dec_lns, graph_var_lns, ls, rins/rens, rnd_cst_lns, rnd_var_lns]
+3 helper subsolvers: [neighborhood_helper, synchronization_agent, update_gap_integral]
+
+#1      56.37s best:-2880000 next:[-2879995,569362695] fj_restart(batch:1 lin{mvs:206 evals:2'143} #w_updates:0 #perturb:0)
+#Bound  66.09s best:-2880000 next:[-2879995,372369355] quick_restart (initial_propagation)
+#Bound  66.14s best:-2880000 next:[-2879995,372126555] default_lp (initial_propagation)
+#Bound  66.87s best:-2880000 next:[-2879995,371027955] default_lp
+#Bound  66.89s best:-2880000 next:[-2879995,370172155] quick_restart
+#Bound  76.97s best:-2880000 next:[-2879995,218347315] max_lp
+#Bound  89.19s best:-2880000 next:[-2879995,196884985] quick_restart
+#Bound  90.33s best:-2880000 next:[-2879995,193237785] quick_restart
+#Bound  90.61s best:-2880000 next:[-2879995,192193785] quick_restart
+#Bound  90.99s best:-2880000 next:[-2879995,191847045] quick_restart
+#Bound  91.14s best:-2880000 next:[-2879995,191762345] default_lp
+#Bound  91.36s best:-2880000 next:[-2879995,191754645] default_lp
+#Bound 109.84s best:-2880000 next:[-2879995,191474785] default_lp
+#Bound 110.61s best:-2880000 next:[-2879995,191360625] default_lp
+#Bound 111.78s best:-2880000 next:[-2879995,191329845] default_lp
+#Bound 113.06s best:-2880000 next:[-2879995,191262645] default_lp
+#Bound 115.11s best:-2880000 next:[-2879995,190623185] default_lp
+#Bound 115.33s best:-2880000 next:[-2879995,190542785] default_lp
+#Bound 115.62s best:-2880000 next:[-2879995,190502585] default_lp
+#Bound 116.64s best:-2880000 next:[-2879995,190422185] default_lp
+#Bound 116.92s best:-2880000 next:[-2879995,190343785] default_lp
+#Bound 117.17s best:-2880000 next:[-2879995,190303585] default_lp
+#Bound 118.93s best:-2880000 next:[-2879995,112256535] max_lp
+#Bound 124.56s best:-2880000 next:[-2879995,80148835] max_lp
+#Bound 140.98s best:-2880000 next:[-2879995,79646815] max_lp
+#Bound 181.59s best:-2880000 next:[-2879995,79030615] max_lp
+#2     184.40s best:-2804750 next:[-2804745,79030615] ls_restart_perturb(batch:2 lin{mvs:17 evals:131} #w_updates:0 #perturb:0)
+#3     188.42s best:-2759255 next:[-2759250,79030615] ls_restart_compound(batch:2 lin{mvs:0 evals:74} gen{mvs:17 evals:0} comp{mvs:17 btracks:0} #w_updates:0 #perturb:0)
+#4     192.40s best:-2683995 next:[-2683990,79030615] ls_restart_decay(batch:2 lin{mvs:17 evals:127} #w_updates:0 #perturb:0)
+#5     196.43s best:-2628525 next:[-2628520,79030615] ls_restart_perturb(batch:2 lin{mvs:17 evals:104} #w_updates:0 #perturb:0)
+#6     200.45s best:-2572815 next:[-2572810,79030615] ls_restart_decay(batch:2 lin{mvs:17 evals:137} #w_updates:0 #perturb:0)
+#Bound 201.90s best:-2572815 next:[-2572810,74538615] max_lp
+#7     209.44s best:-2512535 next:[-2512530,74538615] ls_restart_decay_compound(batch:2 lin{mvs:0 evals:92} gen{mvs:17 evals:0} comp{mvs:17 btracks:0} #w_updates:0 #perturb:0)
+#8     227.30s best:203445 next:[203450,74538615] rnd_var_lns (d=2.93e-01 s=136 t=0.10 p=0.00 stall=0 h=base) [hint]
+#Bound 236.02s best:203445 next:[203450,47184280] quick_restart
+#Bound 236.60s best:203445 next:[203450,37878680] quick_restart
+#9     258.83s best:417375 next:[417380,37878680] graph_arc_lns (d=2.93e-01 s=159 t=0.10 p=0.00 stall=0 h=base) [hint]
+#10    263.76s best:419140 next:[419145,37878680] ls_restart(batch:2 lin{mvs:17 evals:255} #w_updates:0 #perturb:0)
+#11    278.73s best:464675 next:[464680,37878680] graph_cst_lns (d=2.93e-01 s=171 t=0.10 p=0.00 stall=0 h=base) [hint]
+#12    278.78s best:466440 next:[466445,37878680] graph_cst_lns (d=2.93e-01 s=171 t=0.10 p=0.00 stall=0 h=base) [hint] [combined with: ls_restart(batch:2 l...]
+#13    290.54s best:1685775 next:[1685780,37878680] rnd_var_lns (d=1.86e-01 s=211 t=0.10 p=0.00 stall=0 h=base)
+#14    294.99s best:1687885 next:[1687890,37878680] ls_restart_perturb(batch:2 lin{mvs:17 evals:274} #w_updates:0 #perturb:0)
+#15    311.57s best:7167545 next:[7167550,37878680] rins_lp_lns (d=1.86e-01 s=238 t=0.10 p=0.00 stall=1 h=base)
+#Bound 319.86s best:7167545 next:[7167550,37867280] default_lp
+#16    322.39s best:7203995 next:[7204000,37867280] graph_arc_lns (d=1.86e-01 s=244 t=0.10 p=0.00 stall=0 h=base) [hint]
+#17    329.02s best:8666575 next:[8666580,37867280] rnd_var_lns (d=1.24e-01 s=249 t=0.10 p=0.00 stall=0 h=base)
+#18    339.82s best:8678815 next:[8678820,37867280] graph_cst_lns (d=1.86e-01 s=253 t=0.10 p=0.00 stall=0 h=base)
+#19    343.82s best:9326625 next:[9326630,37867280] rnd_var_lns (d=8.55e-02 s=270 t=0.10 p=0.00 stall=0 h=base)
+#20    347.76s best:9640490 next:[9640495,37867280] rnd_var_lns (d=6.07e-02 s=284 t=0.10 p=0.00 stall=0 h=base)
+#21    350.80s best:10773105 next:[10773110,37867280] rins_lp_lns (d=8.55e-02 s=292 t=0.10 p=0.00 stall=1 h=base)
+#22    354.12s best:11367650 next:[11367655,37867280] rnd_var_lns (d=8.37e-02 s=294 t=0.10 p=0.17 stall=0 h=base)
+#23    357.25s best:11372650 next:[11372655,37867280] graph_var_lns (d=6.07e-02 s=298 t=0.10 p=0.00 stall=4 h=base) [hint]
+#24    364.56s best:11383370 next:[11383375,37867280] graph_cst_lns (d=1.24e-01 s=301 t=0.10 p=0.00 stall=0 h=base) [hint]
+#25    367.70s best:11678495 next:[11678500,37867280] rnd_var_lns (d=6.18e-02 s=310 t=0.10 p=0.14 stall=0 h=base)
+#26    370.17s best:11734325 next:[11734330,37867280] graph_var_lns (d=4.41e-02 s=313 t=0.10 p=0.00 stall=0 h=base)
+#Bound 372.69s best:11734325 next:[11734330,37784240] quick_restart
+#27    372.73s best:11756160 next:[11756165,37784240] graph_arc_lns (d=8.55e-02 s=317 t=0.10 p=0.00 stall=0 h=base) [hint]
+#28    373.61s best:12122610 next:[12122615,37784240] rnd_var_lns (d=8.24e-02 s=320 t=0.10 p=0.25 stall=0 h=base)
+#29    376.48s best:12272160 next:[12272165,37784240] graph_var_lns (d=3.26e-02 s=324 t=0.10 p=0.00 stall=0 h=base)
+#30    377.64s best:12872045 next:[12872050,37784240] rins_lp_lns (d=8.74e-02 s=332 t=0.10 p=0.17 stall=1 h=base)
+#31    382.26s best:13018405 next:[13018410,37784240] rnd_cst_lns (d=8.55e-02 s=334 t=0.10 p=0.00 stall=0 h=base)
+#32    386.13s best:13041555 next:[13041560,37784240] graph_var_lns (d=2.44e-02 s=341 t=0.10 p=0.00 stall=0 h=base)
+#33    386.18s best:13176825 next:[13176830,37784240] graph_arc_lns (d=6.07e-02 s=339 t=0.10 p=0.00 stall=0 h=base)
+#34    388.76s best:13367890 next:[13367895,37784240] rnd_var_lns (d=4.81e-02 s=347 t=0.10 p=0.20 stall=0 h=base)
+#35    392.67s best:13382040 next:[13382045,37784240] graph_var_lns (d=1.86e-02 s=351 t=0.10 p=0.00 stall=0 h=base)
+#36    397.54s best:13597650 next:[13597655,37784240] rnd_var_lns (d=6.20e-02 s=356 t=0.10 p=0.27 stall=0 h=base)
+#37    400.15s best:13741420 next:[13741425,37784240] graph_arc_lns (d=4.41e-02 s=359 t=0.10 p=0.00 stall=0 h=base)
+#38    404.14s best:13960595 next:[13960600,37784240] rnd_cst_lns (d=6.07e-02 s=361 t=0.10 p=0.00 stall=0 h=base)
+#Bound 405.03s best:13960595 next:[13960600,37783040] quick_restart
+#39    407.72s best:14021420 next:[14021425,37783040] graph_cst_lns (d=6.07e-02 s=364 t=0.10 p=0.00 stall=0 h=base) [hint]
+#40    407.80s best:14356425 next:[14356430,37783040] rnd_var_lns (d=7.92e-02 s=366 t=0.10 p=0.33 stall=0 h=base)
+#41    415.06s best:14477215 next:[14477220,37783040] graph_arc_lns (d=3.26e-02 s=373 t=0.10 p=0.00 stall=0 h=base)
+#42    418.35s best:14479565 next:[14479570,37783040] graph_cst_lns (d=4.41e-02 s=382 t=0.10 p=0.00 stall=0 h=base) [hint]
+#43    419.72s best:14489565 next:[14489570,37783040] graph_var_lns (d=1.11e-02 s=388 t=0.10 p=0.00 stall=1 h=base)
+#44    422.35s best:14593360 next:[14593365,37783040] graph_arc_lns (d=2.44e-02 s=392 t=0.10 p=0.00 stall=0 h=base)
+#45    424.57s best:14633720 next:[14633725,37783040] rnd_cst_lns (d=3.26e-02 s=396 t=0.10 p=0.00 stall=0 h=base) [hint]
+#46    425.64s best:17044150 next:[17044155,37783040] rens_pump_lns (d=8.87e-02 s=394 t=0.10 p=0.25 stall=1 h=base)
+#47    428.23s best:17239965 next:[17239970,37783040] rnd_var_lns (d=4.97e-02 s=399 t=0.10 p=0.29 stall=0 h=base)
+#Bound 429.92s best:17239965 next:[17239970,37704640] quick_restart
+#48    430.06s best:17289215 next:[17289220,37704640] graph_arc_lns (d=1.86e-02 s=404 t=0.10 p=0.00 stall=0 h=base)
+#49    430.55s best:17311410 next:[17311415,37704640] graph_cst_lns (d=3.26e-02 s=402 t=0.10 p=0.00 stall=0 h=base)
+#50    432.63s best:17423890 next:[17423895,37704640] rnd_cst_lns (d=2.44e-02 s=407 t=0.10 p=0.00 stall=0 h=base)
+#51    434.55s best:17462430 next:[17462435,37704640] rnd_cst_lns (d=1.86e-02 s=416 t=0.10 p=0.00 stall=0 h=base)
+#52    438.33s best:17623830 next:[17623835,37704640] graph_var_lns (d=6.83e-03 s=421 t=0.10 p=0.00 stall=1 h=base)
+#53    440.14s best:17642320 next:[17642325,37704640] graph_arc_lns (d=1.11e-02 s=424 t=0.10 p=0.00 stall=0 h=base)
+#54    442.43s best:17925155 next:[17925160,37704640] rnd_var_lns (d=5.00e-02 s=425 t=0.10 p=0.31 stall=0 h=base)
+#55    446.70s best:17968115 next:[17968120,37704640] graph_cst_lns (d=2.44e-02 s=429 t=0.10 p=0.00 stall=0 h=base)
+#56    448.35s best:18445070 next:[18445075,37704640] rins_pump_lns (d=6.74e-02 s=428 t=0.10 p=0.20 stall=1 h=base)
+#Bound 450.05s best:18445070 next:[18445075,37627840] quick_restart
+#Bound 450.27s best:18445070 next:[18445075,37626240] quick_restart
+#57    451.10s best:18471290 next:[18471295,37626240] graph_arc_lns (d=8.66e-03 s=435 t=0.10 p=0.00 stall=0 h=base)
+#58    451.28s best:18482195 next:[18482200,37626240] graph_arc_lns (d=8.66e-03 s=436 t=0.10 p=0.00 stall=0 h=base)
+#Bound 451.79s best:18482195 next:[18482200,37546240] quick_restart
+#59    452.54s best:18555870 next:[18555875,37546240] graph_cst_lns (d=1.86e-02 s=438 t=0.10 p=0.00 stall=0 h=base)
+#Bound 453.90s best:18555870 next:[18555875,37467500] quick_restart
+#60    454.42s best:18625135 next:[18625140,37467500] rnd_cst_lns (d=1.87e-02 s=445 t=0.10 p=0.09 stall=0 h=base)
+#61    455.46s best:18632735 next:[18632740,37467500] graph_var_lns (d=5.43e-03 s=446 t=0.10 p=0.00 stall=0 h=base)
+#Bound 456.03s best:18632735 next:[18632740,37447470] quick_restart
+#62    457.84s best:18662695 next:[18662700,37447470] graph_cst_lns (d=2.42e-02 s=449 t=0.10 p=0.10 stall=0 h=base)
+#63    460.93s best:18797900 next:[18797905,37447470] graph_var_lns (d=6.79e-03 s=452 t=0.10 p=0.07 stall=0 h=base)
+#64    462.57s best:18814400 next:[18814405,37447470] rnd_cst_lns (d=1.47e-02 s=455 t=0.10 p=0.08 stall=0 h=base)
+#65    463.97s best:18872180 next:[18872185,37447470] rnd_var_lns (d=3.29e-02 s=457 t=0.10 p=0.28 stall=0 h=base)
+#66    466.39s best:18912930 next:[18912935,37447470] graph_cst_lns (d=1.87e-02 s=460 t=0.10 p=0.09 stall=0 h=base)
+#67    467.27s best:18914690 next:[18914695,37447470] graph_arc_lns (d=5.43e-03 s=461 t=0.10 p=0.00 stall=0 h=base) [hint]
+#68    469.98s best:18958495 next:[18958500,37447470] rnd_cst_lns (d=1.86e-02 s=463 t=0.10 p=0.15 stall=0 h=base)
+#69    471.62s best:19115450 next:[19115455,37447470] rnd_var_lns (d=4.03e-02 s=465 t=0.10 p=0.32 stall=0 h=base)
+#70    472.98s best:19116750 next:[19116755,37447470] rins_pump_lns (d=4.02e-02 s=467 t=0.10 p=0.18 stall=0 h=base)
+#71    474.14s best:19133780 next:[19133785,37447470] graph_arc_lns (d=6.79e-03 s=469 t=0.10 p=0.07 stall=0 h=base) [hint]
+#72    477.36s best:19287065 next:[19287070,37447470] rnd_var_lns (d=4.90e-02 s=474 t=0.10 p=0.35 stall=0 h=base)
+#73    478.79s best:19290915 next:[19290920,37447470] graph_cst_lns (d=1.47e-02 s=475 t=0.10 p=0.08 stall=0 h=base) [hint]
+#74    479.70s best:19293785 next:[19293790,37447470] graph_arc_lns (d=8.44e-03 s=476 t=0.10 p=0.12 stall=0 h=base) [hint]
+#75    482.43s best:20407235 next:[20407240,37447470] rins_lp_lns (d=5.13e-02 s=478 t=0.10 p=0.25 stall=0 h=base)
+#76    489.57s best:20422005 next:[20422010,37447470] graph_dec_lns (d=8.55e-02 s=480 t=0.10 p=0.00 stall=0 h=base) [hint]
+#77    492.40s best:20464920 next:[20464925,37447470] rnd_cst_lns (d=1.48e-02 s=482 t=0.10 p=0.14 stall=0 h=base)
+#78    494.49s best:20472550 next:[20472555,37447470] graph_arc_lns (d=1.04e-02 s=483 t=0.10 p=0.18 stall=0 h=base)
+#79    497.38s best:20494000 next:[20494005,37447470] graph_cst_lns (d=1.16e-02 s=487 t=0.10 p=0.08 stall=0 h=base)
+#80    499.63s best:20654860 next:[20654865,37447470] rnd_var_lns (d=5.95e-02 s=488 t=0.10 p=0.38 stall=0 h=base)
+#81    502.30s best:20837980 next:[20837985,37447470] rins_pump_lns (d=6.51e-02 s=489 t=0.10 p=0.31 stall=0 h=base)
+#82    505.30s best:20865845 next:[20865850,37447470] graph_var_lns (d=4.49e-03 s=493 t=0.10 p=0.11 stall=3 h=base)
+#Bound 506.88s best:20865845 next:[20865850,37134340] quick_restart
+#83    507.26s best:20894130 next:[20894135,37134340] graph_cst_lns (d=1.46e-02 s=494 t=0.10 p=0.14 stall=0 h=base)
+#84    509.46s best:20916430 next:[20916435,37134340] graph_arc_lns (d=8.48e-03 s=497 t=0.10 p=0.17 stall=0 h=base)
+#85    510.55s best:20932035 next:[20932040,37134340] rnd_cst_lns (d=1.18e-02 s=498 t=0.10 p=0.13 stall=0 h=base)
+#86    512.65s best:21000785 next:[21000790,37134340] rnd_var_lns (d=4.92e-02 s=501 t=0.10 p=0.36 stall=0 h=base)
+#87    514.84s best:21063195 next:[21063200,37134340] rnd_cst_lns (d=1.47e-02 s=504 t=0.10 p=0.19 stall=0 h=base)
+#88    515.93s best:21064295 next:[21064300,37134340] rins_pump_lns (d=5.17e-02 s=505 t=0.10 p=0.29 stall=0 h=base)
+#89    517.07s best:21100495 next:[21100500,37134340] graph_cst_lns (d=1.17e-02 s=506 t=0.10 p=0.13 stall=0 h=base)
+#90    520.89s best:21121605 next:[21121610,37134340] graph_arc_lns (d=6.93e-03 s=509 t=0.10 p=0.16 stall=0 h=base)
+#91    523.54s best:21245725 next:[21245730,37134340] rnd_var_lns (d=5.93e-02 s=511 t=0.10 p=0.39 stall=0 h=base)
+#92    525.35s best:21435355 next:[21435360,37134340] rins_lp_lns (d=6.46e-02 s=513 t=0.10 p=0.33 stall=0 h=base)
+#93    526.62s best:21438655 next:[21438660,37134340] graph_cst_lns (d=9.38e-03 s=514 t=0.10 p=0.12 stall=0 h=base)
+#94    528.03s best:21453145 next:[21453150,37134340] rnd_cst_lns (d=1.19e-02 s=516 t=0.10 p=0.18 stall=0 h=base)
+#95    531.88s best:21461345 next:[21461350,37134340] graph_arc_lns (d=5.69e-03 s=520 t=0.10 p=0.15 stall=0 h=base) [hint]
+#96    532.99s best:21476135 next:[21476140,37134340] rnd_cst_lns (d=1.46e-02 s=521 t=0.10 p=0.22 stall=0 h=base)
+#Bound 534.39s best:21476135 next:[21476140,37117830] quick_restart
+#97    534.76s best:21476835 next:[21476840,37117830] graph_cst_lns (d=7.59e-03 s=523 t=0.10 p=0.12 stall=0 h=base)
+#Bound 535.26s best:21476835 next:[21476840,37113475] quick_restart
+#Bound 535.96s best:21476835 next:[21476840,37048175] quick_restart
+#Bound 536.27s best:21476835 next:[21476840,37046485] quick_restart
+#Bound 540.83s best:21476835 next:[21476840,36920615] quick_restart
+#Bound 541.52s best:21476835 next:[21476840,36867315] quick_restart
+#Bound 542.85s best:21476835 next:[21476840,36792615] quick_restart
+#Bound 543.49s best:21476835 next:[21476840,36756515] quick_restart
+#98    543.66s best:21477310 next:[21477315,36756515] graph_dec_lns (d=6.07e-02 s=525 t=0.10 p=0.00 stall=0 h=base) [hint]
+#99    544.63s best:21477610 next:[21477615,36756515] graph_var_lns (d=2.51e-03 s=526 t=0.10 p=0.09 stall=2 h=base)
+#Bound 545.08s best:21477610 next:[21477615,36699515] quick_restart
+#Bound 545.67s best:21477610 next:[21477615,36662615] quick_restart
+#Bound 545.98s best:21477610 next:[21477615,36660815] quick_restart
+#100   546.98s best:21579745 next:[21579750,36660815] rnd_var_lns (d=4.94e-02 s=528 t=0.10 p=0.38 stall=0 h=base)
+#101   548.44s best:21605750 next:[21605755,36660815] rnd_cst_lns (d=1.79e-02 s=531 t=0.10 p=0.26 stall=0 h=base)
+#102   549.10s best:21622035 next:[21622040,36660815] rnd_cst_lns (d=1.79e-02 s=532 t=0.10 p=0.26 stall=0 h=base)
+#Bound 549.27s best:21622035 next:[21622040,36518815] quick_restart
+#Bound 549.83s best:21622035 next:[21622040,36501215] quick_restart
+#103   550.02s best:21636785 next:[21636790,36501215] graph_cst_lns (d=6.17e-03 s=535 t=0.10 p=0.11 stall=0 h=base)
+#Bound 550.23s best:21636785 next:[21636790,36497630] quick_restart
+#104   550.74s best:21644085 next:[21644090,36497630] graph_var_lns (d=3.03e-03 s=536 t=0.10 p=0.13 stall=0 h=base) [combined with: graph_cst_lns (d=6.1...]
+#105   551.60s best:21658145 next:[21658150,36497630] graph_arc_lns (d=4.69e-03 s=538 t=0.10 p=0.14 stall=0 h=base)
+#106   551.83s best:21665745 next:[21665750,36497630] graph_arc_lns (d=4.69e-03 s=539 t=0.10 p=0.14 stall=0 h=base) [combined with: graph_arc_lns (d=4.6...]
+#107   552.83s best:21702470 next:[21702475,36497630] graph_cst_lns (d=9.20e-03 s=541 t=0.10 p=0.20 stall=0 h=base)
+#Bound 553.25s best:21702470 next:[21702475,36495840] quick_restart
+#108   553.86s best:21709920 next:[21709925,36495840] graph_var_lns (d=4.34e-03 s=545 t=0.10 p=0.20 stall=1 h=base)
+#Bound 553.90s best:21709920 next:[21709925,36491440] quick_restart
+#Bound 554.75s best:21709920 next:[21709925,36483460] quick_restart
+#109   554.86s best:21716920 next:[21716925,36483460] graph_var_lns (d=4.34e-03 s=547 t=0.10 p=0.20 stall=1 h=base) [combined with: graph_var_lns (d=4.3...]
+#110   555.48s best:21731135 next:[21731140,36483460] graph_arc_lns (d=6.82e-03 s=548 t=0.10 p=0.22 stall=0 h=base)
+#111   555.53s best:21738135 next:[21738140,36483460] graph_arc_lns (d=6.82e-03 s=548 t=0.10 p=0.22 stall=0 h=base) [combined with: graph_var_lns (d=4.3...]
+#Bound 555.69s best:21738135 next:[21738140,36481760] quick_restart
+#Bound 555.95s best:21738135 next:[21738140,36480460] quick_restart
+#Bound 556.58s best:21738135 next:[21738140,36477960] quick_restart
+#112   557.21s best:21765080 next:[21765085,36477960] rnd_cst_lns (d=1.80e-02 s=551 t=0.10 p=0.29 stall=0 h=base)
+#113   559.44s best:21913780 next:[21913785,36477960] rins_lp_lns (d=6.50e-02 s=555 t=0.10 p=0.35 stall=1 h=base)
+#Bound 559.79s best:21913780 next:[21913785,36477360] quick_restart
+#Bound 560.64s best:21913780 next:[21913785,36474160] quick_restart
+#114   560.86s best:21949220 next:[21949225,36474160] graph_cst_lns (d=1.12e-02 s=558 t=0.10 p=0.24 stall=0 h=base)
+#115   560.99s best:22030985 next:[22030990,36474160] rnd_var_lns (d=4.93e-02 s=557 t=0.10 p=0.41 stall=0 h=base)
+#Bound 563.79s best:22030985 next:[22030990,36467360] quick_restart
+#116   564.65s best:22031835 next:[22031840,36467360] graph_dec_lns (d=4.41e-02 s=560 t=0.10 p=0.00 stall=0 h=base)
+#Bound 564.70s best:22031835 next:[22031840,36463460] quick_restart
+#117   565.83s best:22059145 next:[22059150,36463460] graph_cst_lns (d=1.35e-02 s=564 t=0.10 p=0.27 stall=0 h=base)
+#118   567.09s best:22073505 next:[22073510,36463460] graph_var_lns (d=3.06e-03 s=566 t=0.10 p=0.19 stall=0 h=base)
+#119   567.18s best:22080955 next:[22080960,36463460] graph_var_lns (d=3.06e-03 s=567 t=0.10 p=0.19 stall=0 h=base) [combined with: graph_var_lns (d=3.0...]
+#Bound 568.01s best:22080955 next:[22080960,36448460] quick_restart
+#120   568.03s best:22081575 next:[22081580,36448460] graph_arc_lns (d=6.80e-03 s=568 t=0.10 p=0.24 stall=0 h=base) [hint]
+#121   568.07s best:22087955 next:[22087960,36448460] graph_arc_lns (d=6.80e-03 s=569 t=0.10 p=0.24 stall=0 h=base)
+#122   568.12s best:22088575 next:[22088580,36448460] graph_arc_lns (d=6.80e-03 s=569 t=0.10 p=0.24 stall=0 h=base) [combined with: graph_arc_lns (d=6.8...]
+#Bound 568.94s best:22088575 next:[22088580,36442610] quick_restart
+#Bound 569.66s best:22088575 next:[22088580,36442310] quick_restart
+#123   571.49s best:22091345 next:[22091350,36442310] rnd_cst_lns (d=1.23e-02 s=575 t=0.10 p=0.26 stall=0 h=base)
+#124   573.42s best:22301560 next:[22301565,36442310] rins_lp_lns (d=7.99e-02 s=576 t=0.10 p=0.39 stall=0 h=base)
+#Bound 574.47s best:22301560 next:[22301565,36428910] quick_restart
+#125   575.86s best:22315370 next:[22315375,36428910] rnd_var_lns (d=6.94e-02 s=578 t=0.10 p=0.43 stall=0 h=base)
+#126   576.07s best:22475975 next:[22475980,36428910] rnd_var_lns (d=6.94e-02 s=579 t=0.10 p=0.43 stall=0 h=base)
+#127   577.42s best:22477665 next:[22477670,36428910] graph_arc_lns (d=9.64e-03 s=581 t=0.10 p=0.30 stall=0 h=base) [hint]
+#128   579.45s best:22491705 next:[22491710,36428910] rnd_cst_lns (d=1.03e-02 s=587 t=0.10 p=0.25 stall=0 h=base)
+#129   582.95s best:22492490 next:[22492495,36428910] graph_dec_lns (d=3.26e-02 s=590 t=0.10 p=0.00 stall=0 h=base) [hint]
+#130   584.41s best:22499460 next:[22499465,36428910] graph_arc_lns (d=1.35e-02 s=597 t=0.10 p=0.34 stall=0 h=base)
+#131   585.82s best:22506740 next:[22506745,36428910] graph_cst_lns (d=9.34e-03 s=600 t=0.10 p=0.25 stall=1 h=base)
+#132   586.85s best:22540310 next:[22540315,36428910] graph_arc_lns (d=1.35e-02 s=598 t=0.10 p=0.34 stall=0 h=base)
+#133   587.96s best:22565220 next:[22565225,36428910] rnd_cst_lns (d=1.47e-02 s=602 t=0.10 p=0.31 stall=0 h=base)
+#134   589.08s best:22568140 next:[22568145,36428910] graph_cst_lns (d=1.12e-02 s=606 t=0.10 p=0.28 stall=0 h=base) [hint]
+#135   589.33s best:22575670 next:[22575675,36428910] graph_cst_lns (d=1.12e-02 s=607 t=0.10 p=0.28 stall=0 h=base)
+#136   591.38s best:22576560 next:[22576565,36428910] graph_dec_lns (d=2.44e-02 s=609 t=0.10 p=0.00 stall=0 h=base)
+#137   591.41s best:22636505 next:[22636510,36428910] rnd_var_lns (d=4.98e-02 s=611 t=0.10 p=0.40 stall=0 h=base) [hint]
+#138   592.88s best:22636705 next:[22636710,36428910] graph_var_lns (d=4.24e-03 s=613 t=0.10 p=0.27 stall=4 h=base)
+#139   593.63s best:22797030 next:[22797035,36428910] rnd_var_lns (d=5.86e-02 s=612 t=0.10 p=0.42 stall=0 h=base)
+#140   593.68s best:22797230 next:[22797235,36428910] rnd_var_lns (d=5.86e-02 s=612 t=0.10 p=0.42 stall=0 h=base) [combined with: graph_var_lns (d=4.2...]
+#141   594.90s best:22804800 next:[22804805,36428910] rnd_cst_lns (d=1.46e-02 s=616 t=0.10 p=0.32 stall=0 h=base)
+#142   596.36s best:22818820 next:[22818825,36428910] graph_cst_lns (d=1.58e-02 s=620 t=0.10 p=0.33 stall=0 h=base)
+#Bound 597.48s best:22818820 next:[22818825,36424410] quick_restart
+#Bound 598.79s best:22818820 next:[22818825,36423610] quick_restart
+#143   606.16s best:22822425 next:[22822430,36423610] graph_var_lns (d=3.63e-03 s=624 t=0.10 p=0.26 stall=0 h=base)
+#Bound 607.24s best:22822425 next:[22822430,36423110] quick_restart
+#144   607.47s best:22825955 next:[22825960,36423110] graph_arc_lns (d=1.36e-02 s=628 t=0.10 p=0.35 stall=0 h=base)
+#145   607.92s best:22834650 next:[22834655,36423110] graph_arc_lns (d=1.36e-02 s=627 t=0.10 p=0.35 stall=0 h=base)
+#Bound 608.35s best:22834650 next:[22834655,36420910] quick_restart
+#Bound 609.17s best:22834650 next:[22834655,36420710] quick_restart
+#146   609.84s best:22835150 next:[22835155,36420710] graph_dec_lns (d=1.86e-02 s=629 t=0.10 p=0.00 stall=0 h=base) [combined with: graph_arc_lns (d=1.3...]
+#147   610.46s best:22845820 next:[22845825,36420710] rnd_cst_lns (d=1.46e-02 s=634 t=0.10 p=0.33 stall=0 h=base) [hint]
+#148   610.51s best:22846320 next:[22846325,36420710] rnd_cst_lns (d=1.46e-02 s=634 t=0.10 p=0.33 stall=0 h=base) [hint] [combined with: graph_dec_lns (d=1.8...]
+#149   610.94s best:22866550 next:[22866555,36420710] rnd_cst_lns (d=1.46e-02 s=635 t=0.10 p=0.33 stall=0 h=base)
+#150   612.48s best:22876950 next:[22876955,36420710] graph_cst_lns (d=1.59e-02 s=638 t=0.10 p=0.34 stall=0 h=base)
+#151   612.67s best:22889000 next:[22889005,36420710] graph_cst_lns (d=1.59e-02 s=639 t=0.10 p=0.34 stall=0 h=base)
+#152   613.95s best:22942290 next:[22942295,36420710] rnd_var_lns (d=4.99e-02 s=640 t=0.10 p=0.41 stall=0 h=base)
+#153   614.11s best:22963530 next:[22963535,36420710] rnd_var_lns (d=4.99e-02 s=641 t=0.10 p=0.41 stall=0 h=base)
+#Bound 616.12s best:22963530 next:[22963535,36400830] quick_restart
+#154   616.22s best:22964130 next:[22964135,36400830] graph_dec_lns (d=1.43e-02 s=643 t=0.10 p=0.00 stall=0 h=base)
+#Bound 617.63s best:22964130 next:[22964135,36396685] quick_restart
+#155   618.77s best:22966020 next:[22966025,36396685] graph_var_lns (d=3.64e-03 s=648 t=0.10 p=0.28 stall=0 h=base)
+#156   619.67s best:22974535 next:[22974540,36396685] rnd_cst_lns (d=2.02e-02 s=649 t=0.10 p=0.38 stall=0 h=base)
+#157   620.24s best:22985280 next:[22985285,36396685] rnd_cst_lns (d=2.02e-02 s=650 t=0.10 p=0.38 stall=0 h=base)
+#158   622.21s best:22985480 next:[22985485,36396685] graph_dec_lns (d=1.11e-02 s=653 t=0.10 p=0.00 stall=0 h=base)
+#159   623.83s best:23001040 next:[23001045,36396685] graph_arc_lns (d=9.85e-03 s=656 t=0.10 p=0.33 stall=0 h=base)
+#160   626.70s best:23101950 next:[23101955,36396685] rnd_var_lns (d=6.83e-02 s=659 t=0.10 p=0.44 stall=0 h=base)
+#Bound 627.03s best:23101950 next:[23101955,36391700] quick_restart
+#161   627.06s best:23106410 next:[23106415,36391700] rnd_var_lns (d=6.83e-02 s=660 t=0.10 p=0.44 stall=0 h=base)
+#162   628.00s best:23110750 next:[23110755,36391700] graph_cst_lns (d=1.14e-02 s=661 t=0.10 p=0.32 stall=0 h=base) [hint]
+#163   628.06s best:23120410 next:[23120415,36391700] graph_cst_lns (d=1.14e-02 s=662 t=0.10 p=0.32 stall=0 h=base)
+#164   629.03s best:23127790 next:[23127795,36391700] rnd_cst_lns (d=1.47e-02 s=664 t=0.10 p=0.35 stall=0 h=base)
+#165   629.96s best:23135540 next:[23135545,36391700] graph_cst_lns (d=1.14e-02 s=668 t=0.10 p=0.33 stall=0 h=base)
+#166   631.02s best:23146660 next:[23146665,36391700] rnd_cst_lns (d=1.72e-02 s=672 t=0.10 p=0.37 stall=0 h=base)
+#167   632.13s best:23167830 next:[23167835,36391700] rnd_cst_lns (d=1.72e-02 s=675 t=0.10 p=0.39 stall=0 h=base)
+#168   632.99s best:23175305 next:[23175310,36391700] graph_arc_lns (d=7.23e-03 s=678 t=0.10 p=0.31 stall=0 h=base)
+#169   633.93s best:23189305 next:[23189310,36391700] graph_cst_lns (d=1.33e-02 s=680 t=0.10 p=0.35 stall=0 h=base)
+#170   634.03s best:23210455 next:[23210460,36391700] graph_cst_lns (d=1.33e-02 s=679 t=0.10 p=0.35 stall=0 h=base) [combined with: graph_cst_lns (d=1.3...]
+#171   636.30s best:23217755 next:[23217760,36391700] graph_var_lns (d=2.70e-03 s=685 t=0.10 p=0.26 stall=0 h=base)
+#172   637.80s best:23261315 next:[23261320,36391700] rnd_var_lns (d=5.03e-02 s=687 t=0.10 p=0.42 stall=0 h=base)
+#173   638.80s best:23272595 next:[23272600,36391700] rnd_var_lns (d=5.03e-02 s=691 t=0.10 p=0.42 stall=0 h=base)
+#174   640.49s best:23301645 next:[23301650,36391700] rnd_cst_lns (d=2.32e-02 s=694 t=0.10 p=0.41 stall=0 h=base)
+#175   641.56s best:23302850 next:[23302855,36391700] graph_arc_lns (d=7.21e-03 s=696 t=0.10 p=0.32 stall=0 h=base) [hint]
+#176   642.00s best:23303000 next:[23303005,36391700] graph_var_lns (d=3.61e-03 s=698 t=0.10 p=0.30 stall=0 h=base) [combined with: graph_arc_lns (d=7.2...]
+#177   643.17s best:23317150 next:[23317155,36391700] graph_cst_lns (d=1.34e-02 s=700 t=0.10 p=0.36 stall=0 h=base)
+#178   644.68s best:23317350 next:[23317355,36391700] graph_dec_lns (d=4.35e-03 s=704 t=0.10 p=0.00 stall=2 h=base) [hint]
+#179   647.80s best:23318140 next:[23318145,36391700] graph_arc_lns (d=9.69e-03 s=711 t=0.10 p=0.36 stall=0 h=base)
+#180   647.85s best:23339080 next:[23339085,36391700] graph_arc_lns (d=9.69e-03 s=712 t=0.10 p=0.36 stall=0 h=base)
+#181   651.62s best:23421600 next:[23421605,36391700] rnd_var_lns (d=6.78e-02 s=717 t=0.10 p=0.45 stall=0 h=base)
+#182   652.37s best:23424695 next:[23424700,36391700] rnd_var_lns (d=6.78e-02 s=718 t=0.10 p=0.45 stall=0 h=base)
+#Bound 652.85s best:23424695 next:[23424700,36367890] quick_restart
+#183   653.03s best:23435600 next:[23435605,36367890] graph_cst_lns (d=9.91e-03 s=720 t=0.10 p=0.34 stall=0 h=base)
+#184   654.53s best:23544715 next:[23544720,36367890] rins_lp_lns (d=5.43e-02 s=722 t=0.10 p=0.36 stall=2 h=base)
+#Bound 654.58s best:23544715 next:[23544720,36355050] quick_restart
+#Bound 656.31s best:23544715 next:[23544720,36354550] quick_restart
+#185   656.59s best:23562715 next:[23562720,36354550] rnd_cst_lns (d=1.73e-02 s=725 t=0.10 p=0.38 stall=0 h=base)
+#186   656.89s best:23572915 next:[23572920,36354550] rnd_cst_lns (d=1.73e-02 s=726 t=0.10 p=0.38 stall=0 h=base)
+#Bound 657.29s best:23572915 next:[23572920,36354450] quick_restart
+#187   658.74s best:23587010 next:[23587015,36354450] graph_arc_lns (d=1.29e-02 s=728 t=0.10 p=0.39 stall=0 h=base)
+#188   659.81s best:23599900 next:[23599905,36354450] graph_arc_lns (d=1.29e-02 s=731 t=0.10 p=0.39 stall=0 h=base)
+#189   661.20s best:23600050 next:[23600055,36354450] graph_var_lns (d=4.81e-03 s=734 t=0.10 p=0.34 stall=3 h=base)
+#190   662.78s best:23600230 next:[23600235,36354450] graph_cst_lns (d=9.93e-03 s=739 t=0.10 p=0.35 stall=0 h=base)
+#191   665.88s best:23662640 next:[23662645,36354450] rins_lp_lns (d=7.84e-02 s=742 t=0.10 p=0.42 stall=0 h=base)
+#Bound 666.36s best:23662640 next:[23662645,36347975] quick_restart
+#192   667.31s best:23688690 next:[23688695,36347975] rins_pump_lns (d=7.84e-02 s=741 t=0.10 p=0.42 stall=0 h=base)
+#Bound 667.84s best:23688690 next:[23688695,36339375] quick_restart
+#193   668.68s best:23696340 next:[23696345,36339375] rnd_cst_lns (d=1.30e-02 s=746 t=0.10 p=0.37 stall=0 h=base)
+#194   672.44s best:23770400 next:[23770405,36339375] rnd_var_lns (d=5.06e-02 s=755 t=0.10 p=0.42 stall=0 h=base)
+#195   673.93s best:23777720 next:[23777725,36339375] graph_cst_lns (d=9.95e-03 s=758 t=0.10 p=0.36 stall=1 h=base)
+#196   674.17s best:23794275 next:[23794280,36339375] graph_cst_lns (d=9.95e-03 s=759 t=0.10 p=0.36 stall=1 h=base)
+#197   675.13s best:23795985 next:[23795990,36339375] graph_arc_lns (d=9.75e-03 s=761 t=0.10 p=0.37 stall=0 h=base)
+#198   676.14s best:23803085 next:[23803090,36339375] rnd_cst_lns (d=1.30e-02 s=763 t=0.10 p=0.37 stall=0 h=base)
+#199   678.55s best:23803285 next:[23803290,36339375] graph_dec_lns (d=9.54e-03 s=768 t=0.10 p=0.26 stall=6 h=base)
+#200   679.42s best:23818185 next:[23818190,36339375] graph_var_lns (d=4.82e-03 s=770 t=0.10 p=0.35 stall=2 h=base)
+#201   680.44s best:23818245 next:[23818250,36339375] graph_arc_lns (d=1.29e-02 s=773 t=0.10 p=0.40 stall=0 h=base)
+#202   681.96s best:23852595 next:[23852600,36339375] graph_arc_lns (d=1.29e-02 s=775 t=0.10 p=0.40 stall=0 h=base)
+#203   682.21s best:23855645 next:[23855650,36339375] graph_cst_lns (d=7.52e-03 s=778 t=0.10 p=0.34 stall=0 h=base)
+#204   682.95s best:23866045 next:[23866050,36339375] graph_cst_lns (d=7.52e-03 s=779 t=0.10 p=0.34 stall=0 h=base)
+#205   684.94s best:23960310 next:[23960315,36339375] rnd_var_lns (d=6.74e-02 s=780 t=0.10 p=0.45 stall=0 h=base)
+#206   686.11s best:23962460 next:[23962465,36339375] rnd_cst_lns (d=1.71e-02 s=782 t=0.10 p=0.40 stall=0 h=base)
+#207   686.49s best:23989305 next:[23989310,36339375] rnd_cst_lns (d=1.71e-02 s=783 t=0.10 p=0.40 stall=0 h=base)
+#Bound 690.82s best:23989305 next:[23989310,36324850] quick_restart
+#208   691.41s best:24031695 next:[24031700,36324850] rins_pump_lns (d=5.50e-02 s=793 t=0.10 p=0.38 stall=0 h=base)
+#Bound 692.16s best:24031695 next:[24031700,36292950] quick_restart
+#209   692.79s best:24031705 next:[24031710,36292950] graph_cst_lns (d=9.89e-03 s=795 t=0.10 p=0.37 stall=0 h=base) [hint] [combined with: rins_pump_lns (d=5.5...]
+#210   694.35s best:24040235 next:[24040240,36292950] graph_arc_lns (d=1.29e-02 s=797 t=0.10 p=0.40 stall=0 h=base)
+#Bound 696.21s best:24040235 next:[24040240,36289650] quick_restart
+#211   696.54s best:24057365 next:[24057370,36289650] rnd_cst_lns (d=2.24e-02 s=799 t=0.10 p=0.43 stall=0 h=base)
+#212   696.60s best:24075740 next:[24075745,36289650] rnd_cst_lns (d=2.24e-02 s=800 t=0.10 p=0.43 stall=0 h=base)
+#213   697.50s best:24075780 next:[24075785,36289650] graph_arc_lns (d=1.13e-02 s=802 t=0.10 p=0.40 stall=0 h=base) [hint]
+#214   699.67s best:24076180 next:[24076185,36289650] graph_var_lns (d=4.82e-03 s=807 t=0.10 p=0.37 stall=2 h=base)
+#215   702.48s best:24137100 next:[24137105,36289650] rins_lp_lns (d=7.75e-02 s=811 t=0.10 p=0.43 stall=0 h=base)
+#216   704.08s best:24150070 next:[24150075,36289650] rins_lp_lns (d=7.75e-02 s=814 t=0.10 p=0.45 stall=0 h=base)
+#217   704.65s best:24204025 next:[24204030,36289650] rnd_var_lns (d=5.10e-02 s=816 t=0.10 p=0.43 stall=0 h=base)
+#Bound 704.76s best:24204025 next:[24204030,36236950] quick_restart
+#Bound 705.81s best:24204025 next:[24204030,36196850] quick_restart
+#218   706.31s best:24204225 next:[24204230,36196850] graph_arc_lns (d=1.47e-02 s=819 t=0.10 p=0.42 stall=1 h=base)
+#Bound 706.52s best:24204225 next:[24204230,36195150] quick_restart
+#219   706.66s best:24205305 next:[24205310,36195150] graph_arc_lns (d=1.47e-02 s=820 t=0.10 p=0.42 stall=1 h=base)
+#220   709.17s best:24214025 next:[24214030,36195150] rnd_cst_lns (d=1.72e-02 s=824 t=0.10 p=0.41 stall=0 h=base)
+#221   709.32s best:24227245 next:[24227250,36195150] rnd_cst_lns (d=1.72e-02 s=825 t=0.10 p=0.41 stall=0 h=base)
+#222   710.17s best:24234695 next:[24234700,36195150] graph_var_lns (d=3.74e-03 s=827 t=0.10 p=0.35 stall=1 h=base)
+#223   711.11s best:24235305 next:[24235310,36195150] graph_cst_lns (d=7.56e-03 s=829 t=0.10 p=0.35 stall=0 h=base)
+#224   711.74s best:24246395 next:[24246400,36195150] graph_cst_lns (d=7.56e-03 s=830 t=0.10 p=0.35 stall=0 h=base)
+#225   712.90s best:24261275 next:[24261280,36195150] graph_arc_lns (d=1.90e-02 s=833 t=0.10 p=0.44 stall=0 h=base)
+#Bound 714.18s best:24261275 next:[24261280,36120200] quick_restart
+#Bound 715.07s best:24261275 next:[24261280,36120000] quick_restart
+#Bound 716.68s best:24261275 next:[24261280,36100200] quick_restart
+#226   717.41s best:24349590 next:[24349595,36100200] rnd_var_lns (d=6.70e-02 s=838 t=0.10 p=0.46 stall=0 h=base)
+#227   718.76s best:24364190 next:[24364195,36100200] graph_var_lns (d=4.80e-03 s=841 t=0.10 p=0.38 stall=1 h=base)
+#228   719.19s best:24365390 next:[24365395,36100200] graph_var_lns (d=4.80e-03 s=842 t=0.10 p=0.38 stall=1 h=base) [combined with: graph_var_lns (d=4.8...]
+#229   720.12s best:24393690 next:[24393695,36100200] graph_cst_lns (d=9.84e-03 s=845 t=0.10 p=0.38 stall=0 h=base)
+#230   722.49s best:24522970 next:[24522975,36100200] rins_lp_lns (d=1.08e-01 s=846 t=0.10 p=0.47 stall=0 h=base)
+#Bound 722.70s best:24522970 next:[24522975,36057550] quick_restart
+#231   723.96s best:24523010 next:[24523015,36057550] rnd_cst_lns (d=1.72e-02 s=848 t=0.10 p=0.41 stall=0 h=base) [hint]
+#232   727.00s best:24547970 next:[24547975,36057550] graph_arc_lns (d=2.45e-02 s=852 t=0.10 p=0.46 stall=0 h=base)
+#233   728.46s best:24548125 next:[24548130,36057550] rnd_cst_lns (d=1.51e-02 s=854 t=0.10 p=0.40 stall=0 h=base) [hint]
+#234   729.83s best:24555275 next:[24555280,36057550] graph_var_lns (d=4.81e-03 s=858 t=0.10 p=0.38 stall=0 h=base)
+#235   730.24s best:24555335 next:[24555340,36057550] graph_var_lns (d=4.81e-03 s=857 t=0.10 p=0.38 stall=0 h=base) [combined with: graph_var_lns (d=4.8...]
+#236   731.16s best:24562335 next:[24562340,36057550] graph_cst_lns (d=9.85e-03 s=860 t=0.10 p=0.38 stall=1 h=base)
+#237   731.75s best:24562365 next:[24562370,36057550] graph_cst_lns (d=9.85e-03 s=861 t=0.10 p=0.38 stall=1 h=base)
+#238   734.60s best:24562410 next:[24562415,36057550] rnd_cst_lns (d=1.51e-02 s=866 t=0.10 p=0.41 stall=0 h=base)
+#Bound 734.84s best:24562410 next:[24562415,35960650] quick_restart
+#239   735.57s best:24571095 next:[24571100,35960650] rnd_cst_lns (d=1.51e-02 s=869 t=0.10 p=0.40 stall=0 h=base)
+#240   736.80s best:24591885 next:[24591890,35960650] rnd_var_lns (d=5.12e-02 s=871 t=0.10 p=0.44 stall=0 h=base)
+#241   737.22s best:24602370 next:[24602375,35960650] rnd_var_lns (d=5.12e-02 s=872 t=0.10 p=0.44 stall=0 h=base) [hint]
+#242   739.17s best:24617870 next:[24617875,35960650] graph_arc_lns (d=1.91e-02 s=876 t=0.10 p=0.45 stall=0 h=base)
+#243   741.24s best:24617930 next:[24617935,35960650] graph_var_lns (d=5.42e-03 s=878 t=0.10 p=0.39 stall=1 h=base)
+#244   744.00s best:24630640 next:[24630645,35960650] graph_arc_lns (d=2.16e-02 s=884 t=0.10 p=0.46 stall=0 h=base)
+#245   744.64s best:24653230 next:[24653235,35960650] graph_arc_lns (d=2.16e-02 s=883 t=0.10 p=0.46 stall=0 h=base)
+#246   745.74s best:24655195 next:[24655200,35960650] rnd_cst_lns (d=1.51e-02 s=887 t=0.10 p=0.41 stall=0 h=base)
+#247   747.86s best:24707015 next:[24707020,35960650] rnd_var_lns (d=6.67e-02 s=890 t=0.10 p=0.46 stall=0 h=base)
+#248   749.55s best:24714165 next:[24714170,35960650] graph_var_lns (d=4.28e-03 s=894 t=0.10 p=0.38 stall=0 h=base)
+#Bound 759.63s best:24714165 next:[24714170,35952750] quick_restart
+#249   760.36s best:24717015 next:[24717020,35952750] graph_cst_lns (d=9.87e-03 s=902 t=0.10 p=0.39 stall=2 h=base) [hint]
+#250   760.72s best:24717215 next:[24717220,35952750] graph_cst_lns (d=9.87e-03 s=903 t=0.10 p=0.39 stall=2 h=base) [combined with: graph_cst_lns (d=9.8...]
+#Bound 760.93s best:24717215 next:[24717220,35920950] quick_restart
+#251   762.02s best:24732545 next:[24732550,35920950] rnd_cst_lns (d=1.93e-02 s=906 t=0.10 p=0.43 stall=0 h=base)
+#252   763.78s best:24733295 next:[24733300,35920950] graph_var_lns (d=5.41e-03 s=908 t=0.10 p=0.40 stall=0 h=base)
+#Bound 764.31s best:24733295 next:[24733300,35920750] quick_restart
+#253   766.07s best:24747315 next:[24747320,35920750] graph_arc_lns (d=1.69e-02 s=913 t=0.10 p=0.44 stall=0 h=base)
+#254   767.63s best:24747415 next:[24747420,35920750] graph_dec_lns (d=1.26e-02 s=914 t=0.10 p=0.38 stall=14 h=base)
+#Bound 769.20s best:24747415 next:[24747420,35724800] quick_restart
+#255   770.30s best:24793505 next:[24793510,35724800] rnd_var_lns (d=5.15e-02 s=919 t=0.10 p=0.44 stall=0 h=base)
+#256   771.56s best:24801315 next:[24801320,35724800] rnd_cst_lns (d=1.93e-02 s=922 t=0.10 p=0.43 stall=0 h=base) [hint]
+#257   771.90s best:24814995 next:[24815000,35724800] rnd_cst_lns (d=1.93e-02 s=923 t=0.10 p=0.43 stall=0 h=base)
+#258   773.64s best:24815035 next:[24815040,35724800] graph_arc_lns (d=1.69e-02 s=925 t=0.10 p=0.44 stall=0 h=base) [hint]
+#259   774.25s best:24816305 next:[24816310,35724800] graph_arc_lns (d=1.69e-02 s=928 t=0.10 p=0.44 stall=0 h=base)
+#260   775.16s best:24816325 next:[24816330,35724800] graph_cst_lns (d=7.72e-03 s=929 t=0.10 p=0.38 stall=0 h=base) [hint] [combined with: graph_arc_lns (d=1.6...]
+#261   775.60s best:24826345 next:[24826350,35724800] graph_cst_lns (d=7.72e-03 s=930 t=0.10 p=0.38 stall=0 h=base)
+#262   775.64s best:24826365 next:[24826370,35724800] graph_cst_lns (d=7.72e-03 s=930 t=0.10 p=0.38 stall=0 h=base) [combined with: graph_cst_lns (d=7.7...]
+#263   780.19s best:24828670 next:[24828675,35724800] rnd_cst_lns (d=2.45e-02 s=937 t=0.10 p=0.45 stall=0 h=base)
+#264   780.62s best:24833765 next:[24833770,35724800] rnd_cst_lns (d=2.45e-02 s=938 t=0.10 p=0.45 stall=0 h=base)
+#265   782.60s best:24901055 next:[24901060,35724800] rnd_var_lns (d=6.64e-02 s=940 t=0.10 p=0.46 stall=0 h=base)
+#266   786.39s best:24901205 next:[24901210,35724800] graph_arc_lns (d=1.34e-02 s=951 t=0.10 p=0.43 stall=0 h=base) [hint]
+#267   786.93s best:24915545 next:[24915550,35724800] graph_arc_lns (d=1.34e-02 s=950 t=0.10 p=0.43 stall=0 h=base)
+#268   791.42s best:24928575 next:[24928580,35724800] rnd_cst_lns (d=1.94e-02 s=959 t=0.10 p=0.44 stall=0 h=base)
+#Bound 792.10s best:24928575 next:[24928580,35694000] quick_restart
+#269   792.91s best:24929675 next:[24929680,35694000] graph_cst_lns (d=6.06e-03 s=962 t=0.10 p=0.37 stall=2 h=base)
+#270   793.23s best:24935575 next:[24935580,35694000] graph_cst_lns (d=6.06e-03 s=964 t=0.10 p=0.37 stall=2 h=base)
+#271   794.70s best:24966015 next:[24966020,35694000] rnd_var_lns (d=5.17e-02 s=966 t=0.10 p=0.45 stall=0 h=base)
+#272   795.78s best:24966215 next:[24966220,35694000] graph_arc_lns (d=1.69e-02 s=969 t=0.10 p=0.45 stall=0 h=base) [hint]
+#Bound 796.73s best:24966215 next:[24966220,35494245] quick_restart
+#273   796.99s best:24973515 next:[24973520,35494245] graph_var_lns (d=3.85e-03 s=972 t=0.10 p=0.39 stall=6 h=base)
+#274   797.52s best:24975030 next:[24975035,35494245] graph_arc_lns (d=1.69e-02 s=970 t=0.10 p=0.45 stall=0 h=base) [hint] [combined with: graph_var_lns (d=3.8...]
+#Bound 798.13s best:24975030 next:[24975035,35268440] quick_restart
+#Bound 798.77s best:24975030 next:[24975035,35192040] quick_restart
+#Bound 799.42s best:24975030 next:[24975035,35072840] quick_restart
+#275   800.08s best:24982480 next:[24982485,35072840] graph_var_lns (d=4.29e-03 s=978 t=0.10 p=0.40 stall=0 h=base)
+#Bound 800.64s best:24982480 next:[24982485,34996440] quick_restart
+#276   801.26s best:24982620 next:[24982625,34996440] rnd_cst_lns (d=1.54e-02 s=980 t=0.10 p=0.42 stall=0 h=base) [hint]
+#Bound 801.41s best:24982620 next:[24982625,34877240] quick_restart
+#277   801.56s best:24983570 next:[24983575,34877240] rnd_cst_lns (d=1.54e-02 s=981 t=0.10 p=0.42 stall=0 h=base)
+#Bound 802.11s best:24983570 next:[24983575,34769640] quick_restart
+#278   802.51s best:24983650 next:[24983655,34769640] graph_cst_lns (d=4.79e-03 s=983 t=0.10 p=0.36 stall=0 h=base) [hint]
+#279   803.67s best:24990650 next:[24990655,34769640] graph_var_lns (d=4.79e-03 s=985 t=0.10 p=0.41 stall=0 h=base)
+#280   804.38s best:24990800 next:[24990805,34769640] graph_var_lns (d=4.79e-03 s=987 t=0.10 p=0.41 stall=0 h=base) [combined with: graph_var_lns (d=4.7...]
+#281   809.86s best:25039940 next:[25039945,34769640] rnd_var_lns (d=6.61e-02 s=992 t=0.10 p=0.47 stall=0 h=base)
+#282   811.61s best:25040415 next:[25040420,34769640] graph_cst_lns (d=4.79e-03 s=996 t=0.10 p=0.36 stall=0 h=base)
+#283   812.78s best:25055245 next:[25055250,34769640] rnd_cst_lns (d=1.93e-02 s=997 t=0.10 p=0.44 stall=0 h=base)
+#284   816.19s best:25055395 next:[25055400,34769640] graph_cst_lns (d=5.37e-03 s=1005 t=0.10 p=0.37 stall=0 h=base) [hint]
+#285   818.96s best:25055405 next:[25055410,34769640] graph_arc_lns (d=1.51e-02 s=1009 t=0.10 p=0.44 stall=0 h=base) [hint]
+#286   819.08s best:25056695 next:[25056700,34769640] graph_arc_lns (d=1.51e-02 s=1010 t=0.10 p=0.44 stall=0 h=base)
+#287   820.81s best:25064405 next:[25064410,34769640] rnd_cst_lns (d=2.42e-02 s=1012 t=0.10 p=0.46 stall=0 h=base)
+#288   821.42s best:25071645 next:[25071650,34769640] rnd_cst_lns (d=2.42e-02 s=1014 t=0.10 p=0.46 stall=0 h=base)
+#289   822.58s best:25078665 next:[25078670,34769640] graph_cst_lns (d=5.37e-03 s=1018 t=0.10 p=0.38 stall=0 h=base)
+#290   825.64s best:25125715 next:[25125720,34769640] rnd_var_lns (d=5.19e-02 s=1023 t=0.10 p=0.45 stall=0 h=base)
+#291   827.39s best:25126715 next:[25126720,34769640] graph_var_lns (d=3.86e-03 s=1026 t=0.10 p=0.40 stall=2 h=base) [hint]
+#292   829.25s best:25126895 next:[25126900,34769640] graph_arc_lns (d=1.50e-02 s=1030 t=0.10 p=0.44 stall=0 h=base)
+#293   832.11s best:25127895 next:[25127900,34769640] graph_cst_lns (d=5.37e-03 s=1036 t=0.10 p=0.38 stall=0 h=base) [hint]
+#294   833.66s best:25128045 next:[25128050,34769640] rnd_cst_lns (d=1.94e-02 s=1039 t=0.10 p=0.44 stall=0 h=base) [hint]
+#295   833.70s best:25328405 next:[25328410,34769640] rnd_cst_lns (d=1.94e-02 s=1038 t=0.10 p=0.44 stall=0 h=base)
+#296   836.26s best:25328445 next:[25328450,34769640] graph_var_lns (d=4.77e-03 s=1041 t=0.10 p=0.41 stall=0 h=base) [hint]
+#297   838.51s best:25342125 next:[25342130,34769640] rnd_var_lns (d=6.58e-02 s=1047 t=0.10 p=0.47 stall=0 h=base) [hint]
+#298   838.59s best:25389015 next:[25389020,34769640] rnd_var_lns (d=6.58e-02 s=1046 t=0.10 p=0.47 stall=0 h=base) [hint]
+#299   840.02s best:25463670 next:[25463675,34769640] rins_lp_lns (d=5.82e-02 s=1048 t=0.10 p=0.42 stall=5 h=base)
+#300   841.64s best:25463750 next:[25463755,34769640] graph_cst_lns (d=6.70e-03 s=1051 t=0.10 p=0.40 stall=1 h=base)
+#301   841.71s best:25464270 next:[25464275,34769640] graph_cst_lns (d=6.70e-03 s=1052 t=0.10 p=0.40 stall=1 h=base)
+#302   841.77s best:25464350 next:[25464355,34769640] graph_cst_lns (d=6.70e-03 s=1052 t=0.10 p=0.40 stall=1 h=base) [combined with: graph_cst_lns (d=6.7...]
+#303   842.71s best:25478610 next:[25478615,34769640] graph_arc_lns (d=1.21e-02 s=1054 t=0.10 p=0.43 stall=0 h=base)
+#304   844.01s best:25479620 next:[25479625,34769640] rnd_cst_lns (d=1.56e-02 s=1056 t=0.10 p=0.43 stall=0 h=base) [hint]
+#Bound 844.16s best:25479620 next:[25479625,34764355] quick_restart
+#305   845.35s best:25492940 next:[25492945,34764355] rnd_cst_lns (d=1.56e-02 s=1059 t=0.10 p=0.43 stall=0 h=base)
+#306   846.73s best:25495050 next:[25495055,34764355] graph_arc_lns (d=1.50e-02 s=1062 t=0.10 p=0.45 stall=0 h=base)
+#307   849.13s best:25502500 next:[25502505,34764355] graph_var_lns (d=3.87e-03 s=1067 t=0.10 p=0.40 stall=0 h=base)
+#308   850.16s best:25502510 next:[25502515,34764355] graph_cst_lns (d=5.39e-03 s=1069 t=0.10 p=0.39 stall=0 h=base)
+#309   852.03s best:25547810 next:[25547815,34764355] rins_lp_lns (d=7.85e-02 s=1072 t=0.10 p=0.45 stall=0 h=base)
+#310   854.68s best:25554890 next:[25554895,34764355] rnd_cst_lns (d=1.25e-02 s=1078 t=0.10 p=0.42 stall=0 h=base)
+#311   856.22s best:25571525 next:[25571530,34764355] rnd_var_lns (d=5.21e-02 s=1080 t=0.10 p=0.45 stall=0 h=base)
+#312   856.63s best:25576535 next:[25576540,34764355] rnd_var_lns (d=5.21e-02 s=1081 t=0.10 p=0.45 stall=0 h=base)
+#313   859.43s best:25576615 next:[25576620,34764355] graph_cst_lns (d=6.68e-03 s=1086 t=0.10 p=0.40 stall=0 h=base) [hint]
+#314   862.30s best:25576635 next:[25576640,34764355] graph_arc_lns (d=1.21e-02 s=1092 t=0.10 p=0.43 stall=0 h=base)
+#Bound 862.74s best:25576635 next:[25576640,34763640] quick_restart
+#315   863.00s best:25576665 next:[25576670,34763640] graph_arc_lns (d=1.21e-02 s=1093 t=0.10 p=0.43 stall=0 h=base)
+#316   864.49s best:25578805 next:[25578810,34763640] rnd_cst_lns (d=1.55e-02 s=1095 t=0.10 p=0.44 stall=0 h=base)
+#317   868.67s best:25587055 next:[25587060,34763640] rnd_var_lns (d=6.56e-02 s=1103 t=0.10 p=0.47 stall=0 h=base) [hint]
+#318   878.12s best:25587215 next:[25587220,34763640] graph_cst_lns (d=6.00e-03 s=1110 t=0.10 p=0.40 stall=1 h=base)
+#319   882.51s best:25587235 next:[25587240,34763640] graph_var_lns (d=4.76e-03 s=1112 t=0.10 p=0.42 stall=4 h=base)
+#320   883.95s best:25587885 next:[25587890,34763640] rnd_cst_lns (d=1.26e-02 s=1114 t=0.10 p=0.42 stall=0 h=base) [hint]
+#321   884.94s best:25588435 next:[25588440,34763640] graph_arc_lns (d=9.76e-03 s=1115 t=0.10 p=0.42 stall=0 h=base) [hint]
+#322   886.95s best:25610630 next:[25610635,34763640] rnd_var_lns (d=5.85e-02 s=1117 t=0.10 p=0.46 stall=0 h=base) [hint]
+#323   888.52s best:25613580 next:[25613585,34763640] graph_cst_lns (d=5.41e-03 s=1119 t=0.10 p=0.40 stall=0 h=base)
+#324   889.97s best:25616430 next:[25616435,34763640] rnd_cst_lns (d=1.40e-02 s=1121 t=0.10 p=0.43 stall=0 h=base) [hint]
+#325   892.37s best:25623580 next:[25623585,34763640] graph_var_lns (d=4.31e-03 s=1124 t=0.10 p=0.42 stall=0 h=base)
+#326   894.75s best:25623740 next:[25623745,34763640] graph_arc_lns (d=1.21e-02 s=1127 t=0.10 p=0.44 stall=1 h=base) [hint]
+#327   897.65s best:25630940 next:[25630945,34763640] rnd_cst_lns (d=1.55e-02 s=1129 t=0.10 p=0.44 stall=0 h=base)
+#Bound 899.10s best:25630940 next:[25630945,34763600] quick_restart
+#328   899.94s best:25675935 next:[25675940,34763600] rnd_var_lns (d=6.56e-02 s=1130 t=0.10 p=0.47 stall=0 h=base)
+#329   902.99s best:25676015 next:[25676020,34763600] graph_cst_lns (d=5.40e-03 s=1134 t=0.10 p=0.40 stall=1 h=base)
+#330   907.83s best:25706175 next:[25706180,34763600] rnd_cst_lns (d=1.40e-02 s=1138 t=0.10 p=0.43 stall=0 h=base)
+#331   914.97s best:25717400 next:[25717405,34763600] rnd_var_lns (d=5.86e-02 s=1143 t=0.10 p=0.46 stall=0 h=base)
+#332   927.45s best:25724570 next:[25724575,34763600] graph_arc_lns (d=1.34e-02 s=1156 t=0.10 p=0.45 stall=2 h=base)
+#333   929.52s best:25767090 next:[25767095,34763600] rnd_var_lns (d=5.24e-02 s=1158 t=0.10 p=0.46 stall=0 h=base) [hint]
+#334   931.51s best:25775465 next:[25775470,34763600] graph_var_lns (d=4.32e-03 s=1159 t=0.10 p=0.42 stall=3 h=base)
+#335   934.76s best:25783045 next:[25783050,34763600] rnd_cst_lns (d=1.55e-02 s=1162 t=0.10 p=0.44 stall=2 h=base) [hint]
+#336   938.05s best:25784095 next:[25784100,34763600] graph_arc_lns (d=1.21e-02 s=1166 t=0.10 p=0.44 stall=0 h=base)
+#337   940.18s best:25788450 next:[25788455,34763600] rnd_var_lns (d=5.85e-02 s=1168 t=0.10 p=0.46 stall=0 h=base)
+#338   942.25s best:25788550 next:[25788555,34763600] graph_dec_lns (d=1.22e-02 s=1170 t=0.10 p=0.43 stall=23 h=base) [hint]
+#339   943.73s best:25795800 next:[25795805,34763600] graph_var_lns (d=3.91e-03 s=1171 t=0.10 p=0.41 stall=0 h=base)
+#340   943.87s best:25795950 next:[25795955,34763600] graph_var_lns (d=3.91e-03 s=1172 t=0.10 p=0.41 stall=0 h=base) [hint] [combined with: graph_var_lns (d=3.9...]
+#341   945.20s best:25796000 next:[25796005,34763600] graph_cst_lns (d=8.09e-03 s=1173 t=0.10 p=0.43 stall=5 h=base) [combined with: graph_var_lns (d=3.9...]
+#342   945.89s best:25797520 next:[25797525,34763600] graph_cst_lns (d=8.09e-03 s=1174 t=0.10 p=0.43 stall=5 h=base) [hint]
+#343   945.94s best:25797570 next:[25797575,34763600] graph_cst_lns (d=8.09e-03 s=1174 t=0.10 p=0.43 stall=5 h=base) [hint] [combined with: graph_cst_lns (d=8.0...]
+#344   946.69s best:25797650 next:[25797655,34763600] rnd_cst_lns (d=1.40e-02 s=1176 t=0.10 p=0.44 stall=0 h=base) [hint] [combined with: graph_cst_lns (d=8.0...]
+#345   947.41s best:25805800 next:[25805805,34763600] rnd_cst_lns (d=1.40e-02 s=1177 t=0.10 p=0.44 stall=0 h=base)
+#346   949.34s best:25806560 next:[25806565,34763600] graph_arc_lns (d=1.34e-02 s=1180 t=0.10 p=0.45 stall=0 h=base) [hint]
+#347   950.56s best:25828120 next:[25828125,34763600] rnd_var_lns (d=6.54e-02 s=1182 t=0.10 p=0.47 stall=0 h=base)
+#348   951.47s best:25851910 next:[25851915,34763600] rnd_var_lns (d=6.54e-02 s=1183 t=0.10 p=0.47 stall=0 h=base)
+#349   953.94s best:25852060 next:[25852065,34763600] graph_var_lns (d=3.92e-03 s=1190 t=0.10 p=0.42 stall=0 h=base)
+#350   955.07s best:25852750 next:[25852755,34763600] graph_var_lns (d=3.92e-03 s=1189 t=0.10 p=0.42 stall=0 h=base)
+#351   955.14s best:25852900 next:[25852905,34763600] graph_var_lns (d=3.92e-03 s=1189 t=0.10 p=0.42 stall=0 h=base) [combined with: graph_var_lns (d=3.9...]
+#352   955.36s best:25859060 next:[25859065,34763600] rnd_cst_lns (d=1.40e-02 s=1192 t=0.10 p=0.44 stall=0 h=base) [hint]
+#353   958.12s best:25859070 next:[25859075,34763600] graph_arc_lns (d=1.34e-02 s=1199 t=0.10 p=0.45 stall=0 h=base) [hint]
+#354   959.93s best:25859240 next:[25859245,34763600] graph_arc_lns (d=1.34e-02 s=1198 t=0.10 p=0.45 stall=0 h=base) [hint]
+#355   962.80s best:25859320 next:[25859325,34763600] rnd_cst_lns (d=1.71e-02 s=1207 t=0.10 p=0.45 stall=0 h=base) [hint]
+#356   962.88s best:25860125 next:[25860130,34763600] rnd_cst_lns (d=1.71e-02 s=1206 t=0.10 p=0.45 stall=0 h=base) [hint]
+#357   967.90s best:25864085 next:[25864090,34763600] rnd_var_lns (d=5.25e-02 s=1210 t=0.10 p=0.46 stall=0 h=base) [hint]
+#358   968.52s best:25895990 next:[25895995,34763600] rnd_var_lns (d=5.25e-02 s=1211 t=0.10 p=0.46 stall=0 h=base) [hint]
+#359   969.78s best:25896140 next:[25896145,34763600] graph_cst_lns (d=8.07e-03 s=1213 t=0.10 p=0.43 stall=2 h=base)
+#360   972.75s best:26096140 next:[26096145,34763600] rnd_cst_lns (d=1.71e-02 s=1219 t=0.10 p=0.45 stall=0 h=base) [hint]
+#361   974.19s best:26104780 next:[26104785,34763600] rnd_cst_lns (d=1.71e-02 s=1223 t=0.10 p=0.45 stall=0 h=base)
+#362   976.12s best:26104890 next:[26104895,34763600] graph_arc_lns (d=1.34e-02 s=1226 t=0.10 p=0.45 stall=0 h=base) [hint]
+#363   977.50s best:26113390 next:[26113395,34763600] graph_arc_lns (d=1.34e-02 s=1227 t=0.10 p=0.45 stall=0 h=base)
+#364   978.65s best:26113485 next:[26113490,34763600] graph_cst_lns (d=6.64e-03 s=1230 t=0.10 p=0.42 stall=0 h=base)
+#365   981.19s best:26135065 next:[26135070,34763600] rnd_var_lns (d=6.52e-02 s=1234 t=0.10 p=0.47 stall=0 h=base)
+#366   983.68s best:26142215 next:[26142220,34763600] graph_var_lns (d=4.73e-03 s=1241 t=0.10 p=0.43 stall=4 h=base)
+#367   984.77s best:26143255 next:[26143260,34763600] rnd_cst_lns (d=1.40e-02 s=1243 t=0.10 p=0.44 stall=0 h=base) [hint]
+#368   986.76s best:26143285 next:[26143290,34763600] graph_cst_lns (d=5.48e-03 s=1245 t=0.10 p=0.41 stall=0 h=base) [hint]
+#369   989.26s best:26150305 next:[26150310,34763600] graph_arc_lns (d=1.34e-02 s=1251 t=0.10 p=0.45 stall=0 h=base) [hint]
+#370   991.73s best:26150405 next:[26150410,34763600] graph_var_lns (d=4.73e-03 s=1257 t=0.10 p=0.43 stall=1 h=base)
+#371   992.13s best:26164455 next:[26164460,34763600] graph_var_lns (d=4.73e-03 s=1259 t=0.10 p=0.43 stall=1 h=base)
+#372   992.18s best:26164555 next:[26164560,34763600] graph_var_lns (d=4.73e-03 s=1259 t=0.10 p=0.43 stall=1 h=base) [combined with: graph_var_lns (d=4.7...]
+#373   993.95s best:26173525 next:[26173530,34763600] rins_pump_lns (d=5.98e-02 s=1260 t=0.10 p=0.43 stall=4 h=base)
+#374   995.46s best:26176410 next:[26176415,34763600] rnd_var_lns (d=5.26e-02 s=1263 t=0.10 p=0.46 stall=0 h=base) [hint]
+#375   996.99s best:26176520 next:[26176525,34763600] graph_arc_lns (d=1.63e-02 s=1265 t=0.10 p=0.46 stall=0 h=base)
+#376   997.58s best:26189185 next:[26189190,34763600] graph_arc_lns (d=1.63e-02 s=1264 t=0.10 p=0.46 stall=0 h=base)
+#377   999.56s best:26192035 next:[26192040,34763600] graph_cst_lns (d=5.48e-03 s=1269 t=0.10 p=0.41 stall=0 h=base)
+#378   1000.86s best:26192435 next:[26192440,34763600] rnd_cst_lns (d=1.87e-02 s=1272 t=0.10 p=0.46 stall=1 h=base) [hint]
+#379   1006.95s best:26199575 next:[26199580,34763600] rnd_var_lns (d=6.50e-02 s=1283 t=0.10 p=0.47 stall=0 h=base)
+#380   1007.04s best:26204415 next:[26204420,34763600] rnd_var_lns (d=6.50e-02 s=1284 t=0.10 p=0.47 stall=0 h=base) [hint]
+#381   1008.52s best:26204595 next:[26204600,34763600] rnd_cst_lns (d=1.88e-02 s=1286 t=0.10 p=0.46 stall=1 h=base)
+#382   1009.08s best:26210145 next:[26210150,34763600] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:267'276} gen{mvs:10 evals:0} comp{mvs:10 btracks:0} #w_updates:0 #perturb:0)
+#383   1011.99s best:26210345 next:[26210350,34763600] graph_dec_lns (d=9.69e-03 s=1292 t=0.10 p=0.43 stall=11 h=base)
+#384   1012.30s best:26211165 next:[26211170,34763600] graph_arc_lns (d=1.34e-02 s=1293 t=0.10 p=0.45 stall=0 h=base)
+#385   1012.34s best:26211365 next:[26211370,34763600] graph_arc_lns (d=1.34e-02 s=1293 t=0.10 p=0.45 stall=0 h=base) [combined with: graph_dec_lns (d=9.6...]
+#386   1014.03s best:26218365 next:[26218370,34763600] graph_cst_lns (d=7.99e-03 s=1297 t=0.10 p=0.44 stall=2 h=base)
+#387   1015.42s best:26218515 next:[26218520,34763600] graph_var_lns (d=4.73e-03 s=1298 t=0.10 p=0.44 stall=2 h=base)
+#388   1017.97s best:26218615 next:[26218620,34763600] rnd_cst_lns (d=1.88e-02 s=1305 t=0.10 p=0.46 stall=0 h=base) [hint]
+#389   1027.01s best:26224720 next:[26224725,34763600] graph_cst_lns (d=6.63e-03 s=1313 t=0.10 p=0.43 stall=0 h=base)
+#390   1028.62s best:26232210 next:[26232215,34763600] rnd_var_lns (d=5.28e-02 s=1315 t=0.10 p=0.46 stall=0 h=base) [hint]
+#391   1029.86s best:26232380 next:[26232385,34763600] graph_arc_lns (d=1.79e-02 s=1318 t=0.10 p=0.47 stall=2 h=base) [hint]
+#392   1032.84s best:26232400 next:[26232405,34763600] graph_arc_lns (d=1.97e-02 s=1322 t=0.10 p=0.47 stall=0 h=base)
+#393   1033.11s best:26232480 next:[26232485,34763600] rnd_cst_lns (d=2.26e-02 s=1324 t=0.10 p=0.47 stall=0 h=base) [hint]
+#394   1034.45s best:26241220 next:[26241225,34763600] rnd_cst_lns (d=2.26e-02 s=1325 t=0.10 p=0.47 stall=0 h=base)
+#395   1039.12s best:26257640 next:[26257645,34763600] rnd_var_lns (d=6.49e-02 s=1333 t=0.10 p=0.48 stall=0 h=base)
+#396   1040.88s best:26264640 next:[26264645,34763600] graph_cst_lns (d=5.52e-03 s=1338 t=0.10 p=0.42 stall=0 h=base)
+#397   1042.48s best:26265740 next:[26265745,34763600] rnd_cst_lns (d=1.88e-02 s=1341 t=0.10 p=0.46 stall=0 h=base)
+#398   1045.94s best:26279590 next:[26279595,34763600] graph_arc_lns (d=1.63e-02 s=1345 t=0.10 p=0.47 stall=0 h=base)
+#399   1050.43s best:26295790 next:[26295795,34763600] rnd_var_lns (d=5.29e-02 s=1354 t=0.10 p=0.47 stall=0 h=base)
+#400   1053.69s best:26295810 next:[26295815,34763600] graph_arc_lns (d=1.63e-02 s=1361 t=0.10 p=0.47 stall=0 h=base) [hint]
+#401   1054.39s best:26295830 next:[26295835,34763600] graph_arc_lns (d=1.63e-02 s=1362 t=0.10 p=0.47 stall=0 h=base) [hint]
+#402   1054.64s best:26302720 next:[26302725,34763600] graph_cst_lns (d=7.94e-03 s=1363 t=0.10 p=0.44 stall=3 h=base)
+#403   1056.36s best:26310450 next:[26310455,34763600] rnd_cst_lns (d=1.56e-02 s=1366 t=0.10 p=0.45 stall=0 h=base)
+#404   1061.12s best:26310600 next:[26310605,34763600] graph_cst_lns (d=7.94e-03 s=1378 t=0.10 p=0.44 stall=0 h=base) [hint]
+#405   1061.63s best:26311550 next:[26311555,34763600] graph_cst_lns (d=7.94e-03 s=1379 t=0.10 p=0.44 stall=0 h=base)
+#406   1063.32s best:26317900 next:[26317905,34763600] rnd_var_lns (d=6.47e-02 s=1380 t=0.10 p=0.48 stall=0 h=base) [hint]
+#407   1064.41s best:26324750 next:[26324755,34763600] rnd_cst_lns (d=1.56e-02 s=1382 t=0.10 p=0.45 stall=0 h=base)
+#408   1065.59s best:26325440 next:[26325445,34763600] graph_arc_lns (d=1.63e-02 s=1384 t=0.10 p=0.47 stall=0 h=base) [hint]
+#409   1071.25s best:26327440 next:[26327445,34763600] graph_cst_lns (d=7.94e-03 s=1397 t=0.10 p=0.44 stall=0 h=base)
+#410   1073.41s best:26338090 next:[26338095,34763600] rins_lp_lns (d=6.85e-02 s=1399 t=0.10 p=0.45 stall=5 h=base)
+#411   1073.46s best:26339040 next:[26339045,34763600] rins_lp_lns (d=6.85e-02 s=1400 t=0.10 p=0.45 stall=5 h=base)
+#412   1075.77s best:26341890 next:[26341895,34763600] rnd_cst_lns (d=1.87e-02 s=1403 t=0.10 p=0.46 stall=0 h=base) [hint]
+#413   1076.46s best:26346040 next:[26346045,34763600] rnd_cst_lns (d=1.87e-02 s=1404 t=0.10 p=0.46 stall=0 h=base) [hint]
+#414   1077.53s best:26347040 next:[26347045,34763600] graph_arc_lns (d=1.63e-02 s=1407 t=0.10 p=0.47 stall=0 h=base) [hint]
+#415   1079.67s best:26354740 next:[26354745,34763600] rnd_var_lns (d=5.30e-02 s=1409 t=0.10 p=0.47 stall=0 h=base)
+#416   1080.49s best:26355115 next:[26355120,34763600] rnd_var_lns (d=5.30e-02 s=1412 t=0.10 p=0.47 stall=0 h=base)
+#417   1081.33s best:26362265 next:[26362270,34763600] graph_var_lns (d=4.71e-03 s=1415 t=0.10 p=0.44 stall=13 h=stalling)
+#418   1083.24s best:26362285 next:[26362290,34763600] rnd_cst_lns (d=2.24e-02 s=1418 t=0.10 p=0.47 stall=0 h=base) [hint]
+#419   1084.64s best:26369265 next:[26369270,34763600] rnd_cst_lns (d=2.24e-02 s=1419 t=0.10 p=0.47 stall=0 h=base) [hint]
+#420   1087.68s best:26377005 next:[26377010,34763600] graph_arc_lns (d=1.63e-02 s=1425 t=0.10 p=0.47 stall=0 h=base)
+#421   1089.98s best:26382125 next:[26382130,34763600] rins_lp_lns (d=6.84e-02 s=1427 t=0.10 p=0.45 stall=0 h=base)
+#422   1090.10s best:26389040 next:[26389045,34763600] rins_lp_lns (d=6.84e-02 s=1428 t=0.10 p=0.45 stall=0 h=base)
+#423   1091.08s best:26389190 next:[26389195,34763600] graph_var_lns (d=5.59e-03 s=1429 t=0.10 p=0.45 stall=0 h=base) [combined with: rins_lp_lns (d=6.84e...]
+#424   1092.46s best:26396190 next:[26396195,34763600] graph_cst_lns (d=7.93e-03 s=1433 t=0.10 p=0.45 stall=3 h=base)
+#425   1094.03s best:26404190 next:[26404195,34763600] rnd_var_lns (d=5.30e-02 s=1435 t=0.10 p=0.47 stall=0 h=base)
+#426   1097.91s best:26404210 next:[26404215,34763600] graph_var_lns (d=4.71e-03 s=1442 t=0.10 p=0.44 stall=1 h=base)
+#427   1099.34s best:26411190 next:[26411195,34763600] rnd_cst_lns (d=2.24e-02 s=1444 t=0.10 p=0.47 stall=0 h=base) [hint]
+#428   1099.38s best:26411210 next:[26411215,34763600] rnd_cst_lns (d=2.24e-02 s=1444 t=0.10 p=0.47 stall=0 h=base) [hint] [combined with: graph_var_lns (d=4.7...]
+#429   1100.34s best:26411230 next:[26411235,34763600] graph_cst_lns (d=7.93e-03 s=1446 t=0.10 p=0.45 stall=1 h=base) [hint]
+#430   1100.77s best:26411510 next:[26411515,34763600] graph_cst_lns (d=7.93e-03 s=1447 t=0.10 p=0.45 stall=1 h=base)
+#431   1103.42s best:26478460 next:[26478465,34763600] rins_lp_lns (d=8.80e-02 s=1449 t=0.10 p=0.47 stall=0 h=base)
+#432   1105.43s best:26479660 next:[26479665,34763600] ls_restart_decay_perturb(batch:1 lin{mvs:9 evals:267'196} #w_updates:0 #perturb:0)
+#433   1106.19s best:26479700 next:[26479705,34763600] graph_arc_lns (d=1.36e-02 s=1454 t=0.10 p=0.46 stall=0 h=base) [hint] [combined with: ls_restart_decay_per...]
+#434   1108.52s best:26487890 next:[26487895,34763600] rnd_var_lns (d=6.44e-02 s=1458 t=0.10 p=0.48 stall=0 h=base) [hint]
+#435   1110.33s best:26488040 next:[26488045,34763600] ls_restart_decay(batch:1 lin{mvs:3 evals:266'046} #w_updates:0 #perturb:0)
+#436   1113.60s best:26488760 next:[26488765,34763600] rnd_cst_lns (d=1.88e-02 s=1467 t=0.10 p=0.47 stall=0 h=base)
+#437   1114.47s best:26490160 next:[26490165,34763600] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:266'698} gen{mvs:7 evals:0} comp{mvs:7 btracks:0} #w_updates:0 #perturb:0)
+#438   1115.52s best:26495910 next:[26495915,34763600] graph_arc_lns (d=1.36e-02 s=1469 t=0.10 p=0.46 stall=0 h=base)
+#439   1115.57s best:26497310 next:[26497315,34763600] graph_arc_lns (d=1.36e-02 s=1469 t=0.10 p=0.46 stall=0 h=base) [combined with: ls_restart_decay_com...]
+#440   1118.13s best:26497350 next:[26497355,34763600] graph_cst_lns (d=6.69e-03 s=1475 t=0.10 p=0.44 stall=2 h=base) [hint]
+#441   1121.32s best:26497500 next:[26497505,34763600] rnd_cst_lns (d=1.88e-02 s=1481 t=0.10 p=0.47 stall=0 h=base)
+#442   1122.91s best:26506710 next:[26506715,34763600] rnd_var_lns (d=5.31e-02 s=1484 t=0.10 p=0.47 stall=0 h=base) [hint]
+#443   1123.27s best:26512530 next:[26512535,34763600] rnd_var_lns (d=5.31e-02 s=1485 t=0.10 p=0.47 stall=0 h=base) [hint]
+#444   1126.90s best:26517020 next:[26517025,34763600] rins_lp_lns (d=6.87e-02 s=1488 t=0.10 p=0.46 stall=0 h=base)
+#445   1126.94s best:26517085 next:[26517090,34763600] rins_lp_lns (d=6.87e-02 s=1487 t=0.10 p=0.46 stall=0 h=base)
+#446   1127.98s best:26517235 next:[26517240,34763600] graph_var_lns (d=5.57e-03 s=1490 t=0.10 p=0.45 stall=4 h=base)
+#447   1131.14s best:26517255 next:[26517260,34763600] graph_cst_lns (d=6.69e-03 s=1494 t=0.10 p=0.44 stall=1 h=base) [hint]
+#448   1131.27s best:26524235 next:[26524240,34763600] graph_cst_lns (d=6.69e-03 s=1495 t=0.10 p=0.44 stall=1 h=base)
+#449   1131.32s best:26524255 next:[26524260,34763600] graph_cst_lns (d=6.69e-03 s=1495 t=0.10 p=0.44 stall=1 h=base) [combined with: graph_cst_lns (d=6.6...]
+#450   1132.19s best:26524295 next:[26524300,34763600] graph_arc_lns (d=1.14e-02 s=1497 t=0.10 p=0.45 stall=1 h=base) [hint]
+#451   1132.74s best:26524745 next:[26524750,34763600] ls_restart_compound(batch:1 lin{mvs:0 evals:266'043} gen{mvs:4 evals:0} comp{mvs:4 btracks:0} #w_updates:0 #perturb:0)
+#452   1136.60s best:26524765 next:[26524770,34763600] graph_arc_lns (d=1.36e-02 s=1506 t=0.10 p=0.46 stall=0 h=base) [hint]
+#453   1138.47s best:26524805 next:[26524810,34763600] rnd_var_lns (d=6.43e-02 s=1508 t=0.10 p=0.48 stall=0 h=base) [hint]
+#454   1139.19s best:26529885 next:[26529890,34763600] rnd_var_lns (d=6.43e-02 s=1509 t=0.10 p=0.48 stall=0 h=base)
+#455   1139.40s best:26530035 next:[26530040,34763600] graph_var_lns (d=4.72e-03 s=1510 t=0.10 p=0.45 stall=1 h=base) [combined with: rnd_var_lns (d=6.43e...]
+#456   1139.90s best:26532535 next:[26532540,34763600] ls_restart_decay_perturb(batch:1 lin{mvs:8 evals:267'155} #w_updates:0 #perturb:0)
+#457   1144.04s best:26532675 next:[26532680,34763600] graph_cst_lns (d=9.36e-03 s=1517 t=0.10 p=0.46 stall=2 h=base) [hint]
+#458   1145.13s best:26539685 next:[26539690,34763600] rnd_cst_lns (d=1.88e-02 s=1520 t=0.10 p=0.47 stall=2 h=base)
+#459   1145.54s best:26559085 next:[26559090,34763600] rnd_cst_lns (d=1.88e-02 s=1519 t=0.10 p=0.47 stall=2 h=base)
+#460   1146.90s best:26561585 next:[26561590,34763600] ls_restart_decay(batch:1 lin{mvs:7 evals:266'892} #w_updates:1 #perturb:0)
+#461   1148.46s best:26561625 next:[26561630,34763600] graph_arc_lns (d=1.14e-02 s=1525 t=0.10 p=0.45 stall=1 h=base)
+#462   1151.74s best:26561795 next:[26561800,34763600] rnd_var_lns (d=6.44e-02 s=1532 t=0.10 p=0.48 stall=0 h=base) [hint]
+#463   1152.14s best:26564645 next:[26564650,34763600] rnd_var_lns (d=6.44e-02 s=1533 t=0.10 p=0.48 stall=0 h=base)
+#464   1153.24s best:26564655 next:[26564660,34763600] rnd_cst_lns (d=1.88e-02 s=1535 t=0.10 p=0.47 stall=0 h=base) [hint]
+#465   1155.56s best:26568205 next:[26568210,34763600] rins_lp_lns (d=5.38e-02 s=1537 t=0.10 p=0.44 stall=0 h=base)
+#466   1156.31s best:26568505 next:[26568510,34763600] rins_lp_lns (d=5.38e-02 s=1538 t=0.10 p=0.44 stall=0 h=base)
+#467   1158.26s best:26568645 next:[26568650,34763600] graph_arc_lns (d=1.14e-02 s=1541 t=0.10 p=0.45 stall=0 h=base)
+#468   1160.13s best:26569345 next:[26569350,34763600] ls_restart_decay_perturb(batch:1 lin{mvs:4 evals:266'295} #w_updates:0 #perturb:0)
+#469   1160.51s best:26569675 next:[26569680,34763600] graph_arc_lns (d=1.14e-02 s=1542 t=0.10 p=0.46 stall=0 h=base) [hint]
+#470   1161.10s best:26570335 next:[26570340,34763600] ls_restart_compound_perturb(batch:1 lin{mvs:0 evals:265'843} gen{mvs:6 evals:0} comp{mvs:6 btracks:0} #w_updates:0 #perturb:0)
+#471   1162.42s best:26570375 next:[26570380,34763600] graph_cst_lns (d=7.94e-03 s=1548 t=0.10 p=0.45 stall=2 h=base) [hint]
+#472   1163.59s best:26570525 next:[26570530,34763600] ls_restart_perturb(batch:1 lin{mvs:5 evals:266'601} #w_updates:2 #perturb:0)
+#473   1165.51s best:26578535 next:[26578540,34763600] rnd_cst_lns (d=1.88e-02 s=1553 t=0.10 p=0.47 stall=1 h=base) [hint]
+#474   1167.59s best:26586155 next:[26586160,34763600] rnd_var_lns (d=6.44e-02 s=1555 t=0.10 p=0.48 stall=0 h=base)
+#475   1168.20s best:26586405 next:[26586410,34763600] ls_restart_decay_perturb(batch:1 lin{mvs:13 evals:268'750} #w_updates:3 #perturb:0)
+#476   1169.10s best:26593555 next:[26593560,34763600] graph_var_lns (d=4.02e-03 s=1559 t=0.10 p=0.44 stall=5 h=base)
+#477   1170.09s best:26594155 next:[26594160,34763600] graph_var_lns (d=4.02e-03 s=1558 t=0.10 p=0.44 stall=5 h=base) [combined with: graph_var_lns (d=4.0...]
+#478   1174.30s best:26597155 next:[26597160,34763600] rins_lp_lns (d=6.85e-02 s=1567 t=0.10 p=0.46 stall=0 h=base)
+#479   1174.54s best:26619635 next:[26619640,34763600] rins_lp_lns (d=6.85e-02 s=1566 t=0.10 p=0.46 stall=0 h=base)
+#480   1177.93s best:26626635 next:[26626640,34763600] rnd_cst_lns (d=1.59e-02 s=1572 t=0.10 p=0.46 stall=0 h=base) [hint]
+#481   1181.04s best:26627135 next:[26627140,34763600] ls_restart_perturb(batch:1 lin{mvs:8 evals:266'731} #w_updates:0 #perturb:0)
+#482   1187.27s best:26641135 next:[26641140,34763600] rnd_var_lns (d=5.34e-02 s=1580 t=0.10 p=0.47 stall=0 h=base) [hint]
+#483   1188.61s best:26641335 next:[26641340,34763600] graph_arc_lns (d=1.48e-02 s=1582 t=0.10 p=0.47 stall=3 h=base) [hint]
+#484   1190.86s best:26641375 next:[26641380,34763600] graph_dec_lns (d=1.30e-02 s=1585 t=0.10 p=0.46 stall=29 h=stalling)
+#485   1192.39s best:26641875 next:[26641880,34763600] ls_restart_decay(batch:1 lin{mvs:8 evals:266'629} #w_updates:0 #perturb:0)
+#486   1193.08s best:26648375 next:[26648380,34763600] rnd_cst_lns (d=1.35e-02 s=1590 t=0.10 p=0.45 stall=1 h=base) [hint]
+#487   1193.14s best:26648875 next:[26648880,34763600] rnd_cst_lns (d=1.35e-02 s=1590 t=0.10 p=0.45 stall=1 h=base) [hint] [combined with: ls_restart_decay(bat...]
+#488   1195.14s best:26648895 next:[26648900,34763600] rnd_var_lns (d=5.86e-02 s=1592 t=0.10 p=0.48 stall=0 h=base) [hint]
+#489   1195.21s best:26648905 next:[26648910,34763600] rnd_var_lns (d=5.86e-02 s=1593 t=0.10 p=0.48 stall=0 h=base) [hint]
+#490   1196.15s best:26649205 next:[26649210,34763600] ls_restart_decay_perturb(batch:1 lin{mvs:3 evals:265'899} #w_updates:0 #perturb:0)
+#491   1197.39s best:26656205 next:[26656210,34763600] graph_var_lns (d=4.35e-03 s=1597 t=0.10 p=0.45 stall=1 h=base)
+#492   1198.90s best:26656245 next:[26656250,34763600] graph_arc_lns (d=1.75e-02 s=1598 t=0.10 p=0.48 stall=1 h=base)
+#493   1200.10s best:26657225 next:[26657230,34763600] graph_arc_lns (d=1.75e-02 s=1599 t=0.10 p=0.48 stall=1 h=base)
+#494   1208.64s best:26657375 next:[26657380,34763600] rnd_var_lns (d=5.86e-02 s=1615 t=0.10 p=0.48 stall=0 h=base) [hint]
+#495   1210.24s best:26658975 next:[26658980,34763600] rins_lp_lns (d=6.10e-02 s=1617 t=0.10 p=0.45 stall=1 h=base)
+#496   1211.07s best:26659375 next:[26659380,34763600] rins_lp_lns (d=6.10e-02 s=1618 t=0.10 p=0.45 stall=1 h=base)
+#497   1213.97s best:26659395 next:[26659400,34763600] graph_cst_lns (d=1.01e-02 s=1621 t=0.10 p=0.47 stall=7 h=base) [hint]
+#498   1214.45s best:26659445 next:[26659450,34763600] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:266'478} gen{mvs:5 evals:0} comp{mvs:5 btracks:0} #w_updates:0 #perturb:0)
+#499   1215.31s best:26660395 next:[26660400,34763600] rnd_cst_lns (d=1.59e-02 s=1623 t=0.10 p=0.46 stall=2 h=base)
+#500   1215.38s best:26660445 next:[26660450,34763600] rnd_cst_lns (d=1.59e-02 s=1623 t=0.10 p=0.46 stall=2 h=base) [combined with: ls_restart_decay_com...]
+#501   1223.56s best:26675495 next:[26675500,34763600] rnd_var_lns (d=7.03e-02 s=1635 t=0.10 p=0.49 stall=0 h=base)
+#502   1224.04s best:26675645 next:[26675650,34763600] ls_restart(batch:1 lin{mvs:3 evals:265'917} #w_updates:0 #perturb:0)
+#Bound 1224.56s best:26675645 next:[26675650,34762460] quick_restart
+#503   1225.91s best:26685660 next:[26685665,34762460] rins_lp_lns (d=7.68e-02 s=1637 t=0.10 p=0.47 stall=0 h=base)
+#504   1227.88s best:26685710 next:[26685715,34762460] ls_restart_compound_perturb(batch:1 lin{mvs:0 evals:266'774} gen{mvs:5 evals:0} comp{mvs:5 btracks:0} #w_updates:0 #perturb:0)
+#505   1229.28s best:26685740 next:[26685745,34762460] rnd_cst_lns (d=1.59e-02 s=1640 t=0.10 p=0.46 stall=1 h=base) [hint]
+#506   1229.74s best:26685890 next:[26685895,34762460] ls_restart(batch:1 lin{mvs:3 evals:265'893} #w_updates:0 #perturb:0)
+#507   1238.13s best:26694285 next:[26694290,34762460] rins_lp_lns (d=8.61e-02 s=1648 t=0.10 p=0.48 stall=0 h=base)
+#508   1240.43s best:26715465 next:[26715470,34762460] rnd_var_lns (d=6.42e-02 s=1649 t=0.10 p=0.48 stall=0 h=base) [hint]
+#509   1241.61s best:26722465 next:[26722470,34762460] graph_var_lns (d=3.72e-03 s=1650 t=0.10 p=0.44 stall=7 h=base)
+#510   1243.19s best:26922465 next:[26922470,34762460] graph_arc_lns (d=1.48e-02 s=1651 t=0.10 p=0.47 stall=0 h=base) [hint]
+#511   1243.69s best:27122915 next:[27122920,34762460] ls_restart_perturb(batch:1 lin{mvs:6 evals:266'394} #w_updates:0 #perturb:0)
+#512   1247.19s best:27130065 next:[27130070,34762460] graph_var_lns (d=3.44e-03 s=1656 t=0.10 p=0.44 stall=0 h=base)
+#513   1256.69s best:27130085 next:[27130090,34762460] graph_arc_lns (d=1.36e-02 s=1660 t=0.10 p=0.47 stall=0 h=base) [hint]
+#514   1261.64s best:27130135 next:[27130140,34762460] rnd_var_lns (d=5.87e-02 s=1664 t=0.10 p=0.48 stall=0 h=base) [hint]
+#515   1262.12s best:27130185 next:[27130190,34762460] ls_restart_compound(batch:1 lin{mvs:0 evals:266'424} gen{mvs:5 evals:0} comp{mvs:5 btracks:0} #w_updates:0 #perturb:0)
+#516   1264.53s best:27131185 next:[27131190,34762460] graph_arc_lns (d=1.48e-02 s=1667 t=0.10 p=0.47 stall=0 h=base) [hint]
+#517   1266.09s best:27138335 next:[27138340,34762460] graph_var_lns (d=4.02e-03 s=1669 t=0.10 p=0.45 stall=1 h=base)
+#518   1270.31s best:27138355 next:[27138360,34762460] rnd_cst_lns (d=1.59e-02 s=1671 t=0.10 p=0.46 stall=3 h=base)
+#519   1274.15s best:27145500 next:[27145505,34762460] rnd_var_lns (d=6.42e-02 s=1674 t=0.10 p=0.48 stall=0 h=base) [hint]
+#520   1277.44s best:27147000 next:[27147005,34762460] ls_restart_decay_perturb(batch:1 lin{mvs:6 evals:266'409} #w_updates:0 #perturb:0)
+#521   1286.83s best:27154150 next:[27154155,34762460] graph_var_lns (d=5.06e-03 s=1685 t=0.10 p=0.46 stall=2 h=base)
+#522   1290.93s best:27154180 next:[27154185,34762460] rnd_var_lns (d=5.87e-02 s=1688 t=0.10 p=0.48 stall=0 h=base) [hint]
+#523   1292.35s best:27154530 next:[27154535,34762460] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:266'149} gen{mvs:7 evals:0} comp{mvs:7 btracks:0} #w_updates:0 #perturb:0)
+#Bound 1309.79s best:27154530 next:[27154535,34762380] quick_restart
+#524   1314.80s best:27155130 next:[27155135,34762380] graph_cst_lns (d=6.86e-03 s=1708 t=0.10 p=0.45 stall=10 h=base) [hint]
+#525   1319.31s best:27155140 next:[27155145,34762380] rnd_var_lns (d=4.91e-02 s=1712 t=0.10 p=0.47 stall=1 h=base) [hint]
+#526   1327.71s best:27155290 next:[27155295,34762380] rnd_var_lns (d=5.37e-02 s=1719 t=0.10 p=0.47 stall=0 h=base) [hint]
+#527   1329.32s best:27155890 next:[27155895,34762380] rnd_cst_lns (d=1.59e-02 s=1720 t=0.10 p=0.47 stall=5 h=base)
+#528   1339.51s best:27156740 next:[27156745,34762380] ls_restart_decay(batch:1 lin{mvs:5 evals:266'364} #w_updates:0 #perturb:0)
+#529   1342.92s best:27163740 next:[27163745,34762380] rnd_var_lns (d=5.86e-02 s=1730 t=0.10 p=0.48 stall=0 h=base) [hint]
+#530   1347.21s best:27163960 next:[27163965,34762380] graph_arc_lns (d=1.37e-02 s=1733 t=0.10 p=0.47 stall=6 h=base) [hint]
+#531   1347.65s best:27164110 next:[27164115,34762380] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:265'727} gen{mvs:3 evals:0} comp{mvs:3 btracks:0} #w_updates:0 #perturb:0)
+#532   1351.45s best:27171110 next:[27171115,34762380] graph_cst_lns (d=5.89e-03 s=1737 t=0.10 p=0.45 stall=3 h=base)
+#533   1353.35s best:27171260 next:[27171265,34762380] ls_restart_compound_perturb(batch:1 lin{mvs:0 evals:265'648} gen{mvs:3 evals:0} comp{mvs:3 btracks:0} #w_updates:0 #perturb:0)
+#534   1354.37s best:27171310 next:[27171315,34762380] rnd_cst_lns (d=1.36e-02 s=1741 t=0.10 p=0.46 stall=1 h=base)
+#535   1356.54s best:27171460 next:[27171465,34762380] rnd_var_lns (d=6.40e-02 s=1743 t=0.10 p=0.48 stall=0 h=base) [hint]
+#536   1357.02s best:27172060 next:[27172065,34762380] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:266'189} gen{mvs:5 evals:0} comp{mvs:5 btracks:0} #w_updates:0 #perturb:0)
+#537   1357.44s best:27178310 next:[27178315,34762380] rnd_var_lns (d=6.40e-02 s=1744 t=0.10 p=0.48 stall=0 h=base) [hint]
+#538   1357.51s best:27178910 next:[27178915,34762380] rnd_var_lns (d=6.40e-02 s=1744 t=0.10 p=0.48 stall=0 h=base) [hint] [combined with: ls_restart_decay_com...]
+#539   1360.09s best:27179060 next:[27179065,34762380] ls_restart_decay_compound_perturb(batch:1 lin{mvs:0 evals:266'572} gen{mvs:9 evals:0} comp{mvs:3 btracks:3} #w_updates:0 #perturb:0)
+#540   1370.90s best:27179160 next:[27179165,34762380] graph_arc_lns (d=1.26e-02 s=1765 t=0.10 p=0.47 stall=2 h=base)
+#541   1372.86s best:27180560 next:[27180565,34762380] ls_restart_decay(batch:1 lin{mvs:6 evals:266'462} #w_updates:0 #perturb:0)
+#542   1374.39s best:27181560 next:[27181565,34762380] rnd_var_lns (d=5.37e-02 s=1770 t=0.10 p=0.47 stall=0 h=base)
+#543   1377.73s best:27181580 next:[27181585,34762380] rnd_cst_lns (d=1.59e-02 s=1776 t=0.10 p=0.47 stall=3 h=base) [hint]
+#544   1379.96s best:27182580 next:[27182585,34762380] graph_arc_lns (d=1.26e-02 s=1781 t=0.10 p=0.47 stall=1 h=base) [hint]
+#545   1387.92s best:27197940 next:[27197945,34762380] rins_lp_lns (d=5.53e-02 s=1791 t=0.10 p=0.45 stall=5 h=base)
+#546   1388.24s best:27207260 next:[27207265,34762380] rins_lp_lns (d=5.53e-02 s=1790 t=0.10 p=0.45 stall=5 h=base)
+#547   1389.89s best:27208260 next:[27208265,34762380] rnd_cst_lns (d=1.36e-02 s=1794 t=0.10 p=0.46 stall=0 h=base)
+#548   1396.81s best:27209560 next:[27209565,34762380] rnd_cst_lns (d=1.58e-02 s=1807 t=0.10 p=0.47 stall=0 h=base)
+#549   1404.02s best:27210080 next:[27210085,34762380] rnd_var_lns (d=5.38e-02 s=1818 t=0.10 p=0.48 stall=2 h=base)
+#550   1406.89s best:27211080 next:[27211085,34762380] rnd_cst_lns (d=1.59e-02 s=1824 t=0.10 p=0.47 stall=0 h=base)
+#551   1407.29s best:27211130 next:[27211135,34762380] ls_restart_compound(batch:1 lin{mvs:0 evals:531'283} gen{mvs:5 evals:0} comp{mvs:5 btracks:0} #w_updates:0 #perturb:0) [combined with: rnd_cst_lns (d=1.59e...]
+#552   1411.78s best:27211330 next:[27211335,34762380] ls_restart_decay(batch:1 lin{mvs:6 evals:266'238} #w_updates:0 #perturb:0)
+#553   1414.59s best:27218330 next:[27218335,34762380] rnd_var_lns (d=6.38e-02 s=1836 t=0.10 p=0.48 stall=0 h=base) [hint]
+#554   1417.50s best:27218480 next:[27218485,34762380] rins_lp_lns (d=6.86e-02 s=1838 t=0.10 p=0.47 stall=2 h=base)
+#555   1418.05s best:27413480 next:[27413485,34762380] ls_restart_compound_perturb(batch:1 lin{mvs:0 evals:266'732} gen{mvs:6 evals:0} comp{mvs:6 btracks:0} #w_updates:0 #perturb:0)
+#556   1418.69s best:27418480 next:[27418485,34762380] rnd_cst_lns (d=1.36e-02 s=1841 t=0.10 p=0.46 stall=0 h=base) [hint]
+#557   1419.55s best:27425480 next:[27425485,34762380] graph_cst_lns (d=5.09e-03 s=1843 t=0.10 p=0.44 stall=11 h=stalling)
+#558   1423.80s best:27425630 next:[27425635,34762380] ls_restart_perturb(batch:1 lin{mvs:5 evals:266'297} #w_updates:1 #perturb:0)
+#559   1431.64s best:27426630 next:[27426635,34762380] graph_arc_lns (d=1.48e-02 s=1859 t=0.10 p=0.47 stall=5 h=base) [hint]
+#560   1434.49s best:27640630 next:[27640635,34762380] rnd_var_lns (d=5.39e-02 s=1864 t=0.10 p=0.48 stall=0 h=base) [hint]
+#561   1434.99s best:27640930 next:[27640935,34762380] ls_restart_compound(batch:1 lin{mvs:0 evals:265'783} gen{mvs:4 evals:0} comp{mvs:4 btracks:0} #w_updates:0 #perturb:0)
+#562   1438.47s best:27641130 next:[27641135,34762380] rnd_cst_lns (d=1.58e-02 s=1872 t=0.10 p=0.47 stall=3 h=base)
+#563   1438.76s best:27641930 next:[27641935,34762380] graph_cst_lns (d=5.09e-03 s=1873 t=0.10 p=0.45 stall=3 h=base)
+#564   1438.81s best:27642130 next:[27642135,34762380] graph_cst_lns (d=5.09e-03 s=1873 t=0.10 p=0.45 stall=3 h=base) [combined with: rnd_cst_lns (d=1.58e...]
+#565   1439.29s best:27643330 next:[27643335,34762380] ls_restart_decay_compound_perturb(batch:1 lin{mvs:0 evals:266'337} gen{mvs:6 evals:0} comp{mvs:6 btracks:0} #w_updates:0 #perturb:0)
+#566   1443.89s best:27650330 next:[27650335,34762380] rnd_var_lns (d=6.37e-02 s=1881 t=0.10 p=0.48 stall=1 h=base) [hint]
+#567   1445.75s best:27650340 next:[27650345,34762380] graph_var_lns (d=5.85e-03 s=1883 t=0.10 p=0.47 stall=25 h=stalling)
+#568   1447.07s best:27650490 next:[27650495,34762380] ls_restart_compound_perturb(batch:1 lin{mvs:0 evals:268'304} gen{mvs:11 evals:0} comp{mvs:11 btracks:0} #w_updates:0 #perturb:0)
+#569   1448.73s best:27651490 next:[27651495,34762380] rnd_cst_lns (d=1.58e-02 s=1889 t=0.10 p=0.47 stall=0 h=base)
+#570   1453.16s best:27651640 next:[27651645,34762380] ls_restart_decay_perturb(batch:1 lin{mvs:5 evals:266'037} #w_updates:1 #perturb:0)
+#571   1460.05s best:27652640 next:[27652645,34762380] rnd_cst_lns (d=1.58e-02 s=1905 t=0.10 p=0.47 stall=0 h=base) [hint]
+#572   1466.60s best:27652650 next:[27652655,34762380] rnd_var_lns (d=5.40e-02 s=1916 t=0.10 p=0.48 stall=0 h=base) [hint]
+#573   1471.06s best:27652670 next:[27652675,34762380] graph_cst_lns (d=6.79e-03 s=1925 t=0.10 p=0.46 stall=7 h=base) [hint]
+#574   1475.58s best:27659670 next:[27659675,34762380] rnd_var_lns (d=6.37e-02 s=1932 t=0.10 p=0.49 stall=0 h=base) [hint]
+#575   1475.88s best:27666670 next:[27666675,34762380] rnd_var_lns (d=6.37e-02 s=1933 t=0.10 p=0.49 stall=0 h=base) [hint]
+#576   1478.16s best:27666970 next:[27666975,34762380] ls_restart_decay_perturb(batch:1 lin{mvs:4 evals:265'973} #w_updates:0 #perturb:0)
+#577   1481.28s best:27673970 next:[27673975,34762380] rnd_cst_lns (d=1.58e-02 s=1941 t=0.10 p=0.47 stall=3 h=base) [hint]
+#578   1484.10s best:27674120 next:[27674125,34762380] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:266'297} gen{mvs:7 evals:0} comp{mvs:3 btracks:2} #w_updates:0 #perturb:0)
+#579   1485.61s best:27674720 next:[27674725,34762380] ls_restart_perturb(batch:1 lin{mvs:14 evals:267'963} #w_updates:11 #perturb:0)
+#580   1486.65s best:27674870 next:[27674875,34762380] rnd_cst_lns (d=1.59e-02 s=1953 t=0.10 p=0.47 stall=0 h=base) [combined with: ls_restart_perturb(b...]
+#581   1488.04s best:27674890 next:[27674895,34762380] graph_cst_lns (d=6.80e-03 s=1955 t=0.10 p=0.46 stall=2 h=base) [hint]
+#582   1490.06s best:27674940 next:[27674945,34762380] rnd_var_lns (d=5.40e-02 s=1959 t=0.10 p=0.48 stall=0 h=base) [hint]
+#583   1492.63s best:27675140 next:[27675145,34762380] graph_arc_lns (d=1.47e-02 s=1963 t=0.10 p=0.48 stall=8 h=base) [hint]
+#584   1493.11s best:27675190 next:[27675195,34762380] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:265'597} gen{mvs:3 evals:0} comp{mvs:3 btracks:0} #w_updates:0 #perturb:0)
+#585   1518.63s best:27682340 next:[27682345,34762380] rnd_var_lns (d=6.36e-02 s=1999 t=0.10 p=0.49 stall=2 h=base)
+#586   1523.97s best:27696340 next:[27696345,34762380] graph_cst_lns (d=5.52e-03 s=2010 t=0.10 p=0.45 stall=6 h=base)
+#587   1524.36s best:27696640 next:[27696645,34762380] ls_restart(batch:1 lin{mvs:4 evals:265'914} #w_updates:0 #perturb:0) [combined with: graph_cst_lns (d=5.5...]
+#588   1524.78s best:27696940 next:[27696945,34762380] ls_restart_decay_compound_perturb(batch:1 lin{mvs:0 evals:265'797} gen{mvs:4 evals:0} comp{mvs:4 btracks:0} #w_updates:0 #perturb:0)
+#589   1533.18s best:27703950 next:[27703955,34762380] rnd_var_lns (d=7.47e-02 s=2024 t=0.10 p=0.49 stall=1 h=base) [hint]
+#590   1534.56s best:27704100 next:[27704105,34762380] ls_restart_compound(batch:1 lin{mvs:0 evals:265'701} gen{mvs:3 evals:0} comp{mvs:3 btracks:0} #w_updates:0 #perturb:0)
+#591   1537.35s best:27704120 next:[27704125,34762380] graph_arc_lns (d=1.71e-02 s=2033 t=0.10 p=0.48 stall=6 h=base) [hint]
+#592   1543.69s best:27704140 next:[27704145,34762380] graph_cst_lns (d=8.32e-03 s=2044 t=0.10 p=0.47 stall=4 h=base) [hint]
+#593   1546.22s best:27704490 next:[27704495,34762380] graph_arc_lns (d=1.97e-02 s=2047 t=0.10 p=0.49 stall=0 h=base)
+#594   1546.36s best:27705140 next:[27705145,34762380] graph_arc_lns (d=1.97e-02 s=2048 t=0.10 p=0.49 stall=0 h=base) [hint]
+#595   1546.82s best:27705340 next:[27705345,34762380] ls_restart_decay_compound(batch:1 lin{mvs:0 evals:265'987} gen{mvs:6 evals:0} comp{mvs:6 btracks:0} #w_updates:0 #perturb:0) [combined with: graph_arc_lns (d=1.9...]
+#596   1548.12s best:27705520 next:[27705525,34762380] rnd_var_lns (d=6.37e-02 s=2050 t=0.10 p=0.49 stall=0 h=base) [hint] [combined with: ls_restart_decay_com...]
+#597   1560.39s best:27712535 next:[27712540,34762380] rnd_cst_lns (d=1.37e-02 s=2067 t=0.10 p=0.47 stall=13 h=stalling)
+#598   1560.89s best:27712685 next:[27712690,34762380] ls_restart_decay_perturb(batch:1 lin{mvs:3 evals:265'734} #w_updates:0 #perturb:0)
+#599   1569.15s best:27713815 next:[27713820,34762380] rnd_var_lns (d=7.46e-02 s=2077 t=0.10 p=0.49 stall=1 h=base) [hint]
+#600   1571.77s best:27714815 next:[27714820,34762380] graph_arc_lns (d=1.97e-02 s=2081 t=0.10 p=0.49 stall=2 h=base) [hint]
+#601   1583.09s best:27715115 next:[27715120,34762380] graph_cst_lns (d=8.90e-03 s=2100 t=0.10 p=0.47 stall=5 h=base) [hint]
+#602   1584.10s best:27715265 next:[27715270,34762380] rnd_cst_lns (d=1.47e-02 s=2102 t=0.10 p=0.47 stall=4 h=base)
+#603   1589.69s best:27715275 next:[27715280,34762380] rnd_cst_lns (d=1.68e-02 s=2113 t=0.10 p=0.48 stall=1 h=base) [hint]
+#604   1589.83s best:27718765 next:[27718770,34762380] rnd_cst_lns (d=1.68e-02 s=2112 t=0.10 p=0.48 stall=1 h=base)
+#605   1594.44s best:27725765 next:[27725770,34762380] rnd_var_lns (d=6.37e-02 s=2120 t=0.10 p=0.49 stall=2 h=base) [hint]
+#606   1596.62s best:27725915 next:[27725920,34762380] ls_restart(batch:1 lin{mvs:3 evals:265'723} #w_updates:0 #perturb:0)
+#607   1597.97s best:27739915 next:[27739920,34762380] graph_var_lns (d=6.72e-03 s=2125 t=0.10 p=0.48 stall=30 h=stalling)
+#608   1599.99s best:27746915 next:[27746920,34762380] graph_cst_lns (d=8.33e-03 s=2128 t=0.10 p=0.47 stall=3 h=base)
+#609   1601.72s best:27747525 next:[27747530,34762380] rnd_cst_lns (d=1.68e-02 s=2131 t=0.10 p=0.48 stall=0 h=base)
+#610   1602.87s best:27747675 next:[27747680,34762380] ls_restart_decay_perturb(batch:1 lin{mvs:3 evals:265'595} #w_updates:0 #perturb:0)
+#611   1617.47s best:27747875 next:[27747880,34762380] rnd_cst_lns (d=1.47e-02 s=2151 t=0.10 p=0.47 stall=0 h=base) [hint]
+#612   1618.85s best:27754875 next:[27754880,34762380] graph_cst_lns (d=9.50e-03 s=2154 t=0.10 p=0.48 stall=2 h=base)
+#613   1620.50s best:27755025 next:[27755030,34762380] ls_restart_compound_perturb(batch:1 lin{mvs:0 evals:265'574} gen{mvs:3 evals:0} comp{mvs:3 btracks:0} #w_updates:0 #perturb:0)
+#614   1624.57s best:27757025 next:[27757030,34762380] rnd_cst_lns (d=1.47e-02 s=2163 t=0.10 p=0.47 stall=0 h=base)
+#615   1631.09s best:27757035 next:[27757040,34762380] rnd_var_lns (d=5.46e-02 s=2174 t=0.10 p=0.48 stall=2 h=base) [hint]
+#616   1632.76s best:27757045 next:[27757050,34762380] rnd_cst_lns (d=1.68e-02 s=2178 t=0.10 p=0.48 stall=0 h=base) [hint]
+#617   1640.22s best:27758045 next:[27758050,34762380] rnd_var_lns (d=6.37e-02 s=2188 t=0.10 p=0.49 stall=1 h=base) [hint]
+#618   1642.07s best:27759045 next:[27759050,34762380] rnd_cst_lns (d=1.92e-02 s=2190 t=0.10 p=0.48 stall=0 h=base)
+#619   1643.57s best:27759395 next:[27759400,34762380] ls_restart_decay(batch:1 lin{mvs:7 evals:266'233} #w_updates:0 #perturb:0)
+#620   1648.00s best:27812795 next:[27812800,34762380] rins_lp_lns (d=7.79e-02 s=2198 t=0.10 p=0.48 stall=13 h=base)
+#621   1659.87s best:27819795 next:[27819800,34762380] rnd_var_lns (d=5.47e-02 s=2217 t=0.10 p=0.48 stall=0 h=base) [hint]
+#622   1661.94s best:27820795 next:[27820800,34762380] graph_cst_lns (d=9.47e-03 s=2221 t=0.10 p=0.48 stall=8 h=base)
+#623   1662.79s best:27821545 next:[27821550,34762380] ls_restart(batch:1 lin{mvs:6 evals:266'309} #w_updates:1 #perturb:0)
+#624   1663.92s best:27821555 next:[27821560,34762380] rnd_cst_lns (d=1.92e-02 s=2225 t=0.10 p=0.48 stall=2 h=base) [hint]
+#625   1666.67s best:27822755 next:[27822760,34762380] ls_restart_decay(batch:1 lin{mvs:4 evals:265'774} #w_updates:0 #perturb:0)
+#626   1669.88s best:27823755 next:[27823760,34762380] rnd_var_lns (d=6.36e-02 s=2235 t=0.10 p=0.49 stall=0 h=base)
+#627   1674.53s best:27823855 next:[27823860,34762380] rins_lp_lns (d=6.41e-02 s=2242 t=0.10 p=0.47 stall=0 h=base)
+#628   1681.18s best:27823865 next:[27823870,34762380] graph_cst_lns (d=9.47e-03 s=2253 t=0.10 p=0.48 stall=2 h=base) [hint]
+#629   1682.32s best:27824855 next:[27824860,34762380] graph_cst_lns (d=9.47e-03 s=2254 t=0.10 p=0.48 stall=2 h=base)
+#630   1686.25s best:27825555 next:[27825560,34762380] rnd_var_lns (d=6.36e-02 s=2260 t=0.10 p=0.49 stall=1 h=base) [hint]
+#631   1688.15s best:27826155 next:[27826160,34762380] ls_restart_perturb(batch:1 lin{mvs:3 evals:265'629} #w_updates:0 #perturb:0)
+#632   1690.03s best:27827075 next:[27827080,34762380] graph_arc_lns (d=1.71e-02 s=2265 t=0.10 p=0.48 stall=16 h=stalling)
+#633   1693.51s best:27827085 next:[27827090,34762380] graph_cst_lns (d=8.34e-03 s=2271 t=0.10 p=0.47 stall=0 h=base) [hint]
+#634   1697.28s best:27828085 next:[27828090,34762380] rnd_cst_lns (d=1.92e-02 s=2277 t=0.10 p=0.48 stall=4 h=base)
+#635   1704.70s best:27835115 next:[27835120,34762380] rnd_var_lns (d=6.37e-02 s=2284 t=0.10 p=0.49 stall=1 h=base) [hint]
+#636   1705.22s best:27835415 next:[27835420,34762380] ls_restart_decay(batch:1 lin{mvs:4 evals:265'851} #w_updates:0 #perturb:0)
+#637   1708.68s best:27836015 next:[27836020,34762380] graph_arc_lns (d=1.71e-02 s=2291 t=0.10 p=0.48 stall=1 h=base)
+#638   1709.32s best:27837365 next:[27837370,34762380] ls_restart_decay_perturb(batch:1 lin{mvs:5 evals:266'029} #w_updates:0 #perturb:0)
+#639   1713.27s best:27838365 next:[27838370,34762380] graph_cst_lns (d=8.34e-03 s=2300 t=0.10 p=0.47 stall=2 h=base)
+#640   1716.60s best:27838565 next:[27838570,34762380] graph_var_lns (d=5.89e-03 s=2305 t=0.10 p=0.48 stall=23 h=stalling)
+#641   1723.10s best:27846565 next:[27846570,34762380] rnd_var_lns (d=6.37e-02 s=2313 t=0.10 p=0.49 stall=1 h=base) [hint]
+#642   1723.54s best:27846715 next:[27846720,34762380] ls_restart_perturb(batch:1 lin{mvs:3 evals:265'619} #w_updates:0 #perturb:0)
+#643   1724.62s best:27846725 next:[27846730,34762380] graph_cst_lns (d=8.34e-03 s=2317 t=0.10 p=0.47 stall=1 h=base) [hint]
+#644   1732.34s best:27846875 next:[27846880,34762380] rnd_cst_lns (d=2.19e-02 s=2326 t=0.10 p=0.49 stall=4 h=base)
+#645   1732.85s best:27847525 next:[27847530,34762380] rins_lp_lns (d=7.07e-02 s=2327 t=0.10 p=0.47 stall=4 h=base)
+#646   1736.03s best:27848045 next:[27848050,34762380] graph_cst_lns (d=8.34e-03 s=2332 t=0.10 p=0.47 stall=1 h=base)
+#647   1738.97s best:27848645 next:[27848650,34762380] rnd_var_lns (d=5.49e-02 s=2337 t=0.10 p=0.48 stall=0 h=base) [hint]
+#648   1739.42s best:27849245 next:[27849250,34762380] ls_restart_decay(batch:1 lin{mvs:3 evals:265'586} #w_updates:0 #perturb:0)
+#649   1743.35s best:27864015 next:[27864020,34762380] rins_lp_lns (d=7.78e-02 s=2341 t=0.10 p=0.48 stall=0 h=base)
+#650   1746.38s best:27864165 next:[27864170,34762380] graph_arc_lns (d=1.71e-02 s=2346 t=0.10 p=0.49 stall=0 h=base)
+#651   1751.05s best:27864915 next:[27864920,34762380] rnd_var_lns (d=6.36e-02 s=2353 t=0.10 p=0.49 stall=1 h=base)
+#652   1752.57s best:27865615 next:[27865620,34762380] ls_restart_compound_perturb(batch:1 lin{mvs:0 evals:265'807} gen{mvs:5 evals:0} comp{mvs:5 btracks:0} #w_updates:0 #perturb:0)
+#653   1753.37s best:27871115 next:[27871120,34762380] graph_cst_lns (d=7.36e-03 s=2357 t=0.10 p=0.47 stall=2 h=base)
+#654   1753.42s best:27871815 next:[27871820,34762380] graph_cst_lns (d=7.36e-03 s=2357 t=0.10 p=0.47 stall=2 h=base) [combined with: ls_restart_compound_...]
+#655   1756.40s best:27872215 next:[27872220,34762380] ls_restart_decay_perturb(batch:1 lin{mvs:5 evals:265'884} #w_updates:0 #perturb:0)
+#656   1758.81s best:27878715 next:[27878720,34762380] rnd_cst_lns (d=2.19e-02 s=2367 t=0.10 p=0.49 stall=2 h=base)
+#657   1759.28s best:27879215 next:[27879220,34762380] graph_cst_lns (d=7.36e-03 s=2369 t=0.10 p=0.47 stall=1 h=base)
+#658   1763.04s best:27879665 next:[27879670,34762380] ls_restart(batch:1 lin{mvs:3 evals:265'581} #w_updates:0 #perturb:0)
+#659   1766.29s best:27881175 next:[27881180,34762380] rnd_var_lns (d=5.49e-02 s=2380 t=0.10 p=0.48 stall=0 h=base) [hint]
+#660   1771.14s best:27882075 next:[27882080,34762380] rins_lp_lns (d=6.44e-02 s=2389 t=0.10 p=0.47 stall=0 h=base)
+#661   1778.25s best:27910185 next:[27910190,34762380] rnd_var_lns (d=6.36e-02 s=2401 t=0.10 p=0.49 stall=1 h=base)
+#662   1778.73s best:27911385 next:[27911390,34762380] ls_restart_perturb(batch:1 lin{mvs:4 evals:265'773} #w_updates:0 #perturb:0)
+#663   1780.49s best:27912985 next:[27912990,34762380] rins_lp_lns (d=7.07e-02 s=2404 t=0.10 p=0.48 stall=0 h=base)
+#664   1784.66s best:27913985 next:[27913990,34762380] rnd_cst_lns (d=1.93e-02 s=2409 t=0.10 p=0.48 stall=2 h=base)
+#665   1785.99s best:27914435 next:[27914440,34762380] graph_var_lns (d=4.90e-03 s=2412 t=0.10 p=0.47 stall=9 h=base) [hint]
+#666   1786.59s best:27914585 next:[27914590,34762380] graph_var_lns (d=4.90e-03 s=2413 t=0.10 p=0.47 stall=9 h=base) [combined with: graph_var_lns (d=4.9...]
+#667   1790.36s best:27914605 next:[27914610,34762380] graph_arc_lns (d=1.71e-02 s=2420 t=0.10 p=0.49 stall=7 h=base) [hint]
+#668   1790.54s best:27914735 next:[27914740,34762380] graph_var_lns (d=4.34e-03 s=2422 t=0.10 p=0.47 stall=0 h=base)
+#669   1790.59s best:27914755 next:[27914760,34762380] graph_var_lns (d=4.34e-03 s=2422 t=0.10 p=0.47 stall=0 h=base) [combined with: graph_arc_lns (d=1.7...]
+#670   1794.34s best:27914905 next:[27914910,34762380] rnd_var_lns (d=6.36e-02 s=2428 t=0.10 p=0.49 stall=0 h=base)
+#671   1794.71s best:27915055 next:[27915060,34762380] rnd_var_lns (d=6.36e-02 s=2427 t=0.10 p=0.49 stall=0 h=base) [hint]
+#672   1798.23s best:28121840 next:[28121845,34762380] rins_lp_lns (d=8.52e-02 s=2429 t=0.10 p=0.49 stall=0 h=base)
+#673   1799.11s best:28122590 next:[28122595,34762380] graph_cst_lns (d=7.35e-03 s=2431 t=0.10 p=0.47 stall=7 h=base)
+#674   1799.54s best:28129440 next:[28129445,34762380] graph_cst_lns (d=7.35e-03 s=2432 t=0.10 p=0.47 stall=7 h=base)
+
+Task timing                   n [     min,      max]      avg      dev     time         n [     min,      max]      avg      dev    dtime
+              'core':         1 [  29.15m,   29.15m]   29.15m   0.00ns   29.15m         2 [   1.30s,    9.12m]    4.57m    4.55m    9.14m
+        'default_lp':         1 [  29.15m,   29.15m]   29.15m   0.00ns   29.15m         2 [   1.36s,    4.36m]    2.19m    2.17m    4.38m
+  'feasibility_pump':        10 [   3.36s,    2.20m]   38.99s   42.81s    6.50m         9 [496.79ms,   12.00s]    4.32s    4.10s   38.88s
+                'fj':         1 [   1.07s,    1.07s]    1.07s   0.00ns    1.07s         1 [  2.23ms,   2.23ms]   2.23ms   0.00ns   2.23ms
+   'fs_random_no_lp':         1 [   4.68s,    4.68s]    4.68s   0.00ns    4.68s         1 [291.70ms, 291.70ms] 291.70ms   0.00ns 291.70ms
+     'graph_arc_lns':       216 [857.12ms,   31.37s]    1.79s    2.50s    6.43m       216 [ 10.00ns, 100.26ms]  54.53ms  48.48ms   11.78s
+     'graph_cst_lns':       254 [818.93ms,   33.69s]    1.52s    2.44s    6.43m       254 [ 92.00ns, 100.66ms]  54.67ms  48.86ms   13.89s
+     'graph_dec_lns':       191 [879.58ms,   37.07s]    2.02s    3.65s    6.45m       189 [ 10.00ns, 102.09ms]  56.84ms  47.72ms   10.74s
+     'graph_var_lns':       254 [781.61ms,   21.50s]    1.52s    1.84s    6.42m       254 [ 10.00ns, 100.26ms]  56.31ms  47.75ms   14.30s
+                'ls':       968 [ 76.19ms,    1.37s] 397.54ms 161.41ms    6.41m       960 [ 51.80ms, 130.26ms] 105.27ms  11.49ms    1.68m
+            'max_lp':         1 [  29.13m,   29.13m]   29.13m   0.00ns   29.13m         2 [   1.46s,    3.64m]    1.83m    1.81m    3.66m
+             'no_lp':         1 [  29.15m,   29.15m]   29.15m   0.00ns   29.15m         2 [   1.30s,    8.39m]    4.21m    4.18m    8.41m
+     'quick_restart':         1 [  29.15m,   29.15m]   29.15m   0.00ns   29.15m         2 [   1.37s,    4.17m]    2.10m    2.07m    4.19m
+     'reduced_costs':         1 [  29.15m,   29.15m]   29.15m   0.00ns   29.15m         2 [   1.38s,   46.34s]   23.86s   22.48s   47.71s
+         'rins/rens':       123 [533.92ms,   27.65s]    3.19s    3.33s    6.53m       106 [ 10.00ns, 100.98ms]  54.05ms  48.95ms    5.73s
+       'rnd_cst_lns':       235 [926.31ms,   32.30s]    1.64s    2.44s    6.44m       235 [295.00ns, 100.74ms]  53.48ms  48.66ms   12.57s
+       'rnd_var_lns':       178 [   1.13s,   26.92s]    2.18s    2.24s    6.46m       178 [  3.44us, 100.72ms]  53.77ms  48.46ms    9.57s
+
+Search stats            Bools  Conflicts    Branches  Restarts  BacktrackToRoot  Backtrack   BoolPropag  IntegerPropag
+             'core':  667'402  4'535'165   7'216'557         8          144'932  4'605'103  482'900'966    495'684'574
+       'default_lp':  663'282        152   4'443'625         2        1'619'081  2'114'900   48'473'908    103'938'230
+  'fs_random_no_lp':  663'282          0      40'410         0           40'410     40'410    1'207'038      2'214'385
+           'max_lp':  663'282        109   1'549'785         2          630'348    790'036   18'788'328     39'167'571
+            'no_lp':  663'282  1'133'620  12'151'056        20          266'040  1'359'275  485'023'655    216'150'757
+    'quick_restart':  663'282        136   4'935'850         3        1'862'917  2'444'229   55'667'971    119'373'037
+    'reduced_costs':  663'282        926   2'259'742        15          750'377    950'488   23'994'590     50'844'845
+
+SAT formula           Fixed  Equiv    Total  VarLeft  BinaryClauses  PermanentClauses  TemporaryClauses
+             'core':      0      0  667'402  667'402        351'644            61'077            10'881
+       'default_lp':      0      0  663'282  663'282        351'644            61'048                19
+  'fs_random_no_lp':      0      0  663'282  663'282        351'432            60'616                 0
+           'max_lp':      0      0  663'282  663'282        351'644            60'906                22
+            'no_lp':      0      0  663'282  663'282        351'644            61'041            10'103
+    'quick_restart':      0      0  663'282  663'282        351'644            61'047                 2
+    'reduced_costs':      0      0  663'282  663'282        351'644            61'052               350
+
+SAT stats             ClassicMinim   LitRemoved  LitRemovedBinary     LitLearned   LitForgotten   Subsumed
+             'core':     3'758'346  130'641'468       210'103'081  1'618'401'232  1'066'936'492  3'640'623
+       'default_lp':             2            2                 0         12'837              0        134
+  'fs_random_no_lp':             0            0                 0              0              0          0
+           'max_lp':             2            3                 0         15'919              0         81
+            'no_lp':       339'652      970'738                 0  1'508'704'826  1'052'087'638    226'534
+    'quick_restart':             3            3                 0          2'127              0        130
+    'reduced_costs':           305          828                50      1'012'690              0        459
+
+Vivification          Clauses  Decisions  LitTrue  Subsumed  LitRemoved  DecisionReused  Conflicts
+             'core':        0          0        0         0           0               0          0
+       'default_lp':  522'985  2'705'945        0       156      10'093         287'898          1
+  'fs_random_no_lp':        0          0        0         0           0               0          0
+           'max_lp':  177'823    924'487        0       111       6'982          99'304          0
+            'no_lp':   43'110    271'346        0         0           0          24'064          0
+    'quick_restart':  611'080  3'072'737        0       179      10'188         337'426          1
+    'reduced_costs':  220'766  1'189'656        0       248      10'401         121'614          0
+
+Clause deletion       at_true  l_and_not(l)  to_binary  sub_conflict  sub_extra  sub_decisions  sub_eager  sub_vivify  sub_probing  sub_inpro  blocked  eliminated  forgotten   promoted  conflicts
+             'core':        0             0          0     3'637'729     75'048              0      2'894           0            0         84        0           0    808'458  9'640'477  4'535'165
+       'default_lp':        0             0          0           134          0              0          0         156            0         12        0           0          0         36        152
+  'fs_random_no_lp':        0             0          0             0          0              0          0           0            0          0        0           0          0          0          0
+           'max_lp':        0             0          0            81          1              0          0         111            0         21        0           0          0         40        109
+            'no_lp':        0             0          0       223'649     74'111              2      2'885           0            0          0        0           0    822'445  2'851'168  1'133'620
+    'quick_restart':        0             0          0           130          0              0          0         179            0          3        0           0          0          2        136
+    'reduced_costs':        0             0          0           456        107              0          3         248            0         12        0           0          0      2'098        926
+
+Lp stats            Component  Iterations  AddedCuts  OPTIMAL  DUAL_F.  DUAL_U.
+     'default_lp':          1   1'071'606      5'430      265    1'902        0
+         'max_lp':          1      82'169          0        0    6'207        0
+  'quick_restart':          1     659'735      6'914      291    1'073        0
+  'reduced_costs':          1     152'129        101       16   11'791        0
+
+Lp dimension                  Final dimension of first component
+     'default_lp':     8469 rows, 634636 columns, 818572 entries
+         'max_lp':  357576 rows, 668982 columns, 3916205 entries
+  'quick_restart':     9153 rows, 634636 columns, 805138 entries
+  'reduced_costs':     1750 rows, 668982 columns, 330194 entries
+
+Lp debug            CutPropag  CutEqPropag  Adjust  Overflow     Bad  BadScaling
+     'default_lp':          0            0     749         0  24'143           0
+         'max_lp':          0            0   6'179         0       0           0
+  'quick_restart':          0            0     497         0  41'754           0
+  'reduced_costs':          0            0   6'000         0       0           0
+
+Lp pool             Constraints  Updates  Simplif  Merged  Shortened  Split  Strengthened     Cuts/Call
+     'default_lp':      125'207       19        0       0          0      0             0  5'430/31'840
+         'max_lp':      357'576        0        0     624          0      0             0           0/0
+  'quick_restart':      126'691       14        0       0          0      0             0  6'914/44'649
+  'reduced_costs':      357'677        0        0     624          0      0             0       101/770
+
+Lp Cut        default_lp  quick_restart  reduced_costs
+      CG_FF:         191            235              -
+       CG_K:         139            164              -
+      CG_KL:          18             21              -
+       CG_R:         127            159              -
+      CG_RB:          11             14              -
+     CG_RBP:           1              -              -
+         IB:         408            417            101
+   MIR_1_FF:       1'500          1'646              -
+    MIR_1_R:           2              4              -
+   MIR_2_FF:         220            256              -
+    MIR_2_K:         183            260              -
+    MIR_2_R:         146            171              -
+   MIR_2_RB:           -              2              -
+  MIR_2_RBP:           -              1              -
+   MIR_3_FF:         710            900              -
+    MIR_3_K:          32             40              -
+    MIR_3_R:         107            115              -
+   MIR_3_RB:           4              6              -
+   MIR_4_FF:         445            735              -
+    MIR_4_K:          35             41              -
+    MIR_4_R:         169            264              -
+   MIR_4_RB:           2              1              -
+   MIR_5_FF:         365            580              -
+    MIR_5_K:          48             44              -
+    MIR_5_R:         135            207              -
+   MIR_5_RB:           2              3              -
+  MIR_5_RBP:           2              -              -
+   MIR_6_FF:         312            472              -
+    MIR_6_K:          17             19              -
+    MIR_6_R:          96            137              -
+   MIR_6_RB:           2              -              -
+  MIR_6_RBP:           1              -              -
+
+LNS stats           Improv/Calls  Closed  Difficulty  TimeLimit
+  'graph_arc_lns':       130/216     49%    1.71e-02       0.10
+  'graph_cst_lns':       119/254     48%    8.30e-03       0.10
+  'graph_dec_lns':        19/189     48%    1.21e-02       0.10
+  'graph_var_lns':        69/254     47%    4.90e-03       0.10
+      'rins/rens':        56/107     48%    7.09e-02       0.10
+    'rnd_cst_lns':       154/235     49%    1.93e-02       0.10
+    'rnd_var_lns':       153/178     49%    6.36e-02       0.10
+
+LS stats                                Batches  Restarts/Perturbs  LinMoves  GenMoves  CompoundMoves  Bactracks  WeightUpdates  ScoreComputed
+                         'fj_restart':        1                  1       206         0              0          0              0          2'159
+                         'ls_restart':      127                126     1'769         0              0          0            165     16'498'691
+                'ls_restart_compound':      113                112         0     1'489          1'295         37              0     20'600'653
+        'ls_restart_compound_perturb':      121                121         0     1'592          1'404         27              0     22'308'975
+                   'ls_restart_decay':      127                125     1'720         0              0          0            149     16'453'525
+          'ls_restart_decay_compound':      127                126         0     1'667          1'393         31              0     22'352'461
+  'ls_restart_decay_compound_perturb':      112                112         0     1'512          1'359         28              0     20'647'304
+           'ls_restart_decay_perturb':      131                131     1'783         0              0          0            158     17'884'389
+                 'ls_restart_perturb':      110                107     1'478         0              0          0            110     13'391'198
+
+Solutions (674)                         Num       Rank
+                         'fj_restart':    2      [0,1]
+                      'graph_arc_lns':  224    [8,667]
+                      'graph_cst_lns':  226   [10,674]
+                      'graph_dec_lns':   28   [75,484]
+                      'graph_var_lns':  142   [22,669]
+                         'ls_restart':   14    [9,658]
+                'ls_restart_compound':   12    [2,590]
+        'ls_restart_compound_perturb':   14  [469,652]
+                   'ls_restart_decay':   24    [3,648]
+          'ls_restart_decay_compound':   20    [6,595]
+  'ls_restart_decay_compound_perturb':    6  [538,588]
+           'ls_restart_decay_perturb':   24  [431,655]
+                 'ls_restart_perturb':   22    [1,662]
+                      'rens_pump_lns':    2    [45,46]
+                        'rins_lp_lns':   78   [14,672]
+                      'rins_pump_lns':   14   [55,373]
+                        'rnd_cst_lns':  254   [30,664]
+                        'rnd_var_lns':  242    [7,671]
+
+Objective bounds     Num
+      'default_lp':   15
+  'initial_domain':    1
+          'max_lp':    6
+   'quick_restart':   87
+
+Solution repositories    Added  Queried  Synchro
+    'alternative_path':      1        0        1
+      'best_solutions':  2'148    2'503    1'893
+   'fj solution hints':      0        0        0
+        'lp solutions':  3'385       88    1'372
+                'pump':     35       35
+
+Clauses shared        #Exported  #Imported  #BinaryRead  #BinaryTotal
+             'core':        164        474          106           106
+       'default_lp':         32        602          106           106
+  'fs_random_no_lp':          0          0            0           106
+           'max_lp':         28        436          106           106
+            'no_lp':        526          0          106           106
+    'quick_restart':         72        609          106           106
+    'reduced_costs':         47        686          106           106
+
+LRAT_status: NA
+CpSolverResponse summary:
+status: FEASIBLE
+objective: 28129440
+best_bound: 34762380
+integers: 733940
+booleans: 663282
+conflicts: 0
+branches: 40410
+propagations: 1207038
+integer_propagations: 2214385
+restarts: 0
+lp_iterations: 0
+walltime: 1801.97
+usertime: 1801.97
+deterministic_time: 2067.9
+gap_integral: 32443.3
+solution_fingerprint: 0xe2c7067066e14d63
+
+Initialisation du modèle et chargement des données...
+  261 élèves chargés.
+Création des variables pour 261 élèves sur 520 créneaux...
+Modèle initialisé avec 699478 variables.
+Pré-traitement des variables (Indexation)...
+Ajout contrainte: Capacité...
+Ajout contrainte: Unicité...
+Ajout contrainte: Max Vacations/Semaine...
+Ajout contrainte: Paires de Jours (Soft)...
+Ajout contrainte: Remplissage Obligatoire (Soft avec pénalité)...
+Ajout contrainte: Binômes...
+Ajout contrainte: Fréquence des Vacations...
+Ajout contrainte: Répartition Semestrielle...
+Ajout contrainte: Mixité des Groupes (Assouplies)...
+Ajout contrainte: Répartition de la Continuité...
+Ajout contrainte: Remplacement de Niveau (% Capacity)...
+Ajout contrainte: Même Jour (Élève)...
+Configuration Objectifs...
+Configuration Priorité Niveau...
+Lancement du solveur...
+Terminé.
+Score brut : 28,129,440
+Score maximum théorique : 36,877,900
+Score normalisé : 76.28/100
+Ecriture des résultats dans /home/ubuntu/Bureau/Projet_PFE/batch_experiments/2026_02_05/T1800/V5_03_B/iters/model_V5_03_B_t1800_iter05_20260206_093010.csv...
+Données sauvegardées.
+Scores sauvegardés dans /home/ubuntu/Bureau/Projet_PFE/batch_experiments/2026_02_05/T1800/V5_03_B/iters/optimization_scores.json

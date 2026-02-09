@@ -8,12 +8,12 @@ from pathlib import Path
 # ================= Configuration =================
 # Define the models to test (filename without .py)
 MODELS = [
-    "model_V5_01_OK",
-    "model_V5_02",
+    "model_V5_03_B",
+    "model_V5_03_C"
 ]
 
 # Define the time limits to test (in seconds)
-TIME_LIMITS = [7200]  # 60 minutes
+TIME_LIMITS = [7200]  # 120 minutes
 
 # Define how many times to run each configuration
 ITERATIONS = 10
