@@ -1,11 +1,11 @@
 # =============================================================================
-# MODÈLE V5_03_C - SCORING RÉALISTE
+# MODÈLE V5_03_D - REMPLISSAGE SANS QUOTAS
 # =============================================================================
-# Ce modèle garde TOUTES les contraintes identiques au modèle V5_02 mais
-# recalcule le max_theoretical_score en excluant les bonus "grand slam"
-# qui nécessitent que TOUS les élèves atteignent leurs quotas.
-# Résultat: Le score normalisé reflète un pourcentage plus réaliste de
-# ce qui est effectivement atteignable avec les contraintes actuelles.
+# Ce modèle retire complètement la notion de quotas individuels et se concentre
+# uniquement sur le remplissage maximal des vacations disponibles.
+# Objectif: Maximiser le nombre total d'affectations tout en respectant
+# TOUTES les contraintes dures (capacités, unicité, binômes, mixité, etc.)
+# Les bonus soft (préférences, priorités, paires) sont conservés.
 # =============================================================================
 
 import sys
@@ -565,7 +565,7 @@ for disc in disciplines:
 # =============================================================================
 
 # 4. OBJECTIFS D'OPTIMISATION
-# OBJECTIF PRINCIPAL: Remplissage et Quotas
+# OBJECTIF PRINCIPAL: Remplissage Maximal (Sans Quotas)
 print("Configuration Objectifs...")
 
 # Préparation des variables par (Eleve, Discipline) pour les objectifs
@@ -573,147 +573,70 @@ vars_by_student_disc_all = collections.defaultdict(list)
 for (e_id, d_id, _), var in assignments.items():
     vars_by_student_disc_all[(e_id, d_id)].append(var)
 
-# A. Maximiser le nombre d'affectations jusqu'au Quota
-# (Les affectations au-delà du quota ne rapportent pas de points)
+# A. MODÈLE D: Maximiser le NOMBRE TOTAL d'affectations (pas de notion de quota)
+# Objectif simple: remplir au maximum toutes les vacations disponibles
+# Poids de base pour chaque affectation
+w_assignment = 100  # Chaque affectation vaut 100 points
 
-for disc in disciplines:
-    # List to track individual success for this discipline for the "All Quota" bonus
-    discipline_success_vars = []
+# Calculer le score théorique maximal = toutes les capacités remplies
+for v_idx, vac in enumerate(vacations):
+    slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
+    for disc in disciplines:
+        # Ajouter la capacité si la discipline est ouverte sur ce créneau
+        if len(disc.presence) > slot_idx and disc.presence[slot_idx]:
+            cap = disc.nb_eleve[slot_idx] if slot_idx < len(disc.nb_eleve) else 0
+            max_theoretical_score += cap * w_assignment
+
+# Ajouter toutes les variables d'affectation avec le même poids
+for var in assignments.values():
+    obj_terms.append(var)
+    weights.append(w_assignment)
+
+print(f"  Score théorique maximal (toutes capacités remplies): {max_theoretical_score:,.0f}")
+
+# B. Respect des Préférences (Jour Préféré) - Bonus Soft
+if poly.take_jour_pref:
+    # Bonus pour les affectations Poly sur le jour préféré de l'élève
+    w_preference = 50  # Bonus pour préférence
     
-    for el in eleves:
-        if el.annee.value not in disc.annee: continue
-        
-        vars_list = vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
-        if not vars_list: continue
-
-        # Récupération du quota pour l'année de l'élève
-        try:
-            adx = disc.annee.index(el.annee.value)
-            quota = disc.quota[adx]
-        except ValueError:
-            quota = 0
-        
-        if quota > 0:
-            # OPTIMISATION: Fusion des logiques Bonus/Malus pour réduire le nombre de variables
-            # Maximiser (Points) revient au même qu'éviter (Malus).
-            # On garde uniquement les variables "positives" mais avec des poids cumulés.
-
-            # Configuration des poids (Priorisation Polyclinique)
-            w_fill = 150
-            w_excess = -200
-            w_success = 7000
-            
-            # Augmentation significative pour Polyclinique (Id=1) pour garantir l'atteinte des quotas
-            if disc.nom_discipline == "Polyclinique":
-                w_fill = 600      # Incitation forte au remplissage
-                w_excess = -800   # Malus adapté pour éviter le dépassement malgré le fort w_fill
-                w_success = 30000 # Priorité critique pour atteindre le quota global
-
-            # Calculate theoretical max (perfect scenario: quota met, no excess)
-            max_theoretical_score += quota * w_fill + w_success
-
-            # 1. INCITATION AU REMPLISSAGE (Jusqu'au Quota)
-            sat_var = model.NewIntVar(0, quota, f"sat_e{el.id_eleve}_d{disc.id_discipline}")
-            model.Add(sat_var <= sum(vars_list))
-            obj_terms.append(sat_var)
-            weights.append(w_fill) 
-
-            # 2. MALUS DE DÉPASSEMENT (Pour laisser la place aux autres)
-            # Une assignation au-delà du quota n'apporte rien via sat_var (borné),
-            # mais nous ajoutons ici un coût explicite pour "refroidir" le solveur.
-            excess_var = model.NewIntVar(0, 500, f"excess_e{el.id_eleve}_d{disc.id_discipline}")
-            # excess >= sum - quota
-            # <=> excess + quota >= sum
-            model.Add(excess_var + quota >= sum(vars_list))
-            
-            obj_terms.append(excess_var)
-            weights.append(w_excess) # Malus doit être > w_fill pour dissuader le dépassement
-            
-            # 3. BONUS TERMINAISON (Gros Bonus si Quota Atteint)
-            is_success = model.NewBoolVar(f"success_e{el.id_eleve}_d{disc.id_discipline}")
-            model.Add(sum(vars_list) >= quota).OnlyEnforceIf(is_success)
-            
-            # Important: lier la variable dans les deux sens pour le bonus global
-            # Si le quota n'est pas atteint, is_success DOIT être faux (pour ne pas valider le bonus global à tort)
-            # Cependant, maximiser la somme pondérée poussera naturellement is_success à 1 si possible, 
-            # et le bonus global require qu'ils soient TOUS à 1. 
-            # Donc si un seul ne peut pas être à 1, le global est perdu.
-            # On ajoute quand même la contrainte inverse pour la propreté.
-            model.Add(sum(vars_list) < quota).OnlyEnforceIf(is_success.Not())
-            
-            discipline_success_vars.append(is_success)
-
-            obj_terms.append(is_success)
-            weights.append(w_success)
-
-    # 4. BONUS GLOBAL DISPLINE (SUPER BONUS)
-    # Si TOUS les élèves concernés ont atteint leur quota pour cette discipline
-    if discipline_success_vars:
-        all_success_var = model.NewBoolVar(f"all_success_d{disc.id_discipline}")
-        
-        # La variable est vraie SI ET SEULEMENT SI le minimum des succès individuels est 1 (donc tous à 1)
-        model.AddMinEquality(all_success_var, discipline_success_vars)
-        
-        # Poids massif pour encourager la complétion totale
-        w_grand_slam = 1000000 # 1 Million points
-        if disc.nom_discipline == "Polyclinique":
-             w_grand_slam = 5000000 # 5 Millions points for Poly
-
-        # MODÈLE C: NE PAS ajouter au max_theoretical_score car rarement atteignable
-        # max_theoretical_score += w_grand_slam  # COMMENTÉ pour scoring réaliste
-
-        obj_terms.append(all_success_var)
-        weights.append(w_grand_slam)
-
-# B. Respect des Préférences (Jour Préféré)
-if poly.take_jour_pref: # Seulement pour Poly ou configurable globalement
-    # Count theoretical max for preference bonus
+    # Calculer le nombre maximal de préférences possibles
+    pref_count = 0
     for el in eleves:
         if el.annee.value not in poly.annee: continue
-        try:
-            adx = poly.annee.index(el.annee.value)
-            quota_poly = poly.quota[adx]
-            # In best case, all poly assignments are on preferred day
-            max_theoretical_score += quota_poly * 100
-        except (ValueError, IndexError):
-            pass
+        # Compter le nombre de variables poly pour cet élève
+        poly_vars = [v for (e_id, d_id, _), v in assignments.items() 
+                     if e_id == el.id_eleve and d_id == poly.id_discipline]
+        pref_count += len(poly_vars)
+    
+    max_theoretical_score += pref_count * w_preference
     
     for k, var in assignments.items():
-        if k[1] == poly.id_discipline: # Si c'est poly
+        if k[1] == poly.id_discipline:
             el = eleve_dict[k[0]]
             v_idx = k[2]
             vac = vacations[v_idx]
-            # vac.jour 0..4, pref 1..5
             if (vac.jour + 1) == el.jour_preference.value:
                 obj_terms.append(var)
-                weights.append(100) # Bonus significatif
+                weights.append(w_preference)
 
-# C. Priorité de Niveau (Bonus par niveau prioritaire)
+# C. Priorité de Niveau (Bonus par niveau prioritaire) - Bonus Soft
 print("Configuration Priorité Niveau...")
 for disc in disciplines:
     if disc.priorite_niveau:
-        # disc.priorite_niveau = [year_prio_1, year_prio_2, year_prio_3] ex: [5, 4, 6]
-        # On donne un bonus dégressif aux affectations selon la priorité pour qu'ils soient servis en premier
         prio_map = {}
-        # On vérifie la taille pour éviter les IndexErrors si la liste est incomplète
-        if len(disc.priorite_niveau) > 0: prio_map[disc.priorite_niveau[0]] = 50  # Prio 1
-        if len(disc.priorite_niveau) > 1: prio_map[disc.priorite_niveau[1]] = 20  # Prio 2
+        if len(disc.priorite_niveau) > 0: prio_map[disc.priorite_niveau[0]] = 30  # Prio 1
+        if len(disc.priorite_niveau) > 1: prio_map[disc.priorite_niveau[1]] = 15  # Prio 2
         if len(disc.priorite_niveau) > 2: prio_map[disc.priorite_niveau[2]] = 5   # Prio 3
         
-        # Calculate theoretical max for priority bonus (all priority levels get their quotas with their weights)
+        # Calculer le score théorique maximal pour les priorités
         for prio_year, weight in prio_map.items():
             if prio_year in disc.annee:
-                try:
-                    adx = disc.annee.index(prio_year)
-                    quota_prio = disc.quota[adx]
-                    # Count students in this priority year
-                    nb_students_prio = len([e for e in eleves if e.annee.value == prio_year])
-                    max_theoretical_score += nb_students_prio * quota_prio * weight
-                except (ValueError, IndexError):
-                    pass
+                # Compter toutes les variables pour ce niveau/discipline
+                prio_var_count = len([(e_id, d_id, v_idx) for (e_id, d_id, v_idx) in assignments.keys() 
+                                      if d_id == disc.id_discipline and eleve_dict[e_id].annee.value == prio_year])
+                max_theoretical_score += prio_var_count * weight
         
-        # Il est plus efficace d'itérer sur les variables pré-triées par discipline si possible, 
-        # C'est ce que nous faisons ici grâce au dictionnaire vars_by_student_disc_all
+        # Ajouter les bonus aux variables
         for el in eleves:
             if el.annee.value in prio_map:
                 vars_student = vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
