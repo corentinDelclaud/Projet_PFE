@@ -413,6 +413,16 @@ if submitted_discipline:
         # Génération automatique du code discipline
         code_discipline = f"{len(st.session_state.disciplines) + 1}"
 
+        # Préparer les configurations optionnelles selon les checkbox
+        freq_final = freq_semaine if use_freq_semaine else 0
+        nb_vac_final = nb_vacations_par_semaine if use_nb_vacations_semaine else 0
+        repartition_final = nb_vacations_par_semestre if use_nb_semestre else {1: 0, 2: 0}
+        paires_final = jours_consecutifs if use_jours_consecutifs else []
+        mixite_final = mixite_selection if use_mixite else 0
+        evitement_final = (evitement_repetitions_x, evitement_repetitions_y) if use_evitement else (0, 0)
+        priorite_final = ordre_niveaux if use_ordre_priorite else []
+        remplacement_final = regles_remplacement if use_remplacement else {}
+
         # Ajout dans le state
         st.session_state.disciplines.append({
             "id_discipline": code_discipline,
@@ -422,14 +432,14 @@ if submitted_discipline:
             "quota": quota_par_niveau,
             "presence": presence_uic,
             "annee": niveaux_selectionnes,
-            "frequence_vacations": freq_semaine,
-            "nb_vacations_par_semaine": nb_vacations_par_semaine,
-            "repartition_semestrielle": nb_vacations_par_semestre,
-            "paire_jours": jours_consecutifs,
-            "mixite_groupes": mixite_selection,
-            "repartition_continuite": (evitement_repetitions_x, evitement_repetitions_y),
-            "priorite_niveau": ordre_niveaux,
-            "remplacement_niveau": regles_remplacement,
+            "frequence_vacations": freq_final,
+            "nb_vacations_par_semaine": nb_vac_final,
+            "repartition_semestrielle": repartition_final,
+            "paire_jours": paires_final,
+            "mixite_groupes": mixite_final,
+            "repartition_continuite": evitement_final,
+            "priorite_niveau": priorite_final,
+            "remplacement_niveau": remplacement_final,
             "take_jour_pref": jour_pref,
             "be_filled": remplissage_salle,
             "meme_jour_semaine": meme_jour_semaine
