@@ -373,22 +373,7 @@ Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus
 
 Pour toute question ou collaboration:  
 - GitHub: [@corentinDelclaud](https://github.com/corentinDelclaud)
-- Email: [votre.email@etu.umontpellier.fr](mailto:votre.email@etu.umontpellier.fr)
-
----
-
-### Encadrement Académique
-
-**Polytech Montpellier** - Université de Montpellier  
-**Faculté d'Odontologie de Montpellier** - Centre de Soins Dentaires
-
----
-
-**Si ce projet vous a été utile, n'hésitez pas à lui donner une étoile!**
-
-</div>
-
----
+- Email: [corentin.delclaud@etu.umontpellier.fr](mailto:votre.email@etu.umontpellier.fr)
 
 ## Annexes
 
@@ -407,8 +392,6 @@ Pour toute question ou collaboration:
 ---
 
 <div align="center">
-
-**Made with love and coffee by Polytech Montpellier Students**
 
 *Dernière mise à jour: Février 2026*
 
