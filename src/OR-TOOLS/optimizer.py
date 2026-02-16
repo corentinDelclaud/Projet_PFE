@@ -293,7 +293,7 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ {count_vars} variables créées")
     
-    def '_build_indexes(self):
+    def _build_indexes(self):
         """Build indexing structures for efficient constraint addition"""
         logger.info("Construction des index...")
         
@@ -350,12 +350,6 @@ class ScheduleOptimizer:
                     count += 1
         
         logger.info(f"✓ {count} contraintes d'unicité ajoutées")
-    
-    def _add_quota_constraints(self): #A modifier pour vrai modele
-        """Add soft quota constraints (handled in objective)"""
-        # Quotas are handled in the objective function
-        # This method is kept for potential hard quota constraints
-        logger.info("✓ Quotas gérés dans l'objectif")
     
     def _add_max_vacations_per_week(self): #A modifier pour vrai modele
         """Add maximum vacations per week constraints"""
