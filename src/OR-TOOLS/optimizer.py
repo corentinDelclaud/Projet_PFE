@@ -320,7 +320,7 @@ class ScheduleOptimizer:
             for disc in self.config.disciplines:
                 vars_in_disc_slot = self.vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
                 if vars_in_disc_slot:
-                    cap = disc.capacite[slot_idx] if len(disc.capacite) > slot_idx else 0
+                    cap = disc.nb_eleve[slot_idx] if len(disc.nb_eleve) > slot_idx else 0
                     if cap > 0:
                         self.model.Add(sum(vars_in_disc_slot) <= cap)
                         count += 1
@@ -393,8 +393,8 @@ class ScheduleOptimizer:
             for v_idx, vac in enumerate(self.vacations):
                 slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
                 
-                if len(disc.capacite) > slot_idx and disc.presence[slot_idx]:
-                    cap = disc.capacite[slot_idx]
+                if len(disc.nb_eleve) > slot_idx and disc.presence[slot_idx]:
+                    cap = disc.nb_eleve[slot_idx]
                     vars_in_slot = self.vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
                     
                     if cap > 0 and vars_in_slot:
@@ -412,31 +412,30 @@ class ScheduleOptimizer:
             if not disc.en_binome:
                 continue
             
-            # Créer paires de binômes
-            binome_pairs = set()
+            # Créer paires de binômes à partir de id_binome
+            binome_groups = {}
             for e in self.config.eleves:
-                if e.annee.value in disc.annee and e.binome:
-                    binome_id_1 = min(e.id_eleve, e.binome.id_eleve)
-                    binome_id_2 = max(e.id_eleve, e.binome.id_eleve)
+                if e.annee.value in disc.annee:
+                    if e.id_binome not in binome_groups:
+                        binome_groups[e.id_binome] = []
+                    binome_groups[e.id_binome].append(e.id_eleve)
+            
+            # Créer paires uniques (groupes de 2)
+            binome_pairs = set()
+            for binome_id, eleves_ids in binome_groups.items():
+                if len(eleves_ids) == 2:
+                    binome_id_1 = min(eleves_ids)
+                    binome_id_2 = max(eleves_ids)
                     binome_pairs.add((binome_id_1, binome_id_2))
             
+            # Pour chaque paire, forcer même affectations
             for e1_id, e2_id in binome_pairs:
-                for s in range(1, 53):
-                    vars_e1 = self.vars_by_student_disc_semaine.get((e1_id, disc.id_discipline, s), [])
-                    vars_e2 = self.vars_by_student_disc_semaine.get((e2_id, disc.id_discipline, s), [])
+                for v_idx in range(len(self.vacations)):
+                    var1 = self.assignments.get((e1_id, disc.id_discipline, v_idx))
+                    var2 = self.assignments.get((e2_id, disc.id_discipline, v_idx))
                     
-                    if vars_e1 and vars_e2:
-                        # Même nombre d'affectations dans la semaine
-                        sum_e1 = sum(v for (_, v) in vars_e1)
-                        sum_e2 = sum(v for (_, v) in vars_e2)
-                        self.model.Add(sum_e1 == sum_e2)
-                        
-                        # Même créneaux
-                        for (v_idx1, var1) in vars_e1:
-                            for (v_idx2, var2) in vars_e2:
-                                if v_idx1 == v_idx2:
-                                    self.model.Add(var1 == var2)
-                        
+                    if var1 is not None and var2 is not None:
+                        self.model.Add(var1 == var2)
                         count += 1
         
         logger.info(f"✓ {count} contraintes de binômes ajoutées")
@@ -642,7 +641,7 @@ class ScheduleOptimizer:
                     if not vars_to:
                         continue
                     
-                    cap = disc.capacite[slot_idx] if len(disc.capacite) > slot_idx else 0
+                    cap = disc.nb_eleve[slot_idx] if len(disc.nb_eleve) > slot_idx else 0
                     required = int((percentage / 100.0) * cap)
                     
                     if required > 0:
@@ -675,7 +674,7 @@ class ScheduleOptimizer:
                     
                     try:
                         idx_annee = disc.annee.index(el.annee.value)
-                        quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
+                        quota = disc.quota[idx_annee] if len(disc.quota) > idx_annee else 0
                     except (ValueError, IndexError):
                         quota = 0
                     
@@ -723,7 +722,7 @@ class ScheduleOptimizer:
                 # Récupérer quota
                 try:
                     idx_annee = disc.annee.index(el.annee.value)
-                    quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
+                    quota = disc.quota[idx_annee] if len(disc.quota) > idx_annee else 0
                 except (ValueError, IndexError):
                     quota = 0
                 
@@ -794,10 +793,10 @@ class ScheduleOptimizer:
             # Calcul max théorique
             pref_count = 0
             for el in self.config.eleves:
-                if el.annee.value in poly.annee and el.jour_pref:
+                if el.annee.value in poly.annee:
                     try:
                         idx_annee = poly.annee.index(el.annee.value)
-                        quota = poly.quotas[idx_annee] if len(poly.quotas) > idx_annee else 0
+                        quota = poly.quota[idx_annee] if len(poly.quota) > idx_annee else 0
                         pref_count += quota
                     except (ValueError, IndexError):
                         pass
@@ -808,11 +807,13 @@ class ScheduleOptimizer:
             for (e_id, d_id, v_idx), var in self.assignments.items():
                 if d_id == poly.id_discipline:
                     el = self.eleve_dict[e_id]
-                    if el.jour_pref:
-                        vac = self.vacations[v_idx]
-                        if vac.jour == el.jour_pref.jour and vac.period == el.jour_pref.period:
-                            self.obj_terms.append(var)
-                            self.weights.append(w_preference)
+                    vac = self.vacations[v_idx]
+                    # jour_preference: lundi=1, mardi=2, ..., vendredi=5
+                    # Convert to jour index: 0-4
+                    preferred_jour = el.jour_preference.value - 1
+                    if vac.jour == preferred_jour:
+                        self.obj_terms.append(var)
+                        self.weights.append(w_preference)
         
         # C. PRIORITÉ NIVEAU
         logger.info("  → Priorité niveau...")
@@ -832,7 +833,7 @@ class ScheduleOptimizer:
                         
                         try:
                             idx_annee = disc.annee.index(niv_val)
-                            quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
+                            quota = disc.quota[idx_annee] if len(disc.quota) > idx_annee else 0
                         except (ValueError, IndexError):
                             quota = 0
                         
@@ -1004,7 +1005,8 @@ class ScheduleOptimizer:
                 if current - last_log >= 5:
                     elapsed = int(current - start_time)
                     remaining = max(0, int(self.config.solver_params.max_time_seconds - elapsed))
-                    print(f"STATUS|Elapsed: {elapsed}s|Remaining: {remaining}s")
+                    # Format compatible avec le parsing Streamlit (sans objective car pas encore disponible)
+                    print(f"PROGRESS|Status check|Elapsed: {elapsed}s|Remaining: {remaining}s|Objective: 0")
                     sys.stdout.flush()
                     last_log = current
         
@@ -1152,7 +1154,7 @@ class ScheduleOptimizer:
                 # Récupérer quota
                 try:
                     idx_annee = disc.annee.index(el.annee.value)
-                    quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
+                    quota = disc.quota[idx_annee] if len(disc.quota) > idx_annee else 0
                 except (ValueError, IndexError):
                     quota = 0
                 
@@ -1211,11 +1213,9 @@ class ScheduleOptimizer:
             
             rows.append({
                 'eleve_id': e_id,
-                'eleve_nom': el.nom,
-                'eleve_prenom': el.prenom,
                 'eleve_annee': el.annee.name,
                 'discipline_id': d_id,
-                'discipline_nom': disc.nom,
+                'discipline_nom': disc.nom_discipline,
                 'semaine': vac.semaine,
                 'jour': vac.jour,
                 'jour_nom': ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][vac.jour],
@@ -1225,9 +1225,8 @@ class ScheduleOptimizer:
         
         # Écrire CSV
         with open(output_path, 'w', newline='', encoding='utf-8') as f:
-            fieldnames = ['eleve_id', 'eleve_nom', 'eleve_prenom', 'eleve_annee',
-                         'discipline_id', 'discipline_nom', 'semaine', 'jour',
-                         'jour_nom', 'period', 'vacation_index']
+            fieldnames = ['eleve_id', 'eleve_annee', 'discipline_id', 'discipline_nom', 
+                         'semaine', 'jour', 'jour_nom', 'period', 'vacation_index']
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows)

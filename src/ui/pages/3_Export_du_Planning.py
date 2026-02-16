@@ -207,15 +207,18 @@ if st.session_state.get('model_running', False):
                     max_time = int(solver_start_match.group(1))
                     remaining_display.metric("Temps restant", f"{max_time}s")
                 
-                # Parse solution progress (EXACT FORMAT)
-                # Format: PROGRESS|Solution #X|Elapsed: Ys|Remaining: Zs|Objective: V
+                # Parse solution progress (TWO FORMATS)
+                # Format 1: PROGRESS|Solution #X|Elapsed: Ys|Remaining: Zs|Objective: V
+                # Format 2: PROGRESS|Status check|Elapsed: Ys|Remaining: Zs|Objective: V
                 progress_match = re.search(
-                    r'PROGRESS\|Solution #(\d+)\|Elapsed: (\d+)s\|Remaining: (\d+)s\|Objective: ([\d.]+)',
+                    r'PROGRESS\|(?:Solution #(\d+)|Status check)\|Elapsed: (\d+)s\|Remaining: (\d+)s\|Objective: ([\d.]+)',
                     line
                 )
                 
                 if progress_match:
-                    solution_count = int(progress_match.group(1))
+                    # Group 1 peut être None si c'est "Status check"
+                    if progress_match.group(1):
+                        solution_count = int(progress_match.group(1))
                     elapsed_time = int(progress_match.group(2))
                     remaining_time = int(progress_match.group(3))
                     objective = float(progress_match.group(4))

@@ -30,8 +30,8 @@ class ModelConfig:
     """Validated configuration for the optimization model"""
     disciplines: List = field(default_factory=list)
     eleves: List = field(default_factory=list)
-    stages: Dict = field(default_factory=dict)
-    calendriers: Dict = field(default_factory=dict)
+    stages_lookup: Dict = field(default_factory=dict)
+    calendar_unavailability: Dict = field(default_factory=dict)
     periodes: List = field(default_factory=list)
     output_dir: Path = None
     solver_params: SolverParams = field(default_factory=SolverParams)
@@ -92,7 +92,7 @@ class ModelConfig:
             'nb_disciplines': len(self.disciplines),
             'nb_eleves': len(self.eleves),
             'disciplines': [d.nom_discipline for d in self.disciplines],
-            'nb_stages': sum(len(v) for v in self.stages.values()),
+            'nb_stages': sum(len(v) for v in self.stages_lookup.values()),
             'nb_periodes': len(self.periodes),
             'solver_params': self.solver_params.to_dict()
         }
@@ -132,13 +132,10 @@ class ModelConfig:
         solver_cfg = SolverParams(**solver_params) if solver_params else SolverParams()
         
         config = cls(
-            disciplines=load_disciplines(
-                data_dir / "disciplines.csv",
-                data_dir / "periodes.csv"
-            ),
+            disciplines=load_disciplines(data_dir / "disciplines.csv"),
             eleves=load_eleves(data_dir / "eleves_with_code.csv"),
-            stages=load_stages(data_dir / "stages.csv"),
-            calendriers=load_calendars(data_dir),
+            stages_lookup=load_stages(data_dir / "stages.csv"),
+            calendar_unavailability=load_calendars(data_dir),
             periodes=load_periodes(data_dir / "periodes.csv"),
             output_dir=data_dir.parent / "resultat",
             solver_params=solver_cfg

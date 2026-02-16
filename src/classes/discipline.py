@@ -381,21 +381,24 @@ class discipline:
             repartition: [nb_sem1, nb_sem2] où sum = quota
         
         Raises:
-            ValueError: Si la somme ne correspond pas aux quotas
+            ValueError: Si la somme ne correspond pas aux quotas des niveaux actifs
         
         Note:
-            Cette méthode vérifie actuellement que sum(repartition) == quota[i]
-            pour CHAQUE niveau, ce qui implique la même répartition pour tous.
-            À ajuster si besoin de répartitions différenciées par niveau.
+            Vérifie que sum(repartition) == quota[i] uniquement pour les niveaux
+            dans self.annee (pas pour tous les niveaux).
         """
-        # Validation: la somme doit égaler chaque quota
-        # TODO: Permettre des répartitions différentes par niveau?
-        if sum(repartition) != self.quota[0]:
-            raise ValueError(f"Somme répartition ({sum(repartition)}) ≠ quota 4A ({self.quota[0]})")
-        if sum(repartition) != self.quota[1]:
-            raise ValueError(f"Somme répartition ({sum(repartition)}) ≠ quota 5A ({self.quota[1]})")
-        if sum(repartition) != self.quota[2]:
-            raise ValueError(f"Somme répartition ({sum(repartition)}) ≠ quota 6A ({self.quota[2]})")
+        # Validation: la somme doit égaler les quotas des niveaux actifs
+        sum_rep = sum(repartition)
+        # Mapper annee (4,5,6) vers indices quota (0,1,2)
+        for niveau_idx in self.annee:
+            quota_idx = niveau_idx - 4  # 4->0, 5->1, 6->2
+            if quota_idx < 0 or quota_idx >= len(self.quota):
+                continue
+            if sum_rep != self.quota[quota_idx]:
+                niveau_name = ['DFAS01', 'DFAS02', 'DFTCC'][quota_idx]
+                raise ValueError(
+                    f"Somme répartition ({sum_rep}) ≠ quota {niveau_name} ({self.quota[quota_idx]})"
+                )
         self.repartition_semestrielle = repartition
     
     def modif_paire_jours(self, paires: list[tuple[int, int]]):

@@ -10,19 +10,12 @@ st.set_page_config(
 st.title("Gestion du Planning Hospitalier")
 st.subheader("Faculté d'Odontologie de Montpellier")
 
-st.markdown("---")
-
 # Introduction
 st.markdown("""
-### À propos de l'application
+##### À propos de l'application
 
 La planification des stages cliniques est un exercice complexe qui nécessite de coordonner 
-de nombreux paramètres
-            \n1. Disponibilité des étudiants
-            \n2. Capacités d'accueil des services
-            \n3. Présence des encadrants
-            \n4. Respect des quotas de formation par discipline.
-
+de nombreux paramètres.
 Cet outil a été conçu pour simplifier ce processus et garantir une répartition équitable 
 des ressources tout en respectant les contraintes pédagogiques et organisationnelles 
 de la faculté.
@@ -42,15 +35,16 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.info("""
-    ### Import Données
+    ### Étape 1 : Import Données
     Importez vos fichiers Excel :
-    - Calendrier universitaire
+    - Calendrier universitaire de chaque niveau
     """)
 
 with col2:
     st.info("""
-    ### Configuration
+    ### Étape 2 : Configuration
     Configurez :
+    - Le nombre d'élèves par niveau
     - Les disciplines
     - Les stages
     """)
@@ -59,8 +53,8 @@ with col3:
     st.success("""
     ### Résultats
     Consultez et exportez :
-    - Planning calendrier
     - Planning par étudiant
+    - Les fiches d'appel par discipline
     """)
 
 st.markdown("<br>", unsafe_allow_html=True)

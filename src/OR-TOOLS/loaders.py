@@ -1,12 +1,12 @@
 ''' 
 LOADERS - Adapté pour Model V5_03_C
 
-Ce module de chargement reproduit exactement la logique de model_V5_03_C:
- - Disciplines hardcodées avec toutes les configurations
- - Chargement élèves depuis eleves_with_code.csv
- - Chargement stages avec stages_lookup (dict de listes de dicts)
- - Chargement calendriers avec (semaine, slot_idx) comme clé
- - Périodes hardcodées
+Ce module de chargement charge les données depuis les fichiers CSV:
+ - Disciplines chargées depuis disciplines.csv
+ - Élèves chargés depuis eleves_with_code.csv
+ - Stages chargés avec stages_lookup (dict de listes de dicts)
+ - Calendriers chargés avec (semaine, slot_idx) comme clé
+ - Périodes chargées depuis periodes.csv
  
 '''
 import sys
@@ -14,8 +14,9 @@ import os
 import logging
 import csv
 import collections
+import ast
 from pathlib import Path
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Any
 
 # Add parent directory to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -25,7 +26,6 @@ from classes.eleve import eleve
 from classes.stage import stage
 from classes.jour_preference import jour_pref
 from classes.enum.niveaux import niveau
-from classes.enum.demijournee import DemiJournee
 from classes.periode import Periode
 
 logger = logging.getLogger(__name__)
@@ -35,83 +35,248 @@ class DataLoadError(Exception):
     pass
 
 # =============================================================================
-# DISCIPLINES HARDCODÉES (Configuration exacte du model_V5_03_C)
+# HELPERS DE PARSING
 # =============================================================================
 
-def load_disciplines() -> List[discipline]:
+def parse_csv_value(value: str) -> Any:
     """
-    Charge les disciplines avec configuration hardcodée (identique à model_V5_03_C)
+    Parse une valeur CSV qui peut contenir dict, list, tuple, etc.
+    
+    Args:
+        value: Chaîne à parser
     
     Returns:
-        List[discipline]: Liste des 13 disciplines configurées
+        La valeur parsée (dict, list, int, bool, str, etc.)
     """
-    logger.info("Chargement des disciplines (configuration hardcodée)...")
+    if not value or value.strip() == '':
+        return None
     
-    # Instanciation des disciplines (Configuration issue de model_V5_03_C)
-    poly = discipline(1, "Polyclinique", [20,20,20,20,20,20,20,20,20,20], True, [50,50,50], [True]*10,[4,5,6])
-    paro = discipline(2, "Parodontologie", [0,4,4,4,4,4,4,4,4,4], False, [6,6,6], [False, True, True, True, True, True, True, True, True, True],[4,5,6])
-    como = discipline(3, "Comodulation", [3,3,3,3,3,3,0,0,3,3], False, [6,6,6] , [True, True, True, True, True, True, False, False, True, True],[4,5,6])
-    pedo_soins = discipline(4, "Pédodontie Soins", [10,0,0,0,20,20,20,0,20,0], True, [12,12,12], [True]*10,[4,5,6])
-    odf = discipline(5, "Orthodontie", [3] * 10, False, [4,4,4], [True]*10,[5])
-    occl = discipline(6, "Occlusodontie", [4,0,4,0,0,0,4,0,4,0], False, [3,0,0], [True, False, True, False, False, False, True, False, True, False],[4])
-    ra = discipline(7, "Radiologie", [4] * 10, False, [9,8,0], [True]*10,[4,5])
-    ste = discipline(8, "Stérilisation", [1] * 10, False, [3,2,0], [True]*10,[4,5,6])
-    pano = discipline(9, "Panoramique", [0,1,0,1,1,1,0,1,0,1,0,1] * 10, False, [0,3,3], [True]*10,[5,6])
-    urg = discipline(10, "Urgence", [8] * 10, False, [20,20,20], [True]*10,[4,5,6])
-    pedo_urg = discipline(11, "Pédodontie Urgences", [2] * 10, False, [0,1,1], [True]*10,[5,6])
-    bloc = discipline(12, "BLOC", [0,0,2,0,0,0,2,0,0,0], False, [0,1,1], [False,False,True,False,False,False,True,False,False,False],[5,6])
-    sp = discipline(13, "Soins spécifiques", [1,0,0,0,0,0,0,0,0,0], False, [0,0,0], [True,False,False,False,False,False,False,False,False,False],[5,6])
+    value = value.strip()
     
-    # Configuration des présences (Ouvertures/Fermetures créneaux types)
-    # Format: [LunMatin, LunAprem, MarMatin, MarAprem, MerMatin, MerAprem, JeuMatin, JeuAprem, VenMatin, VenAprem]
-    poly.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-    paro.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, True, True, True, True, True, True, True, True])
-    como.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, False, False, True, True])
-    pedo_soins.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, False, False, False, True, True, True, False, True, False])
-    odf.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, True, True, False, False, False, True])
-    occl.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, False, True, False, False, False, True, False, True, False])
-    ra.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-    ste.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-    pano.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, True, False, True, False, True, False, True])
-    urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True, True, True, True, True, True, True, True, True, True])
-    pedo_urg.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [False, True, False, False, False, False, False, True, False, True])
-    bloc.multiple_modif_presence([0,1,2,3,4,5,6,7,8,9], [True,False,True,False,False,False,True,False,False,False])
+    # Try to evaluate as Python literal
+    try:
+        return ast.literal_eval(value)
+    except (ValueError, SyntaxError):
+        # Return as string if parsing fails
+        return value
+
+def convert_dict_keys_to_int(d: Dict) -> Dict:
+    """
+    Convertit les clés d'un dictionnaire en entiers
     
-    # Modifications spécifiques (Contraintes avancées)
-    poly.modif_nb_vacations_par_semaine(2)
-    poly.modif_paire_jours([ (0,1), (2,3), (0,4) ]) # Paires requises: (Lun,Mar), (Mer,Jeu), (Lun,Ven)
-    poly.modif_take_jour_pref(True)
+    Args:
+        d: Dictionnaire avec clés strings
     
-    bloc.modif_fill_requirement(True)
+    Returns:
+        Dictionnaire avec clés entières
+    """
+    if not isinstance(d, dict):
+        return d
+    return {int(k): v for k, v in d.items()}
+
+# =============================================================================
+# DISCIPLINES (Chargement depuis CSV)
+# =============================================================================
+
+def load_disciplines(disciplines_path: Path) -> List[discipline]:
+    """
+    Charge les disciplines depuis disciplines.csv
     
-    occl.modif_repetition_continuite(1, 12)  # Pas 2 fois de suite dans 12 semaines
+    Args:
+        disciplines_path: Chemin vers disciplines.csv
     
-    sp.modif_fill_requirement(True)
+    Returns:
+        List[discipline]: Liste des disciplines configurées
     
-    ste.modif_fill_requirement(True)
+    Raises:
+        DataLoadError: Si le fichier est manquant ou invalide
+    """
+    if not disciplines_path.exists():
+        raise DataLoadError(f"Fichier disciplines introuvable: {disciplines_path}")
     
-    ra.modif_priorite_niveau([4,5,6])  # Priorité: 4A > 5A > 6A
+    logger.info("Chargement des disciplines depuis CSV...")
     
-    odf.modif_repartition_semestrielle([2,2])  # 4 total, 2 par semestre
+    try:
+        disciplines = []
+        with open(disciplines_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    # Parse basic fields
+                    id_disc = int(row['id_discipline'])
+                    nom = row['nom_discipline'].strip()
+                    
+                    # Parse nb_eleve (dict with int keys)
+                    nb_eleve_dict = parse_csv_value(row['nb_eleve'])
+                    nb_eleve = convert_dict_keys_to_int(nb_eleve_dict)
+                    # Convert to list [val for week 1-10]
+                    nb_eleve_list = [nb_eleve.get(i, 0) for i in range(1, 11)]
+                    
+                    # Parse en_binome
+                    en_binome = parse_csv_value(row['en_binome'])
+                    
+                    # Parse quota (dict)
+                    quota_dict = parse_csv_value(row['quota'])
+                    # Convert to list [DFAS01, DFAS02, DFTCC]
+                    quota_list = [
+                        quota_dict.get('DFAS01', 0),
+                        quota_dict.get('DFAS02', 0),
+                        quota_dict.get('DFTCC', 0)
+                    ]
+                    
+                    # Parse presence (dict with int keys)
+                    presence_dict = parse_csv_value(row['presence'])
+                    presence = convert_dict_keys_to_int(presence_dict)
+                    presence_list = [presence.get(i, True) for i in range(1, 11)]
+                    
+                    # Parse annee (list of niveau codes)
+                    annee_list = parse_csv_value(row['annee'])
+                    # Convert to niveau indices: DFAS01=4, DFAS02=5, DFTCC=6
+                    annee_indices = []
+                    for niveau_code in annee_list:
+                        if niveau_code == 'DFAS01':
+                            annee_indices.append(4)
+                        elif niveau_code == 'DFAS02':
+                            annee_indices.append(5)
+                        elif niveau_code == 'DFTCC':
+                            annee_indices.append(6)
+                    
+                    # Create discipline instance
+                    disc = discipline(
+                        id_disc,
+                        nom,
+                        nb_eleve_list,
+                        en_binome,
+                        quota_list,
+                        presence_list,
+                        annee_indices
+                    )
+                    
+                    # Apply presence modifications
+                    disc.multiple_modif_presence(
+                        list(range(10)),
+                        presence_list
+                    )
+                    
+                    # Parse and apply additional configurations
+                    # frequence_vacations
+                    freq_vac = parse_csv_value(row.get('frequence_vacations', '0'))
+                    if freq_vac and freq_vac > 0:
+                        disc.modif_frequence_vacations(freq_vac)
+                    
+                    # nb_vacations_par_semaine
+                    nb_vac_semaine = parse_csv_value(row.get('nb_vacations_par_semaine', '0'))
+                    if nb_vac_semaine and nb_vac_semaine > 0:
+                        disc.modif_nb_vacations_par_semaine(nb_vac_semaine)
+                    
+                    # repartition_semestrielle
+                    rep_sem = parse_csv_value(row.get('repartition_semestrielle', '{}'))
+                    if rep_sem and isinstance(rep_sem, dict) and rep_sem:
+                        rep_list = [rep_sem.get(1, 0), rep_sem.get(2, 0)]
+                        if any(rep_list):
+                            try:
+                                disc.modif_repartition_semestrielle(rep_list)
+                            except ValueError as e:
+                                logger.warning(f"Discipline {nom}: répartition semestrielle ignorée - {e}")
+                    
+                    # paire_jours
+                    paire_jours = parse_csv_value(row.get('paire_jours', '[]'))
+                    if paire_jours and len(paire_jours) > 0:
+                        disc.modif_paire_jours(paire_jours)
+                    
+                    # mixite_groupes
+                    mixite = parse_csv_value(row.get('mixite_groupes', '0'))
+                    if mixite and mixite > 0:
+                        disc.modif_mixite_groupes(mixite)
+                    
+                    # repartition_continuite
+                    rep_cont = parse_csv_value(row.get('repartition_continuite', '(0, 0)'))
+                    if rep_cont and isinstance(rep_cont, tuple) and rep_cont != (0, 0):
+                        disc.modif_repetition_continuite(rep_cont[0], rep_cont[1])
+                    
+                    # priorite_niveau
+                    priorite = parse_csv_value(row.get('priorite_niveau', '[]'))
+                    if priorite and len(priorite) > 0:
+                        # Convert niveau names to indices
+                        priorite_indices = []
+                        for niv in priorite:
+                            if niv == 'DFAS01':
+                                priorite_indices.append(4)
+                            elif niv == 'DFAS02':
+                                priorite_indices.append(5)
+                            elif niv == 'DFTCC':
+                                priorite_indices.append(6)
+                        if priorite_indices:
+                            disc.modif_priorite_niveau(priorite_indices)
+                    
+                    # remplacement_niveau
+                    remplacement = parse_csv_value(row.get('remplacement_niveau', '{}'))
+                    if remplacement and isinstance(remplacement, dict) and remplacement:
+                        # Format CSV: {'DFAS02': {'niveau_remplacant': 'DFTCC', 'quota': 7}}
+                        # Format attendu: [(niveau_absent, niveau_remplacant, quota)]
+                        remp_list = []
+                        for niv_key, remp_info in remplacement.items():
+                            if isinstance(remp_info, dict):
+                                # Parse niveau absent (from key like 'DFAS02' or 'DFAS02_2')
+                                if 'DFAS01' in niv_key:
+                                    niv_idx = 4
+                                elif 'DFAS02' in niv_key:
+                                    niv_idx = 5
+                                elif 'DFTCC' in niv_key:
+                                    niv_idx = 6
+                                else:
+                                    logger.warning(f"Niveau inconnu dans remplacement: {niv_key}")
+                                    continue
+                                
+                                # Parse niveau remplaçant
+                                remp_niv = remp_info.get('niveau_remplacant', '')
+                                if remp_niv == 'DFAS01':
+                                    remp_idx = 4
+                                elif remp_niv == 'DFAS02':
+                                    remp_idx = 5
+                                elif remp_niv == 'DFTCC':
+                                    remp_idx = 6
+                                else:
+                                    logger.warning(f"Niveau remplaçant inconnu: {remp_niv}")
+                                    continue
+                                
+                                # Le 'quota' dans le CSV est le pourcentage attendu par l'optimizer
+                                quota_remp = remp_info.get('quota', 0)
+                                if quota_remp > 0:
+                                    remp_list.append((niv_idx, remp_idx, quota_remp))
+                        
+                        if remp_list:
+                            disc.modif_remplacement_niveau(remp_list)
+                    
+                    # take_jour_pref
+                    take_jour = parse_csv_value(row.get('take_jour_pref', 'False'))
+                    if take_jour:
+                        disc.modif_take_jour_pref(True)
+                    
+                    # be_filled
+                    be_filled = parse_csv_value(row.get('be_filled', 'False'))
+                    if be_filled:
+                        disc.modif_fill_requirement(True)
+                    
+                    # meme_jour_semaine
+                    meme_jour = parse_csv_value(row.get('meme_jour_semaine', 'False'))
+                    if meme_jour:
+                        disc.modif_meme_jour(True)
+                    
+                    disciplines.append(disc)
+                    
+                except (KeyError, ValueError, TypeError) as e:
+                    logger.error(f"Erreur lecture discipline {row.get('id_discipline', '?')}: {e}")
+                    continue
+        
+        if not disciplines:
+            raise DataLoadError("Aucune discipline valide chargée")
+        
+        logger.info(f"✓ {len(disciplines)} disciplines chargées depuis CSV")
+        return disciplines
     
-    pedo_soins.modif_frequence_vacations(1)  # Une semaine sur deux
-    pedo_soins.modif_priorite_niveau([5,6,4])  # Priorité: 5A > 6A > 4A
-    pedo_soins.modif_meme_jour(True)
-    
-    paro.modif_mixite_groupes(2) # Au moins 2 niveaux différents par vacation
-    
-    como.modif_mixite_groupes(3) # Un élève de chaque niveau
-    
-    pano.modif_priorite_niveau([6,5])  # Priorité: 6A > 5A
-    
-    urg.modif_remplacement_niveau([(5,6,7),(5,4,5)])  # 5A→6A (7 élèves), 5A→4A (5 élèves)
-    
-    pedo_urg.modif_priorite_niveau([6,5])  # Priorité: 6A > 5A
-    
-    disciplines = [poly, paro, como, pedo_soins, odf, occl, ra, ste, pano, urg, pedo_urg, bloc, sp]
-    
-    logger.info(f"✓ {len(disciplines)} disciplines chargées avec configuration hardcodée")
-    return disciplines
+    except Exception as e:
+        raise DataLoadError(f"Erreur chargement disciplines: {e}")
 
 # =============================================================================
 # ÉLÈVES (Chargement depuis CSV - identique à model_V5_03_C)
@@ -119,7 +284,7 @@ def load_disciplines() -> List[discipline]:
 
 def load_eleves(eleves_path: Path) -> List[eleve]:
     """
-    Charge les élèves depuis eleves_with_code.csv (logique model_V5_03_C)
+    Charge les élèves depuis eleves_with_code.csv
     
     Args:
         eleves_path: Chemin vers eleves_with_code.csv
@@ -141,21 +306,22 @@ def load_eleves(eleves_path: Path) -> List[eleve]:
             reader = csv.DictReader(f)
             for row in reader:
                 try:
-                    # Parse jour preference
+                    # Parse jour preference (jour_pref is an Enum)
                     jour_pref_str = row.get("jour_preference", "lundi").strip().lower()
-                    jour_pref_map = {
-                        "lundi": (0, DemiJournee.matin),
-                        "mardi": (1, DemiJournee.matin),
-                        "mercredi": (2, DemiJournee.matin),
-                        "jeudi": (3, DemiJournee.matin),
-                        "vendredi": (4, DemiJournee.matin)
-                    }
                     
-                    if jour_pref_str in jour_pref_map:
-                        jour, period = jour_pref_map[jour_pref_str]
-                        jour_preference = jour_pref(jour, period)
+                    # Map string to jour_pref enum
+                    if jour_pref_str == "lundi":
+                        jour_preference = jour_pref.lundi
+                    elif jour_pref_str == "mardi":
+                        jour_preference = jour_pref.mardi
+                    elif jour_pref_str == "mercredi":
+                        jour_preference = jour_pref.mercredi
+                    elif jour_pref_str == "jeudi":
+                        jour_preference = jour_pref.jeudi
+                    elif jour_pref_str == "vendredi":
+                        jour_preference = jour_pref.vendredi
                     else:
-                        jour_preference = jour_pref(0, DemiJournee.matin)  # Default: Lundi matin
+                        jour_preference = jour_pref.lundi  # Default: Lundi
                     
                     # Parse niveau
                     annee_str = row.get("annee", "DFAS01").strip()
@@ -165,21 +331,27 @@ def load_eleves(eleves_path: Path) -> List[eleve]:
                         logger.warning(f"Niveau inconnu '{annee_str}' pour élève {row.get('id_eleve')}, utilisation DFAS01 par défaut")
                         annee_niveau = niveau.DFAS01
                     
-                    # Créer élève
-                    el = eleve(
-                        id_eleve=int(row["id_eleve"]),
-                        nom=row["nom"].strip(),
-                        prenom=row["prenom"].strip(),
-                        annee=annee_niveau,
-                        jour_preference=jour_preference,
-                        periode_stage=int(row.get("periode_stage", 0)),
-                        code=row.get("code", "").strip()
-                    )
+                    # Extraire id_eleve et id_binome
+                    id_eleve = int(row["id_eleve"])
+                    id_binome_str = row.get("id_binome", "").strip()
+                    id_binome = int(id_binome_str) if id_binome_str else id_eleve
                     
-                    # Ajouter binôme si présent
-                    binome_id = row.get("binome_id", "").strip()
-                    if binome_id and binome_id != "":
-                        el.binome_id = int(binome_id)
+                    # Parse jour_similaire (meme_jour)
+                    jour_similaire = int(row.get("jour_similaire", 0))
+                    
+                    # Parse periode_stage_ext
+                    periode_stage_ext = int(row.get("periode_stage_ext", 0))
+                    
+                    # Créer élève avec la bonne signature
+                    el = eleve(
+                        id_eleve=id_eleve,
+                        id_binome=id_binome,
+                        jour_preference=jour_preference,
+                        annee=annee_niveau,
+                        meme_jour=jour_similaire,
+                        periode_stage=int(row.get("periode_stage", 0)),
+                        periode_stage_ext=periode_stage_ext
+                    )
                     
                     eleves.append(el)
                     
@@ -190,14 +362,26 @@ def load_eleves(eleves_path: Path) -> List[eleve]:
         if not eleves:
             raise DataLoadError("Aucun élève valide chargé")
         
-        # Résoudre les binômes (références croisées)
-        eleves_dict = {e.id_eleve: e for e in eleves}
+        # Convert mutual binome references to common group IDs
+        # CSV format: student A has id_binome=B, student B has id_binome=A
+        # Optimizer expects: both A and B have the same group ID
+        binome_map = {}  # Maps old id_binome to new group_id
         for el in eleves:
-            if hasattr(el, 'binome_id') and el.binome_id:
-                if el.binome_id in eleves_dict:
-                    el.binome = eleves_dict[el.binome_id]
+            if el.id_binome != el.id_eleve:
+                # This student is in a binome
+                pair = tuple(sorted([el.id_eleve, el.id_binome]))
+                if pair not in binome_map:
+                    # Use the smaller ID as the group ID
+                    binome_map[pair] = pair[0]
         
-        logger.info(f"✓ {len(eleves)} élèves chargés")
+        # Apply the group IDs
+        for el in eleves:
+            if el.id_binome != el.id_eleve:
+                pair = tuple(sorted([el.id_eleve, el.id_binome]))
+                if pair in binome_map:
+                    el.id_binome = binome_map[pair]
+        
+        logger.info(f"✓ {len(eleves)} élèves chargés (dont {len(binome_map)} paires de binômes)")
         return eleves
     
     except Exception as e:
@@ -269,17 +453,31 @@ def load_stages(stages_path: Path) -> Dict[Tuple[str, int], List[Dict]]:
 
 def load_calendars(data_dir: Path) -> Dict[niveau, Set[Tuple[int, int]]]:
     """
-    Charge les calendriers d'indisponibilité (logique model_V5_03_C)
+    Charge les calendriers d'indisponibilité depuis les fichiers CSV
+    
+    Le format des CSV est:
+    Semaine,1,2,3,4,5,6,7,8,9,10
+    S34,F,F,F,F,C,C,C,C,C,C
+    ...
+    
+    Où les colonnes 1-10 correspondent aux créneaux:
+    1=Lundi Matin, 2=Lundi Après-midi, 3=Mardi Matin, 4=Mardi Après-midi, ...
+    
+    Et les valeurs sont:
+    - C: Cours (disponible)
+    - F: Férié (indisponible)
+    - E: Examen (indisponible)
+    - vide: indisponible
     
     Returns:
         Dict[niveau -> Set[(semaine, slot_idx)]]: calendar_unavailability
-            slot_idx = jour * 2 + (0 si matin, 1 si après-midi)
+            slot_idx = créneau - 1 (pour indexation à partir de 0)
     """
     calendar_unavailability = collections.defaultdict(set)
     
     cal_files = {
         niveau.DFAS01: data_dir / 'calendrier_DFAS01.csv',
-        niveau.DFAS02: data_dir / 'calendrier_DFASS02.csv',  # Note le double S (comme dans model_V5_03_C)
+        niveau.DFAS02: data_dir / 'calendrier_DFAS02.csv',
         niveau.DFTCC: data_dir / 'calendrier_DFTCC.csv'
     }
     
@@ -296,28 +494,26 @@ def load_calendars(data_dir: Path) -> Dict[niveau, Set[Tuple[int, int]]]:
                 count = 0
                 for row in reader:
                     try:
-                        semaine = int(row.get("semaine", 0))
-                        jour = int(row.get("jour", 0))  # 0=Lun, 1=Mar, 2=Mer, 3=Jeu, 4=Ven
-                        
-                        # Déterminer période (matin/après-midi)
-                        period_str = row.get("period", "").strip().lower()
-                        if period_str in ["matin", "am"]:
-                            period_offset = 0
-                        elif period_str in ["aprem", "pm", "après-midi", "apresmidi"]:
-                            period_offset = 1
-                        else:
-                            # Default: toute la journée (ajouter matin et après-midi)
-                            slot_matin = jour * 2 + 0
-                            slot_aprem = jour * 2 + 1
-                            calendar_unavailability[niv].add((semaine, slot_matin))
-                            calendar_unavailability[niv].add((semaine, slot_aprem))
-                            count += 2
+                        # Extract week number from 'Semaine' column (format: S34 -> 34)
+                        semaine_str = row.get("Semaine", "").strip()
+                        if not semaine_str or not semaine_str.startswith("S"):
                             continue
+                        semaine = int(semaine_str[1:])
                         
-                        slot_idx = jour * 2 + period_offset
-                        calendar_unavailability[niv].add((semaine, slot_idx))
-                        count += 1
-                        
+                        # Check each slot (columns 1-10)
+                        for slot_idx in range(1, 11):
+                            slot_str = str(slot_idx)
+                            if slot_str not in row:
+                                continue
+                            
+                            value = row[slot_str].strip().upper()
+                            
+                            # If not 'C' (Cours), then it's unavailable
+                            if value != 'C':
+                                # slot_idx is 1-10, convert to 0-9 for internal use
+                                calendar_unavailability[niv].add((semaine, slot_idx - 1))
+                                count += 1
+                    
                     except (ValueError, KeyError) as e:
                         logger.warning(f"Erreur lecture calendrier {niv.name}: {e}")
                         continue
@@ -330,33 +526,60 @@ def load_calendars(data_dir: Path) -> Dict[niveau, Set[Tuple[int, int]]]:
     return dict(calendar_unavailability)
 
 # =============================================================================
-# PÉRIODES (Hardcodées - identique à model_V5_03_C)
+# PÉRIODES (Chargement depuis CSV)
 # =============================================================================
 
-def load_periodes() -> List[Periode]:
+def load_periodes(periodes_path: Path) -> List[Periode]:
     """
-    Retourne les périodes hardcodées (logique model_V5_03_C)
+    Charge les périodes depuis periodes.csv
+    
+    Args:
+        periodes_path: Chemin vers periodes.csv
     
     Returns:
-        List[Periode]: Liste des 6 périodes
-    """
-    periodes = [
-        Periode(0, 34, 44),  # Période 0: semaines 34-44
-        Periode(1, 45, 51),  # Période 1: semaines 45-51
-        Periode(2, 1, 8),    # Période 2: semaines 1-8
-        Periode(3, 9, 15),   # Période 3: semaines 9-15
-        Periode(4, 16, 22),  # Période 4: semaines 16-22
-        Periode(5, 23, 30)   # Période 5: semaines 23-30
-    ]
+        List[Periode]: Liste des périodes
     
-    logger.info(f"✓ {len(periodes)} périodes hardcodées chargées")
-    return periodes
+    Raises:
+        DataLoadError: Si le fichier est manquant ou invalide
+    """
+    if not periodes_path.exists():
+        raise DataLoadError(f"Fichier périodes introuvable: {periodes_path}")
+    
+    logger.info("Chargement des périodes depuis CSV...")
+    
+    try:
+        periodes = []
+        with open(periodes_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    periode = Periode(
+                        int(row['periode']),
+                        int(row['deb_semaine']),
+                        int(row['fin_semaine'])
+                    )
+                    periodes.append(periode)
+                except (KeyError, ValueError) as e:
+                    logger.error(f"Erreur lecture période {row.get('id_periode', '?')}: {e}")
+                    continue
+        
+        if not periodes:
+            raise DataLoadError("Aucune période valide chargée")
+        
+        # Sort by periode number
+        periodes.sort(key=lambda p: p.id_periode if hasattr(p, 'id_periode') else 0)
+        
+        logger.info(f"✓ {len(periodes)} périodes chargées depuis CSV")
+        return periodes
+    
+    except Exception as e:
+        raise DataLoadError(f"Erreur chargement périodes: {e}")
 
 # =============================================================================
 # FONCTION PRINCIPALE DE CHARGEMENT
 # =============================================================================
 
-def load_all_data   (data_dir: Path) -> Dict:
+def load_all_data(data_dir: Path) -> Dict:
     """
     Charge toutes les données (wrapper principal pour optimizer)
     
@@ -375,12 +598,13 @@ def load_all_data   (data_dir: Path) -> Dict:
         DataLoadError: Si des données essentielles sont manquantes
     """
     logger.info("=" * 80)
-    logger.info("CHARGEMENT DES DONNÉES (LOADERS - Model V5_03_C)")
+    logger.info("CHARGEMENT DES DONNÉES (LOADERS - depuis CSV)")
     logger.info("=" * 80)
     
     try:
-        # Charger disciplines (hardcodées)
-        disciplines = load_disciplines()
+        # Charger disciplines depuis CSV
+        disciplines_path = data_dir / 'disciplines.csv'
+        disciplines = load_disciplines(disciplines_path)
         
         # Charger élèves
         eleves_path = data_dir / 'eleves_with_code.csv'
@@ -393,8 +617,9 @@ def load_all_data   (data_dir: Path) -> Dict:
         # Charger calendriers
         calendar_unavailability = load_calendars(data_dir)
         
-        # Charger périodes (hardcodées)
-        periodes = load_periodes()
+        # Charger périodes depuis CSV
+        periodes_path = data_dir / 'periodes.csv'
+        periodes = load_periodes(periodes_path)
         
         logger.info("=" * 80)
         logger.info("✓ CHARGEMENT TERMINÉ")
