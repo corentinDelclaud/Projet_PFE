@@ -1,4 +1,5 @@
-"""
+""" 
+OPTIMIZER - Adapté pour Model V5_03_C
 Optimization service with progress tracking
 """
 import sys
@@ -6,6 +7,7 @@ import os
 import logging
 import collections
 import time
+import csv
 from typing import Optional, Callable, Dict, List, Tuple
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,14 +19,21 @@ from ortools.sat.python import cp_model
 from classes.vacation import vacation
 from classes.stage import stage
 from classes.enum.demijournee import DemiJournee
+from classes.enum.niveaux import niveau
 
 logger = logging.getLogger(__name__)
 
+
+# result & callback classes
+
+
 @dataclass
 class OptimizationResult:
-    """Result of optimization with metadata"""
+    """Résultat d'optimisation avec métadonnées"""
     status: str  # 'OPTIMAL', 'FEASIBLE', 'INFEASIBLE', 'ERROR', 'TIMEOUT'
     objective_value: Optional[float] = None
+    normalized_score: Optional[float] = None  # Score normalisé /100
+    max_theoretical_score: Optional[float] = None  # Score max théorique
     solve_time: float = 0.0
     assignments: Optional[Dict] = None
     statistics: Optional[Dict] = None
@@ -37,7 +46,7 @@ class OptimizationResult:
             self.statistics = {}
     
     def is_success(self) -> bool:
-        """Check if optimization succeeded"""
+        """Vérifie si l'optimisation a réussi"""
         return self.status in ['OPTIMAL', 'FEASIBLE']
 
 class SolutionCallback(cp_model.CpSolverSolutionCallback):
@@ -51,67 +60,98 @@ class SolutionCallback(cp_model.CpSolverSolutionCallback):
         self._last_log_time = 0
     
     def on_solution_callback(self):
-        """Called each time a solution is found"""
+        """Appelé à chaque nouvelle solution trouvée"""
         self._solution_count += 1
         current_time = time.time()
         elapsed = int(current_time - self.start_time)
         remaining = max(0, int(self.max_time - elapsed))
         
-        # Log every 2 seconds to avoid spam
+        # Log toutes les 2 secondes pour éviter le spam
         if current_time - self._last_log_time >= 2:
-            # IMPORTANT: Format exact pour le parsing Streamlit
+            # Format exact pour le parsing Streamlit
             print(f"PROGRESS|Solution #{self._solution_count}|Elapsed: {elapsed}s|Remaining: {remaining}s|Objective: {self.ObjectiveValue()}")
-            sys.stdout.flush()  # Force immediate output
+            sys.stdout.flush()  # Force l'affichage immédiat
             self._last_log_time = current_time
 
+
+# main optimizer class
+
+
 class ScheduleOptimizer:
-    """Clean optimizer interface with progress tracking"""
+    """
+    Optimizer adapté au model V5_03_C avec scoring réaliste.
+    
+    Architecture:
+    - prepare_data(): Charge données (élèves, stages, calendriers, vacations)
+    - build_model(): Construit le modèle CP-SAT complet
+    - solve(): Lance la résolution avec tracking progression
+    - export_solution(): Exporte la solution en CSV
+    """
     
     def __init__(self, config):
         """
-        Initialize optimizer with configuration
+        Initialize optimizer avec configuration
         
         Args:
-            config: ModelConfig instance
+            config: ModelConfig instance contenant:
+                - disciplines: Liste des disciplines
+                - eleves: Liste des élèves
+                - calendriers: Dict des indisponibilités
+                - solver_params: Paramètres du solver
         """
         self.config = config
         self.model = None
         self.solver = None
-        self.assignments = {}
+        self.assignments = {}  # (eleve_id, disc_id, vac_idx) -> BoolVar
         self.vacations = []
         self.eleve_dict = {}
         self.stages_eleves = {}
         self.calendar_unavailability = {}
         self.progress_callback = None
         
-        # Indexing structures
+        # Structures d'indexation pour accélération
         self.vars_by_student_vac = collections.defaultdict(list)
         self.vars_by_disc_vac = collections.defaultdict(list)
         self.vars_by_student_disc_semaine = collections.defaultdict(list)
         self.vars_by_disc_vac_niveau = collections.defaultdict(list)
         self.vars_by_student_disc_all = collections.defaultdict(list)
+        
+        # Variables pour l'objectif (V5_03_C logic)
+        self.obj_terms = []
+        self.weights = []
+        self.max_theoretical_score = 0  # Score max théorique réaliste
+        
+        # Variables de quota (sat_var, excess_var, is_success, all_success_var)
+        self.sat_vars = {}  # (eleve_id, disc_id) -> IntVar (affectations dans quota)
+        self.excess_vars = {}  # (eleve_id, disc_id) -> IntVar (affectations au-delà quota)
+        self.success_vars = {}  # (eleve_id, disc_id) -> BoolVar (quota atteint?)
+        self.all_success_vars = {}  # disc_id -> BoolVar (tous élèves quota atteint?)
     
     def set_progress_callback(self, callback: Callable[[str, int], None]):
         """
-        Set callback for progress updates
+        Configure callback pour les mises à jour de progression
         
         Args:
             callback: Function(message: str, progress_percent: int)
         """
         self.progress_callback = callback
     
+    # data preparation
+    
     def prepare_data(self):
-        """Prepare data structures for optimization"""
+        """Prépare les structures de données pour l'optimisation"""
         self._notify_progress("Préparation des données", 5)
         
         # Create eleve dict
         self.eleve_dict = {e.id_eleve: e for e in self.config.eleves}
+        logger.info(f"  {len(self.config.eleves)} élèves chargés.")
         
         # Prepare stages
         for el in self.config.eleves:
             if el.periode_stage > 0:
                 key = (el.annee.name, el.periode_stage)
-                if key in self.config.stages:
+                if key in self.config.stages_lookup:
+                    # Créer objets stage à partir des dicts dans stages_lookup
                     self.stages_eleves[el.id_eleve] = [
                         stage(
                             d["nom"],
@@ -120,13 +160,13 @@ class ScheduleOptimizer:
                             d["niveau_obj"],
                             el.periode_stage
                         )
-                        for d in self.config.stages[key]
+                        for d in self.config.stages_lookup[key]
                     ]
         
         # Calendar unavailability
-        self.calendar_unavailability = self.config.calendriers
+        self.calendar_unavailability = self.config.calendar_unavailability
         
-        # Generate vacations (weeks 1-52)
+        # Générer vacations (semaines 1-52)
         self.vacations = []
         for s in range(1, 53):
             for j in range(5):  # Lundi à Vendredi
@@ -135,126 +175,77 @@ class ScheduleOptimizer:
         
         logger.info(f"✓ Données préparées: {len(self.vacations)} créneaux")
     
+    
+    # model construction
+    
+    
     def build_model(self) -> None:
-        """Build the complete CP-SAT model"""
+        """Construit le modèle CP-SAT complet"""
         logger.info("=" * 80)
-        logger.info("CONSTRUCTION DU MODÈLE")
+        logger.info("CONSTRUCTION DU MODÈLE V5_03_C")
         logger.info("=" * 80)
         
         self.model = cp_model.CpModel()
         
-        # Create variables
+        # Créer variables
         self._create_variables()
         self._notify_progress("Variables créées", 20)
         
-        # Build indexes
+        # Construire index
         self._build_indexes()
         self._notify_progress("Index construits", 25)
         
-        # Add constraints
+        # Ajouter contraintes
         self._add_capacity_constraints()
         self._notify_progress("Contraintes de capacité", 30)
         
         self._add_uniqueness_constraints()
         self._notify_progress("Contraintes d'unicité", 35)
         
-        self._add_quota_constraints()
-        self._notify_progress("Contraintes de quotas", 40)
-        
         self._add_max_vacations_per_week()
-        self._notify_progress("Contraintes hebdomadaires", 45)
+        self._notify_progress("Contraintes hebdomadaires", 40)
+        
+        self._add_pair_days_constraints()
+        self._notify_progress("Contraintes paires de jours", 42)
         
         self._add_fill_requirements()
-        self._notify_progress("Contraintes de remplissage", 50)
+        self._notify_progress("Contraintes de remplissage", 45)
         
         self._add_binome_constraints()
-        self._notify_progress("Contraintes de binômes", 55)
+        self._notify_progress("Contraintes de binômes", 48)
         
-        self._add_advanced_constraints()
-        self._notify_progress("Contraintes avancées", 65)
+        self._add_frequency_constraints()
+        self._notify_progress("Contraintes de fréquence", 50)
         
-        # Set objective
+        self._add_semester_distribution()
+        self._notify_progress("Répartition semestrielle", 52)
+        
+        self._add_group_diversity()
+        self._notify_progress("Mixité des groupes", 55)
+        
+        self._add_continuity_constraints()
+        self._notify_progress("Contraintes de continuité", 58)
+        
+        self._add_level_replacement()
+        self._notify_progress("Remplacement de niveau", 60)
+        
+        self._add_same_day_constraints()
+        self._notify_progress("Contraintes même jour", 62)
+        
+        # Configurer objectif
         self._set_objective()
         self._notify_progress("Objectif configuré", 70)
         
         logger.info("✓ Modèle construit avec succès")
+        logger.info(f"  Variables: {len(self.assignments)}")
+        logger.info(f"  Score max théorique: {self.max_theoretical_score:,.0f}")
     
-    def solve(self) -> OptimizationResult:
-        """
-        Solve the model and return results
-        
-        Returns:
-            OptimizationResult: Optimization result with status and data
-        """
-        logger.info("=" * 80)
-        logger.info("RÉSOLUTION")
-        logger.info("=" * 80)
-        
-        start_time = time.time()
-        
-        self._notify_progress("Résolution en cours...", 75)
-        
-        # Configure solver
-        self.solver = cp_model.CpSolver()
-        self.solver.parameters.max_time_in_seconds = self.config.solver_params.max_time_seconds
-        self.solver.parameters.num_workers = self.config.solver_params.num_workers
-        self.solver.parameters.log_search_progress = self.config.solver_params.log_progress
-        
-        # Add callback for progress tracking
-        callback = SolutionCallback(self.config.solver_params.max_time_seconds)
-
-        # Timer thread to log progress every 5 seconds
-        stop_timer = threading.Event()
-
-        def periodic_progress():
-            """Log progress periodically even without new solutions"""
-            while not stop_timer.is_set():
-                time.sleep(5)
-                if not stop_timer.is_set():
-                    elapsed = int(time.time() - start_time)
-                    remaining = max(0, int(self.config.solver_params.max_time_seconds - elapsed))
-                    obj = callback.ObjectiveValue() if callback._solution_count > 0 else 0
-                    print(f"PROGRESS|Solution #{callback._solution_count}|Elapsed: {elapsed}s|Remaining: {remaining}s|Objective: {obj}")
-                    sys.stdout.flush()
-        
-        timer_thread = threading.Thread(target=periodic_progress, daemon=True)
-        timer_thread.start()
-
-        # Solve
-        try:
-            logger.info(f"Temps maximum autorisé: {self.config.solver_params.max_time_seconds}s")
-            print(f"SOLVER_START|MaxTime: {self.config.solver_params.max_time_seconds}s")
-            sys.stdout.flush()
-            
-            status = self.solver.Solve(self.model, callback)
-            
-            # Stop timer
-            stop_timer.set()
-            timer_thread.join(timeout=1)
-            
-            solve_time = time.time() - start_time
-            
-            self._notify_progress("Solution trouvée", 95)
-            
-            return self._build_result(status, solve_time)
-        
-        except Exception as e:
-            stop_timer.set()
-            logger.exception("Erreur lors de la résolution")
-            return OptimizationResult(
-                status='ERROR',
-                solve_time=time.time() - start_time,
-                error_message=str(e)
-            )
     
-    def _notify_progress(self, message: str, percent: int):
-        """Notify progress if callback is set"""
-        if self.progress_callback:
-            self.progress_callback(message, percent)
-        logger.info(f"[{percent}%] {message}")
+    # variable creation
+    
     
     def _create_variables(self):
-        """Create decision variables"""
+        """Crée les variables de décision x_{e,d,v}"""
         logger.info("Création des variables de décision...")
         
         count_vars = 0
@@ -262,20 +253,16 @@ class ScheduleOptimizer:
             slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
             
             for disc in self.config.disciplines:
-                # Check if discipline is open at this slot
+                # Contrainte 3 (Fermeture Discipline): O_{d,v} = 0
                 if not (len(disc.presence) > slot_idx and disc.presence[slot_idx]):
                     continue
                 
                 for el in self.config.eleves:
-                    # Check if student's year matches discipline
+                    # Contrainte 2 (Éligibilité Niveau): E_{e,d} = 0
                     if el.annee.value not in disc.annee:
                         continue
                     
-                    # Check calendar unavailability
-                    if (vac.semaine, slot_idx) in self.calendar_unavailability.get(el.annee, set()):
-                        continue
-                    
-                    # Check stage conflict
+                    # Contrainte 4 (Indisponibilité Élève - Stage): I_{e,v} = 1
                     is_in_stage = False
                     if el.id_eleve in self.stages_eleves:
                         for st in self.stages_eleves[el.id_eleve]:
@@ -285,41 +272,46 @@ class ScheduleOptimizer:
                     if is_in_stage:
                         continue
                     
-                    # Create variable
+                    # Contrainte 5 (Indisponibilité Cours - Calendrier): C_{a,v} = 1
+                    if el.annee in self.calendar_unavailability:
+                        if vac in self.calendar_unavailability[el.annee]:
+                            continue
+                    
+                    # Créer variable
                     var_name = f"x_e{el.id_eleve}_d{disc.id_discipline}_v{v_idx}"
-                    self.assignments[(el.id_eleve, disc.id_discipline, v_idx)] = \
-                        self.model.NewBoolVar(var_name)
+                    var = self.model.NewBoolVar(var_name)
+                    self.assignments[(el.id_eleve, disc.id_discipline, v_idx)] = var
                     count_vars += 1
         
         logger.info(f"✓ {count_vars} variables créées")
     
     def _build_indexes(self):
-        """Build indexing structures for efficient constraint addition"""
+        """Construit les structures d'indexation pour accélération"""
         logger.info("Construction des index...")
         
         for (e_id, d_id, v_idx), var in self.assignments.items():
-            # Index by student and vacation
+            # Index par (élève, vacation)
             self.vars_by_student_vac[(e_id, v_idx)].append(var)
             
-            # Index by discipline and vacation
+            # Index par (discipline, vacation)
             self.vars_by_disc_vac[(d_id, v_idx)].append(var)
             
-            # Index by student and discipline (all vacations)
+            # Index par (élève, discipline) - toutes vacations
             self.vars_by_student_disc_all[(e_id, d_id)].append(var)
             
-            # Index by student, discipline and week
+            # Index par (élève, discipline, semaine)
             semaine = self.vacations[v_idx].semaine
             self.vars_by_student_disc_semaine[(e_id, d_id, semaine)].append((v_idx, var))
             
-            # Index by discipline, vacation and student level
+            # Index par (discipline, vacation, niveau)
             el_annee = self.eleve_dict[e_id].annee
             self.vars_by_disc_vac_niveau[(d_id, v_idx, el_annee)].append(var)
         
         logger.info("✓ Index construits")
-    
-    def _add_capacity_constraints(self): #A modifier pour vrai modele
-        """Add capacity constraints for each discipline at each slot"""
-        logger.info("Ajout des contraintes de capacité...")
+    # CONSTRAINTS
+    def _add_capacity_constraints(self):
+        """Contrainte 1: Capacité des disciplines par créneau"""
+        logger.info("Ajout contraintes: Capacité...")
         
         count = 0
         for v_idx, vac in enumerate(self.vacations):
@@ -327,33 +319,31 @@ class ScheduleOptimizer:
             
             for disc in self.config.disciplines:
                 vars_in_disc_slot = self.vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
-                
                 if vars_in_disc_slot:
-                    cap = disc.nb_eleve[slot_idx] if slot_idx < len(disc.nb_eleve) else 0
+                    cap = disc.capacite[slot_idx] if len(disc.capacite) > slot_idx else 0
                     if cap > 0:
                         self.model.Add(sum(vars_in_disc_slot) <= cap)
                         count += 1
         
         logger.info(f"✓ {count} contraintes de capacité ajoutées")
     
-    def _add_uniqueness_constraints(self): #A modifier pour vrai modele
-        """Ensure each student is assigned to at most one discipline per slot"""
-        logger.info("Ajout des contraintes d'unicité...")
+    def _add_uniqueness_constraints(self):
+        """Contrainte 2: Un élève sur au plus une vacation par créneau"""
+        logger.info("Ajout contraintes: Unicité...")
         
         count = 0
         for v_idx in range(len(self.vacations)):
             for el in self.config.eleves:
                 vars_for_student = self.vars_by_student_vac.get((el.id_eleve, v_idx), [])
-                
-                if vars_for_student and len(vars_for_student) > 1:
+                if vars_for_student:
                     self.model.Add(sum(vars_for_student) <= 1)
                     count += 1
         
         logger.info(f"✓ {count} contraintes d'unicité ajoutées")
     
-    def _add_max_vacations_per_week(self): #A modifier pour vrai modele
-        """Add maximum vacations per week constraints"""
-        logger.info("Ajout des contraintes max vacations/semaine...")
+    def _add_max_vacations_per_week(self):
+        """Contrainte: Maximum de vacations par semaine par discipline"""
+        logger.info("Ajout contraintes: Max vacations/semaine...")
         
         count = 0
         for disc in self.config.disciplines:
@@ -365,20 +355,35 @@ class ScheduleOptimizer:
                     continue
                 
                 for s in range(1, 53):
-                    vars_entries = self.vars_by_student_disc_semaine.get(
-                        (el.id_eleve, disc.id_discipline, s), []
-                    )
-                    vars_week = [v[1] for v in vars_entries]
-                    
-                    if vars_week:
-                        self.model.Add(sum(vars_week) <= disc.nb_vacations_par_semaine)
+                    vars_semaine = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                    if vars_semaine:
+                        vars_only = [v for (_, v) in vars_semaine]
+                        self.model.Add(sum(vars_only) <= disc.nb_vacations_par_semaine)
                         count += 1
         
-        logger.info(f"✓ {count} contraintes max vacations/semaine")
+        logger.info(f"✓ {count} contraintes max vacations/semaine ajoutées")
     
-    def _add_fill_requirements(self): #A modifier pour vrai modele
-        """Add constraints to fill slots to capacity"""
-        logger.info("Ajout des contraintes de remplissage...")
+    def _add_pair_days_constraints(self):
+        """Contrainte soft: Paires de jours (bonus dans objectif)"""
+        logger.info("Ajout contraintes: Paires de jours (soft)...")
+        
+        # Cette contrainte est gérée dans l'objectif (bonus)
+        # Calcul du score max théorique pour les paires
+        for disc in self.config.disciplines:
+            if disc.paire_jours:
+                pair_count = 0
+                for el in self.config.eleves:
+                    if el.annee.value in disc.annee:
+                        pair_count += 1
+                
+                # Maximum: chaque élève obtient toutes les paires dans toutes les semaines
+                self.max_theoretical_score += pair_count * 52 * len(disc.paire_jours) * 50
+        
+        logger.info("✓ Paires de jours configurées (soft)")
+    
+    def _add_fill_requirements(self):
+        """Contrainte hard: Vacations doivent être remplies à capacité"""
+        logger.info("Ajout contraintes: Remplissage obligatoire...")
         
         count = 0
         for disc in self.config.disciplines:
@@ -387,347 +392,326 @@ class ScheduleOptimizer:
             
             for v_idx, vac in enumerate(self.vacations):
                 slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
-                vars_in_disc_slot = self.vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
                 
-                if vars_in_disc_slot:
-                    cap = disc.nb_eleve[slot_idx] if slot_idx < len(disc.nb_eleve) else 0
-                    target = min(cap, len(vars_in_disc_slot))
+                if len(disc.capacite) > slot_idx and disc.presence[slot_idx]:
+                    cap = disc.capacite[slot_idx]
+                    vars_in_slot = self.vars_by_disc_vac.get((disc.id_discipline, v_idx), [])
                     
-                    if target > 0:
-                        self.model.Add(sum(vars_in_disc_slot) == target)
+                    if cap > 0 and vars_in_slot:
+                        self.model.Add(sum(vars_in_slot) == cap)
                         count += 1
         
-        logger.info(f"✓ {count} contraintes de remplissage")
+        logger.info(f"✓ {count} contraintes de remplissage ajoutées")
     
-    def _add_binome_constraints(self): #A modifier pour vrai modele
-        """Add constraints for paired students (binômes)"""
-        logger.info("Ajout des contraintes de binômes...")
+    def _add_binome_constraints(self):
+        """Contrainte: Binômes doivent être affectés ensemble"""
+        logger.info("Ajout contraintes: Binômes...")
         
         count = 0
         for disc in self.config.disciplines:
             if not disc.en_binome:
                 continue
             
-            # Create binome pairs
+            # Créer paires de binômes
             binome_pairs = set()
             for e in self.config.eleves:
-                if e.id_binome > 0 and e.id_eleve < e.id_binome:
-                    if e.id_binome in self.eleve_dict:
-                        binome_pairs.add((e.id_eleve, e.id_binome))
+                if e.annee.value in disc.annee and e.binome:
+                    binome_id_1 = min(e.id_eleve, e.binome.id_eleve)
+                    binome_id_2 = max(e.id_eleve, e.binome.id_eleve)
+                    binome_pairs.add((binome_id_1, binome_id_2))
             
             for e1_id, e2_id in binome_pairs:
                 for s in range(1, 53):
                     vars_e1 = self.vars_by_student_disc_semaine.get((e1_id, disc.id_discipline, s), [])
                     vars_e2 = self.vars_by_student_disc_semaine.get((e2_id, disc.id_discipline, s), [])
                     
-                    if not vars_e1 or not vars_e2:
-                        continue
-                    
-                    # For each day/period combination
-                    for j in range(5):
-                        for p in DemiJournee:
-                            v_idxs_e1 = [v[0] for v in vars_e1 
-                                        if self.vacations[v[0]].jour == j 
-                                        and self.vacations[v[0]].period == p]
-                            v_idxs_e2 = [v[0] for v in vars_e2 
-                                        if self.vacations[v[0]].jour == j 
-                                        and self.vacations[v[0]].period == p]
-                            
-                            if v_idxs_e1 and v_idxs_e2:
-                                var_e1 = self.assignments.get((e1_id, disc.id_discipline, v_idxs_e1[0]))
-                                var_e2 = self.assignments.get((e2_id, disc.id_discipline, v_idxs_e2[0]))
-                                
-                                if var_e1 is not None and var_e2 is not None:
-                                    self.model.Add(var_e1 == var_e2)
-                                    count += 1
+                    if vars_e1 and vars_e2:
+                        # Même nombre d'affectations dans la semaine
+                        sum_e1 = sum(v for (_, v) in vars_e1)
+                        sum_e2 = sum(v for (_, v) in vars_e2)
+                        self.model.Add(sum_e1 == sum_e2)
+                        
+                        # Même créneaux
+                        for (v_idx1, var1) in vars_e1:
+                            for (v_idx2, var2) in vars_e2:
+                                if v_idx1 == v_idx2:
+                                    self.model.Add(var1 == var2)
+                        
+                        count += 1
         
-        logger.info(f"✓ {count} contraintes de binômes")
+        logger.info(f"✓ {count} contraintes de binômes ajoutées")
     
-    def _add_advanced_constraints(self): #A modifier pour vrai modele
-        """Add advanced discipline-specific constraints"""
-        logger.info("Ajout des contraintes avancées...")
+    def _add_frequency_constraints(self):
+        """Contrainte: Fréquence des vacations (toutes les X semaines)"""
+        logger.info("Ajout contraintes: Fréquence...")
         
-        constraint_count = 0
-        
-        # 1. PAIRE JOURS (Soft - via objective)
-        # Students should be assigned to paired days in the same week
-        logger.info("  → Paires de jours...")
-        obj_terms_pairs = []
-        weights_pairs = []
-        
+        count = 0
         for disc in self.config.disciplines:
-            if disc.paire_jours:
-                for el in self.config.eleves:
-                    if el.annee.value not in disc.annee:
+            if disc.frequence_vacations <= 1:
+                continue
+            
+            for el in self.config.eleves:
+                if el.annee.value not in disc.annee:
+                    continue
+                
+                # Vérifier qu'entre deux semaines consécutives avec affectation,
+                # il y a au moins frequence_vacations semaines d'écart
+                for s1 in range(1, 53):
+                    vars_s1 = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s1), [])
+                    if not vars_s1:
                         continue
                     
-                    for s in range(1, 53):
-                        vars_entries = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
-                        if not vars_entries:
-                            continue
+                    # Si affectation en s1, pas d'affectation dans les (freq-1) semaines suivantes
+                    for offset in range(1, disc.frequence_vacations):
+                        s2 = s1 + offset
+                        if s2 > 52:
+                            break
                         
-                        for (j1, j2) in disc.paire_jours:
-                            # Get variables for each day
-                            vars_j1 = [v[1] for v in vars_entries if self.vacations[v[0]].jour == j1]
-                            vars_j2 = [v[1] for v in vars_entries if self.vacations[v[0]].jour == j2]
-                            
-                            if vars_j1 and vars_j2:
-                                # Boolean for presence on j1
-                                b_j1 = self.model.NewBoolVar(f"present_j{j1}_s{s}_e{el.id_eleve}_d{disc.id_discipline}")
-                                self.model.Add(sum(vars_j1) >= 1).OnlyEnforceIf(b_j1)
-                                self.model.Add(sum(vars_j1) == 0).OnlyEnforceIf(b_j1.Not())
-                                
-                                # Boolean for presence on j2
-                                b_j2 = self.model.NewBoolVar(f"present_j{j2}_s{s}_e{el.id_eleve}_d{disc.id_discipline}")
-                                self.model.Add(sum(vars_j2) >= 1).OnlyEnforceIf(b_j2)
-                                self.model.Add(sum(vars_j2) == 0).OnlyEnforceIf(b_j2.Not())
-                                
-                                # If j1 then j2 (soft constraint via objective)
-                                pair_ok = self.model.NewBoolVar(f"pair_ok_{j1}_{j2}_s{s}_e{el.id_eleve}_d{disc.id_discipline}")
-                                self.model.AddImplication(b_j1, b_j2).OnlyEnforceIf(pair_ok)
-                                
-                                obj_terms_pairs.append(pair_ok)
-                                weights_pairs.append(50)
-                                constraint_count += 1
+                        vars_s2 = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s2), [])
+                        if vars_s2:
+                            sum_s1 = sum(v for (_, v) in vars_s1)
+                            sum_s2 = sum(v for (_, v) in vars_s2)
+                            # Si sum_s1 > 0, alors sum_s2 == 0
+                            has_s1 = self.model.NewBoolVar(f"has_e{el.id_eleve}_d{disc.id_discipline}_s{s1}")
+                            self.model.Add(sum_s1 > 0).OnlyEnforceIf(has_s1)
+                            self.model.Add(sum_s1 == 0).OnlyEnforceIf(has_s1.Not())
+                            self.model.Add(sum_s2 == 0).OnlyEnforceIf(has_s1)
+                            count += 1
         
-        # 2. FRÉQUENCE VACATIONS (Hard)
-        # Students should have vacations every X weeks
-        logger.info("  → Fréquence des vacations...")
+        logger.info(f"✓ {count} contraintes de fréquence ajoutées")
+    
+    def _add_semester_distribution(self):
+        """Contrainte: Répartition semestrielle des quotas"""
+        logger.info("Ajout contraintes: Répartition semestrielle...")
+        
+        count = 0
         for disc in self.config.disciplines:
-            if disc.frequence_vacations > 1:
-                for el in self.config.eleves:
-                    if el.annee.value not in disc.annee:
+            if not disc.repartition_semestrielle:
+                continue
+            
+            for el in self.config.eleves:
+                if el.annee.value not in disc.annee:
+                    continue
+                
+                # Semestre 1: semaines 1-26, Semestre 2: semaines 27-52
+                vars_sem1 = []
+                vars_sem2 = []
+                
+                for s in range(1, 27):
+                    vars_s = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                    vars_sem1.extend([v for (_, v) in vars_s])
+                
+                for s in range(27, 53):
+                    vars_s = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                    vars_sem2.extend([v for (_, v) in vars_s])
+                
+                if vars_sem1 and vars_sem2:
+                    quota_sem1 = disc.repartition_semestrielle[0]
+                    quota_sem2 = disc.repartition_semestrielle[1]
+                    
+                    self.model.Add(sum(vars_sem1) <= quota_sem1)
+                    self.model.Add(sum(vars_sem2) <= quota_sem2)
+                    count += 2
+        
+        logger.info(f"✓ {count} contraintes de répartition semestrielle ajoutées")
+    
+    def _add_group_diversity(self):
+        """Contrainte: Mixité des groupes (niveaux)"""
+        logger.info("Ajout contraintes: Mixité des groupes...")
+        
+        count = 0
+        for disc in self.config.disciplines:
+            if disc.mixite_groupes == 0:
+                continue
+            
+            for v_idx, vac in enumerate(self.vacations):
+                slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
+                
+                if not (len(disc.presence) > slot_idx and disc.presence[slot_idx]):
+                    continue
+                
+                # Récupérer toutes les années éligibles
+                niveaux_eligibles = [niv for niv in niveau if niv.value in disc.annee]
+                
+                if disc.mixite_groupes == 1:
+                    # Exactement 1 élève de chaque niveau
+                    for niv in niveaux_eligibles:
+                        vars_niveau = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
+                        if vars_niveau:
+                            self.model.Add(sum(vars_niveau) == 1)
+                            count += 1
+                
+                elif disc.mixite_groupes == 2:
+                    # Au moins 2 niveaux différents
+                    niveau_present_vars = []
+                    for niv in niveaux_eligibles:
+                        vars_niveau = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
+                        if vars_niveau:
+                            niv_present = self.model.NewBoolVar(f"niv{niv.value}_d{disc.id_discipline}_v{v_idx}")
+                            self.model.Add(sum(vars_niveau) > 0).OnlyEnforceIf(niv_present)
+                            self.model.Add(sum(vars_niveau) == 0).OnlyEnforceIf(niv_present.Not())
+                            niveau_present_vars.append(niv_present)
+                    
+                    if len(niveau_present_vars) >= 2:
+                        self.model.Add(sum(niveau_present_vars) >= 2)
+                        count += 1
+                
+                elif disc.mixite_groupes == 3:
+                    # Tous du même niveau
+                    niveau_present_vars = []
+                    for niv in niveaux_eligibles:
+                        vars_niveau = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
+                        if vars_niveau:
+                            niv_present = self.model.NewBoolVar(f"niv{niv.value}_d{disc.id_discipline}_v{v_idx}")
+                            self.model.Add(sum(vars_niveau) > 0).OnlyEnforceIf(niv_present)
+                            self.model.Add(sum(vars_niveau) == 0).OnlyEnforceIf(niv_present.Not())
+                            niveau_present_vars.append(niv_present)
+                    
+                    if niveau_present_vars:
+                        self.model.Add(sum(niveau_present_vars) <= 1)
+                        count += 1
+        
+        logger.info(f"✓ {count} contraintes de mixité ajoutées")
+    
+    def _add_continuity_constraints(self):
+        """Contrainte: Pas plus de X vacations dans Y semaines"""
+        logger.info("Ajout contraintes: Continuité...")
+        
+        count = 0
+        for disc in self.config.disciplines:
+            if not isinstance(disc.repetition_continuite, (list, tuple)):
+                continue
+            
+            limit = disc.repetition_continuite[0]
+            distance = disc.repetition_continuite[1]
+            
+            if limit <= 0 or distance <= 0:
+                continue
+            
+            for el in self.config.eleves:
+                if el.annee.value not in disc.annee:
+                    continue
+                
+                # Fenêtre glissante de 'distance' semaines
+                for s_start in range(1, 53):
+                    s_end = min(s_start + distance - 1, 52)
+                    
+                    vars_window = []
+                    for s in range(s_start, s_end + 1):
+                        vars_s = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                        vars_window.extend([v for (_, v) in vars_s])
+                    
+                    if vars_window:
+                        self.model.Add(sum(vars_window) <= limit)
+                        count += 1
+        
+        logger.info(f"✓ {count} contraintes de continuité ajoutées")
+    
+    def _add_level_replacement(self):
+        """Contrainte: Remplacement de niveau (% de capacité)"""
+        logger.info("Ajout contraintes: Remplacement de niveau...")
+        
+        count = 0
+        for disc in self.config.disciplines:
+            if not disc.remplacement_niveau:
+                continue
+            
+            for (niv_from_val, niv_to_val, percentage) in disc.remplacement_niveau:
+                # Trouver les objets niveau
+                niv_from = None
+                niv_to = None
+                for n in niveau:
+                    if n.value == niv_from_val:
+                        niv_from = n
+                    if n.value == niv_to_val:
+                        niv_to = n
+                
+                if not niv_from or not niv_to:
+                    continue
+                
+                # Pour chaque vacation, si niveau FROM absent, niveau TO doit remplir X%
+                for v_idx, vac in enumerate(self.vacations):
+                    slot_idx = vac.jour * 2 + (0 if vac.period == DemiJournee.matin else 1)
+                    
+                    if not (len(disc.presence) > slot_idx and disc.presence[slot_idx]):
                         continue
                     
-                    # For each possible starting week
-                    for start_week in range(1, disc.frequence_vacations + 1):
-                        weeks_group = list(range(start_week, 53, disc.frequence_vacations))
+                    vars_from = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv_from), [])
+                    vars_to = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv_to), [])
+                    
+                    if not vars_to:
+                        continue
+                    
+                    cap = disc.capacite[slot_idx] if len(disc.capacite) > slot_idx else 0
+                    required = int((percentage / 100.0) * cap)
+                    
+                    if required > 0:
+                        # Si aucun élève FROM présent, alors TO >= required
+                        from_absent = self.model.NewBoolVar(f"from_absent_d{disc.id_discipline}_v{v_idx}")
                         
-                        # Split into groups of size frequence_vacations
-                        for i in range(0, len(weeks_group), disc.frequence_vacations):
-                            group_weeks = weeks_group[i:i + disc.frequence_vacations]
-                            
-                            vars_in_group = []
-                            for s in group_weeks:
-                                vars_entries = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
-                                vars_in_group.extend([v[1] for v in vars_entries])
-                            
-                            if vars_in_group:
-                                # At most 1 vacation in this group of weeks
-                                self.model.Add(sum(vars_in_group) <= 1)
-                                constraint_count += 1
+                        if vars_from:
+                            self.model.Add(sum(vars_from) == 0).OnlyEnforceIf(from_absent)
+                            self.model.Add(sum(vars_from) > 0).OnlyEnforceIf(from_absent.Not())
+                        else:
+                            # Pas de variables FROM disponibles, donc toujours absent
+                            self.model.Add(from_absent == 1)
+                        
+                        self.model.Add(sum(vars_to) >= required).OnlyEnforceIf(from_absent)
+                        count += 1
         
-        # 3. RÉPARTITION SEMESTRIELLE (Hard)
-        # Distribute quotas between semesters
-        logger.info("  → Répartition semestrielle...")
+        logger.info(f"✓ {count} contraintes de remplacement ajoutées")
+    
+    def _add_same_day_constraints(self):
+        """Contrainte soft: Même jour (bonus dans objectif)"""
+        logger.info("Ajout contraintes: Même jour (soft)...")
+        
+        # Cette contrainte est gérée dans l'objectif (bonus)
+        # Calcul du score max théorique
         for disc in self.config.disciplines:
-            if disc.repartition_semestrielle:
+            if disc.meme_jour:
                 for el in self.config.eleves:
                     if el.annee.value not in disc.annee:
                         continue
                     
-                    # Get quota for this student's year
                     try:
-                        adx = disc.annee.index(el.annee.value)
-                        quota = disc.quota[adx]
+                        idx_annee = disc.annee.index(el.annee.value)
+                        quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
                     except (ValueError, IndexError):
                         quota = 0
                     
-                    if quota > 0:
-                        sem1_target = disc.repartition_semestrielle[0]
-                        sem2_target = disc.repartition_semestrielle[1]
-                        
-                        vars_sem1 = []
-                        vars_sem2 = []
-                        
-                        for s in range(1, 53):
-                            vars_entries = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
-                            if vars_entries:
-                                if s <= 26:  # First semester
-                                    vars_sem1.extend([v[1] for v in vars_entries])
-                                else:  # Second semester
-                                    vars_sem2.extend([v[1] for v in vars_entries])
-                        
-                        if vars_sem1:
-                            self.model.Add(sum(vars_sem1) <= sem1_target)
-                            constraint_count += 1
-                        if vars_sem2:
-                            self.model.Add(sum(vars_sem2) <= sem2_target)
-                            constraint_count += 1
+                    if quota > 1:
+                        # Chaque paire d'affectations peut rapporter 30 points max
+                        max_pairs = quota * (quota - 1) // 2
+                        self.max_theoretical_score += max_pairs * 30
         
-        # 4. MIXITÉ DES GROUPES (Hard)
-        # Control year-level diversity in vacations
-        logger.info("  → Mixité des groupes...")
-        from classes.enum.niveaux import niveau
-        
-        for disc in self.config.disciplines:
-            if disc.mixite_groupes > 0:
-                for v_idx, vac in enumerate(self.vacations):
-                    if not self.vars_by_disc_vac.get((disc.id_discipline, v_idx)):
-                        continue
-                    
-                    if disc.mixite_groupes == 1:
-                        # Exactly 1 student from each level
-                        for niv in niveau:
-                            vars_niv = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
-                            if vars_niv:
-                                self.model.Add(sum(vars_niv) == 1)
-                                constraint_count += 1
-                    
-                    elif disc.mixite_groupes == 2:
-                        # At least 2 different levels (if vacation is not empty)
-                        niv_bools = []
-                        for niv in niveau:
-                            vars_niv = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
-                            if vars_niv:
-                                b_niv = self.model.NewBoolVar(f"pres_{niv.name}_d{disc.id_discipline}_v{v_idx}")
-                                self.model.Add(sum(vars_niv) >= 1).OnlyEnforceIf(b_niv)
-                                self.model.Add(sum(vars_niv) == 0).OnlyEnforceIf(b_niv.Not())
-                                niv_bools.append(b_niv)
-                        
-                        if niv_bools:
-                            # If any level present, must have at least 2 levels
-                            any_present = self.model.NewBoolVar(f"any_pres_d{disc.id_discipline}_v{v_idx}")
-                            self.model.Add(sum(niv_bools) >= 1).OnlyEnforceIf(any_present)
-                            self.model.Add(sum(niv_bools) == 0).OnlyEnforceIf(any_present.Not())
-                            self.model.Add(sum(niv_bools) >= 2).OnlyEnforceIf(any_present)
-                            constraint_count += 1
-                    
-                    elif disc.mixite_groupes == 3:
-                        # All from same level (at most 1 level present)
-                        niv_bools = []
-                        for niv in niveau:
-                            vars_niv = self.vars_by_disc_vac_niveau.get((disc.id_discipline, v_idx, niv), [])
-                            if vars_niv:
-                                b_niv = self.model.NewBoolVar(f"pres_{niv.name}_d{disc.id_discipline}_v{v_idx}")
-                                self.model.Add(sum(vars_niv) >= 1).OnlyEnforceIf(b_niv)
-                                self.model.Add(sum(vars_niv) == 0).OnlyEnforceIf(b_niv.Not())
-                                niv_bools.append(b_niv)
-                        
-                        if niv_bools:
-                            self.model.Add(sum(niv_bools) <= 1)
-                            constraint_count += 1
-        
-        # 5. RÉPÉTITION CONTINUITÉ (Hard)
-        # No more than X vacations within Y weeks
-        logger.info("  → Répétition continuité...")
-        for disc in self.config.disciplines:
-            if isinstance(disc.repetition_continuite, tuple):
-                limit = disc.repetition_continuite[0]
-                distance = disc.repetition_continuite[1]
-                
-                if limit > 0 and distance > 0:
-                    for el in self.config.eleves:
-                        if el.annee.value not in disc.annee:
-                            continue
-                        
-                        # For each possible starting week
-                        for start_week in range(1, distance + 1):
-                            weeks_group = list(range(start_week, 53, distance))
-                            
-                            vars_in_group = []
-                            for s in weeks_group:
-                                vars_entries = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
-                                vars_in_group.extend([v[1] for v in vars_entries])
-                            
-                            if vars_in_group:
-                                self.model.Add(sum(vars_in_group) <= limit)
-                                constraint_count += 1
-        
-        # 6. REMPLACEMENT DE NIVEAU (Hard)
-        # Allow one year level to replace another
-        logger.info("  → Remplacement de niveau...")
-        for disc in self.config.disciplines:
-            if disc.remplacement_niveau:
-                for (niv_from, niv_to, nb_eleves) in disc.remplacement_niveau:
-                    eleves_from = [e for e in self.config.eleves if e.annee.value == niv_from]
-                    eleves_to = [e for e in self.config.eleves if e.annee.value == niv_to]
-                    
-                    for v_idx, vac in enumerate(self.vacations):
-                        vars_from = []
-                        vars_to = []
-                        
-                        for el in eleves_from:
-                            if (el.id_eleve, disc.id_discipline, v_idx) in self.assignments:
-                                vars_from.append(self.assignments[(el.id_eleve, disc.id_discipline, v_idx)])
-                        
-                        for el in eleves_to:
-                            if (el.id_eleve, disc.id_discipline, v_idx) in self.assignments:
-                                vars_to.append(self.assignments[(el.id_eleve, disc.id_discipline, v_idx)])
-                        
-                        if vars_from and vars_to:
-                            # For every niv_from student, we need nb_eleves from niv_to
-                            denom = max(1, len(eleves_from))
-                            self.model.Add(sum(vars_to) * denom >= sum(vars_from) * nb_eleves)
-                            constraint_count += 1
-        
-        # 7. PRIORITÉ NIVEAU (Soft - via objective)
-        # Give priority to certain year levels
-        logger.info("  → Priorité niveau...")
-        obj_terms_prio = []
-        weights_prio = []
-        
-        for disc in self.config.disciplines:
-            if disc.priorite_niveau:
-                # Create priority map
-                prio_map = {}
-                if len(disc.priorite_niveau) > 0:
-                    prio_map[disc.priorite_niveau[0]] = 50  # Priority 1
-                if len(disc.priorite_niveau) > 1:
-                    prio_map[disc.priorite_niveau[1]] = 20  # Priority 2
-                if len(disc.priorite_niveau) > 2:
-                    prio_map[disc.priorite_niveau[2]] = 5   # Priority 3
-                
-                for el in self.config.eleves:
-                    if el.annee.value in prio_map:
-                        vars_student = self.vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
-                        w = prio_map[el.annee.value]
-                        for var in vars_student:
-                            obj_terms_prio.append(var)
-                            weights_prio.append(w)
-        
-        # 8. JOUR PRÉFÉRENCE (Soft - via objective)
-        # Respect student day preferences
-        logger.info("  → Préférences jours...")
-        obj_terms_pref = []
-        weights_pref = []
-        
-        for disc in self.config.disciplines:
-            if disc.take_jour_pref:
-                for (e_id, d_id, v_idx), var in self.assignments.items():
-                    if d_id == disc.id_discipline:
-                        el = self.eleve_dict[e_id]
-                        vac = self.vacations[v_idx]
-                        
-                        # Check if vacation day matches preference
-                        # vac.jour: 0-4 (Mon-Fri), jour_preference.value: 1-5
-                        if (vac.jour + 1) == el.jour_preference.value:
-                            obj_terms_pref.append(var)
-                            weights_pref.append(100)  # Significant bonus
-        
-        logger.info(f"✓ {constraint_count} contraintes avancées ajoutées")
-        
-        # Store objective terms for later use in _set_objective
-        if not hasattr(self, 'advanced_obj_terms'):
-            self.advanced_obj_terms = []
-            self.advanced_obj_weights = []
-        
-        self.advanced_obj_terms.extend(obj_terms_pairs)
-        self.advanced_obj_weights.extend(weights_pairs)
-        self.advanced_obj_terms.extend(obj_terms_prio)
-        self.advanced_obj_weights.extend(weights_prio)
-        self.advanced_obj_terms.extend(obj_terms_pref)
-        self.advanced_obj_weights.extend(weights_pref)
+        logger.info("✓ Même jour configuré (soft)")
     
-    def _set_objective(self): #A modifier pour vrai modele
-        """Set the optimization objective"""
+    # objective configuration
+        
+    def _set_objective(self):
+        """Configure la fonction objectif (logique V5_03_C)"""
         logger.info("Configuration de l'objectif...")
         
-        obj_terms = []
-        weights = []
+        # Poids configuration (identique à V5_03_C)
+        w_fill = 600         # Points par affectation dans le quota
+        w_excess = -900      # Pénalité par affectation au-delà du quota
+        w_success = 30000    # Bonus si élève atteint son quota pour une discipline
+        w_grand_slam = 5000000  # Super bonus si TOUS les élèves atteignent quota
         
-        # Main objective: Quotas
+        w_preference = 50    # Bonus préférence jour
+        w_priority_1 = 30    # Bonus priorité niveau 1
+        w_priority_2 = 15    # Bonus priorité niveau 2
+        w_priority_3 = 5     # Bonus priorité niveau 3
+        
+        w_pair = 50          # Bonus paire de jours
+        w_same_day = 30      # Bonus même jour
+        
+        # A. MAXIMISER REMPLISSAGE JUSQU'AU QUOTA
+        logger.info("  → Configuration quotas...")
+        
         for disc in self.config.disciplines:
+            discipline_success_vars = []
+            
             for el in self.config.eleves:
                 if el.annee.value not in disc.annee:
                     continue
@@ -736,66 +720,343 @@ class ScheduleOptimizer:
                 if not vars_list:
                     continue
                 
+                # Récupérer quota
                 try:
-                    adx = disc.annee.index(el.annee.value)
-                    quota = disc.quota[adx]
+                    idx_annee = disc.annee.index(el.annee.value)
+                    quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
                 except (ValueError, IndexError):
                     quota = 0
                 
                 if quota > 0:
-                    # Weight configuration
-                    w_fill = 150
-                    w_excess = -200
-                    w_success = 7000
+                    # 1. Variable sat_var: affectations DANS le quota
+                    sat_var = self.model.NewIntVar(0, quota, f"sat_e{el.id_eleve}_d{disc.id_discipline}")
+                    self.sat_vars[(el.id_eleve, disc.id_discipline)] = sat_var
                     
-                    # Special weights for Polyclinique (id=1)
-                    if disc.id_discipline == 1:
-                        w_fill = 600
-                        w_excess = -800
-                        w_success = 30000
+                    # 2. Variable excess_var: affectations AU-DELÀ du quota
+                    max_possible = len(vars_list)
+                    excess_var = self.model.NewIntVar(0, max_possible, f"excess_e{el.id_eleve}_d{disc.id_discipline}")
+                    self.excess_vars[(el.id_eleve, disc.id_discipline)] = excess_var
                     
-                    # Satisfaction variable (how much of quota is filled)
-                    sat_var = self.model.NewIntVar(
-                        0, quota,
-                        f"sat_e{el.id_eleve}_d{disc.id_discipline}"
-                    )
-                    self.model.Add(sat_var <= sum(vars_list))
-                    obj_terms.append(sat_var)
-                    weights.append(w_fill)
+                    # 3. Relation: sum(vars) = sat_var + excess_var
+                    self.model.Add(sum(vars_list) == sat_var + excess_var)
                     
-                    # Excess variable (penalize going over quota)
-                    excess_var = self.model.NewIntVar(
-                        0, 500,
-                        f"excess_e{el.id_eleve}_d{disc.id_discipline}"
-                    )
-                    self.model.Add(excess_var + quota >= sum(vars_list))
-                    obj_terms.append(excess_var)
-                    weights.append(w_excess)
+                    # 4. Contrainte: sat_var <= quota
+                    self.model.Add(sat_var <= quota)
                     
-                    # Success variable (bonus for meeting quota exactly)
-                    is_success = self.model.NewBoolVar(
-                        f"success_e{el.id_eleve}_d{disc.id_discipline}"
-                    )
-                    self.model.Add(sum(vars_list) >= quota).OnlyEnforceIf(is_success)
-                    self.model.Add(sum(vars_list) < quota).OnlyEnforceIf(is_success.Not())
-                    obj_terms.append(is_success)
-                    weights.append(w_success)
+                    # 5. Contribution objectif: w_fill * sat_var + w_excess * excess_var
+                    self.obj_terms.append(sat_var)
+                    self.weights.append(w_fill)
+                    self.obj_terms.append(excess_var)
+                    self.weights.append(w_excess)
+                    
+                    # Score max théorique: tous atteignent quota sans dépassement
+                    self.max_theoretical_score += w_fill * quota
+                    
+                    # 6. Variable is_success: True si quota atteint
+                    is_success = self.model.NewBoolVar(f"success_e{el.id_eleve}_d{disc.id_discipline}")
+                    self.success_vars[(el.id_eleve, disc.id_discipline)] = is_success
+                    
+                    self.model.Add(sat_var >= quota).OnlyEnforceIf(is_success)
+                    self.model.Add(sat_var < quota).OnlyEnforceIf(is_success.Not())
+                    
+                    # 7. Bonus si succès individuel
+                    self.obj_terms.append(is_success)
+                    self.weights.append(w_success)
+                    
+                    # Score max théorique: tous les élèves réussissent
+                    self.max_theoretical_score += w_success
+                    
+                    discipline_success_vars.append(is_success)
+            
+            # 8. SUPER BONUS: Tous les élèves de la discipline atteignent quota
+            if discipline_success_vars:
+                all_success_var = self.model.NewBoolVar(f"all_success_d{disc.id_discipline}")
+                self.all_success_vars[disc.id_discipline] = all_success_var
+                
+                # all_success = min(discipline_success_vars)
+                self.model.AddMinEquality(all_success_var, discipline_success_vars)
+                
+                # Bonus si tous réussissent
+                # NOTE: On ne l'inclut PAS dans max_theoretical_score (logique V5_03_C)
+                # car trop difficile à atteindre avec toutes les contraintes
+                # self.obj_terms.append(all_success_var)
+                # self.weights.append(w_grand_slam)
         
-        # Add advanced constraint objectives (soft constraints)
-        if hasattr(self, 'advanced_obj_terms'):
-            obj_terms.extend(self.advanced_obj_terms)
-            weights.extend(self.advanced_obj_weights)
-            logger.info(f"  + {len(self.advanced_obj_terms)} termes de contraintes avancées")
+        # B. PRÉFÉRENCES JOURS
+        logger.info("  → Préférences jours...")
+        poly = None
+        for disc in self.config.disciplines:
+            if disc.id_discipline == 1:  # Polyclinique
+                poly = disc
+                break
         
-        # Set objective
-        self.model.Maximize(sum(t * w for t, w in zip(obj_terms, weights)))
+        if poly and poly.take_jour_pref:
+            # Calcul max théorique
+            pref_count = 0
+            for el in self.config.eleves:
+                if el.annee.value in poly.annee and el.jour_pref:
+                    try:
+                        idx_annee = poly.annee.index(el.annee.value)
+                        quota = poly.quotas[idx_annee] if len(poly.quotas) > idx_annee else 0
+                        pref_count += quota
+                    except (ValueError, IndexError):
+                        pass
+            
+            self.max_theoretical_score += pref_count * w_preference
+            
+            # Ajouter bonus
+            for (e_id, d_id, v_idx), var in self.assignments.items():
+                if d_id == poly.id_discipline:
+                    el = self.eleve_dict[e_id]
+                    if el.jour_pref:
+                        vac = self.vacations[v_idx]
+                        if vac.jour == el.jour_pref.jour and vac.period == el.jour_pref.period:
+                            self.obj_terms.append(var)
+                            self.weights.append(w_preference)
         
-        logger.info(f"✓ Objectif configuré avec {len(obj_terms)} termes")
+        # C. PRIORITÉ NIVEAU
+        logger.info("  → Priorité niveau...")
+        for disc in self.config.disciplines:
+            if disc.priorite_niveau:
+                # Calcul max théorique
+                for priority_idx, niv_val in enumerate(disc.priorite_niveau):
+                    niv = None
+                    for n in niveau:
+                        if n.value == niv_val:
+                            niv = n
+                            break
+                    
+                    if niv:
+                        # Compter élèves de ce niveau
+                        count_niv = sum(1 for el in self.config.eleves if el.annee == niv)
+                        
+                        try:
+                            idx_annee = disc.annee.index(niv_val)
+                            quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
+                        except (ValueError, IndexError):
+                            quota = 0
+                        
+                        if priority_idx == 0:
+                            self.max_theoretical_score += count_niv * quota * w_priority_1
+                        elif priority_idx == 1:
+                            self.max_theoretical_score += count_niv * quota * w_priority_2
+                        elif priority_idx == 2:
+                            self.max_theoretical_score += count_niv * quota * w_priority_3
+                
+                # Ajouter bonus
+                for priority_idx, niv_val in enumerate(disc.priorite_niveau):
+                    niv = None
+                    for n in niveau:
+                        if n.value == niv_val:
+                            niv = n
+                            break
+                    
+                    if not niv:
+                        continue
+                    
+                    for el in self.config.eleves:
+                        if el.annee != niv:
+                            continue
+                        
+                        vars_list = self.vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
+                        if not vars_list:
+                            continue
+                        
+                        bonus = 0
+                        if priority_idx == 0:
+                            bonus = w_priority_1
+                        elif priority_idx == 1:
+                            bonus = w_priority_2
+                        elif priority_idx == 2:
+                            bonus = w_priority_3
+                        
+                        if bonus > 0:
+                            for var in vars_list:
+                                self.obj_terms.append(var)
+                                self.weights.append(bonus)
+        
+        # D. PAIRES DE JOURS (Soft)
+        logger.info("  → Paires de jours...")
+        for disc in self.config.disciplines:
+            if disc.paire_jours:
+                for el in self.config.eleves:
+                    if el.annee.value not in disc.annee:
+                        continue
+                    
+                    for s in range(1, 53):
+                        vars_semaine = self.vars_by_student_disc_semaine.get((el.id_eleve, disc.id_discipline, s), [])
+                        if not vars_semaine:
+                            continue
+                        
+                        # Grouper par jour
+                        vars_by_day = collections.defaultdict(list)
+                        for (v_idx, var) in vars_semaine:
+                            day = self.vacations[v_idx].jour
+                            vars_by_day[day].append(var)
+                        
+                        # Vérifier paires
+                        for (day1, day2) in disc.paire_jours:
+                            if day1 in vars_by_day and day2 in vars_by_day:
+                                # Bonus si les deux jours ont au moins une affectation
+                                pair_bonus = self.model.NewBoolVar(f"pair_e{el.id_eleve}_d{disc.id_discipline}_s{s}_d{day1}d{day2}")
+                                
+                                has_day1 = self.model.NewBoolVar(f"has_d{day1}_e{el.id_eleve}_d{disc.id_discipline}_s{s}")
+                                has_day2 = self.model.NewBoolVar(f"has_d{day2}_e{el.id_eleve}_d{disc.id_discipline}_s{s}")
+                                
+                                self.model.Add(sum(vars_by_day[day1]) > 0).OnlyEnforceIf(has_day1)
+                                self.model.Add(sum(vars_by_day[day1]) == 0).OnlyEnforceIf(has_day1.Not())
+                                self.model.Add(sum(vars_by_day[day2]) > 0).OnlyEnforceIf(has_day2)
+                                self.model.Add(sum(vars_by_day[day2]) == 0).OnlyEnforceIf(has_day2.Not())
+                                
+                                # pair_bonus = has_day1 AND has_day2
+                                self.model.AddBoolAnd([has_day1, has_day2]).OnlyEnforceIf(pair_bonus)
+                                self.model.AddBoolOr([has_day1.Not(), has_day2.Not()]).OnlyEnforceIf(pair_bonus.Not())
+                                
+                                self.obj_terms.append(pair_bonus)
+                                self.weights.append(w_pair)
+        
+        # E. MÊME JOUR (Soft)
+        logger.info("  → Même jour...")
+        for disc in self.config.disciplines:
+            if disc.meme_jour:
+                for el in self.config.eleves:
+                    if el.annee.value not in disc.annee:
+                        continue
+                    
+                    # Pour chaque paire d'affectations de l'élève dans cette discipline
+                    vars_list = self.vars_by_student_disc_all.get((el.id_eleve, disc.id_discipline), [])
+                    if len(vars_list) < 2:
+                        continue
+                    
+                    # Récupérer v_idx pour chaque variable
+                    var_to_vidx = {}
+                    for (e_id, d_id, v_idx), var in self.assignments.items():
+                        if e_id == el.id_eleve and d_id == disc.id_discipline:
+                            var_to_vidx[id(var)] = v_idx
+                    
+                    # Pour chaque paire
+                    for i in range(len(vars_list)):
+                        for j in range(i + 1, len(vars_list)):
+                            var_i = vars_list[i]
+                            var_j = vars_list[j]
+                            
+                            v_idx_i = var_to_vidx.get(id(var_i))
+                            v_idx_j = var_to_vidx.get(id(var_j))
+                            
+                            if v_idx_i is None or v_idx_j is None:
+                                continue
+                            
+                            day_i = self.vacations[v_idx_i].jour
+                            day_j = self.vacations[v_idx_j].jour
+                            
+                            # Bonus si même jour ou jour adjacent
+                            if abs(day_i - day_j) <= 1:
+                                same_day_bonus = self.model.NewBoolVar(f"sameday_e{el.id_eleve}_d{disc.id_discipline}_v{v_idx_i}v{v_idx_j}")
+                                
+                                # bonus actif si les deux variables sont à 1
+                                self.model.AddBoolAnd([var_i, var_j]).OnlyEnforceIf(same_day_bonus)
+                                self.model.AddBoolOr([var_i.Not(), var_j.Not()]).OnlyEnforceIf(same_day_bonus.Not())
+                                
+                                self.obj_terms.append(same_day_bonus)
+                                self.weights.append(w_same_day)
+        
+        # Définir objectif
+        self.model.Maximize(sum(t * w for t, w in zip(self.obj_terms, self.weights)))
+        
+        logger.info(f"✓ Objectif configuré avec {len(self.obj_terms)} termes")
+        logger.info(f"  Score max théorique: {self.max_theoretical_score:,.0f}")
+    
+    # resolution
+    
+    def solve(self) -> OptimizationResult:
+        """
+        Résout le modèle et retourne les résultats
+        
+        Returns:
+            OptimizationResult: Résultat avec statut et données
+        """
+        logger.info("=" * 80)
+        logger.info("RÉSOLUTION")
+        logger.info("=" * 80)
+        
+        start_time = time.time()
+        
+        self._notify_progress("Résolution en cours...", 75)
+        
+        # Configurer solver
+        self.solver = cp_model.CpSolver()
+        self.solver.parameters.max_time_in_seconds = self.config.solver_params.max_time_seconds
+        self.solver.parameters.num_workers = self.config.solver_params.num_workers
+        self.solver.parameters.log_search_progress = self.config.solver_params.log_progress
+        
+        # Callback pour suivi progression
+        callback = SolutionCallback(self.config.solver_params.max_time_seconds)
+        
+        # Thread timer pour log périodique
+        stop_timer = threading.Event()
+        
+        def periodic_progress():
+            """Log progression périodique même sans nouvelle solution"""
+            last_log = time.time()
+            while not stop_timer.is_set():
+                time.sleep(1)
+                current = time.time()
+                if current - last_log >= 5:
+                    elapsed = int(current - start_time)
+                    remaining = max(0, int(self.config.solver_params.max_time_seconds - elapsed))
+                    print(f"STATUS|Elapsed: {elapsed}s|Remaining: {remaining}s")
+                    sys.stdout.flush()
+                    last_log = current
+        
+        timer_thread = threading.Thread(target=periodic_progress, daemon=True)
+        timer_thread.start()
+        
+        # Résolution
+        try:
+            logger.info(f"Temps maximum: {self.config.solver_params.max_time_seconds}s")
+            print(f"SOLVER_START|MaxTime: {self.config.solver_params.max_time_seconds}s")
+            sys.stdout.flush()
+            
+            status = self.solver.Solve(self.model, callback)
+            
+            # Arrêter timer
+            stop_timer.set()
+            timer_thread.join(timeout=1)
+            
+            solve_time = time.time() - start_time
+            
+            self._notify_progress("Solution trouvée", 95)
+            
+            return self._build_result(status, solve_time)
+        
+        except KeyboardInterrupt:
+            stop_timer.set()
+            logger.warning("Interruption utilisateur (Ctrl+C)")
+            
+            # Tenter récupération solution partielle
+            if self.solver.ObjectiveValue() > 0:
+                solve_time = time.time() - start_time
+                return self._build_result(cp_model.FEASIBLE, solve_time)
+            else:
+                return OptimizationResult(
+                    status='ERROR',
+                    solve_time=time.time() - start_time,
+                    error_message="Interruption utilisateur sans solution"
+                )
+        
+        except Exception as e:
+            stop_timer.set()
+            logger.exception("Erreur lors de la résolution")
+            return OptimizationResult(
+                status='ERROR',
+                solve_time=time.time() - start_time,
+                error_message=str(e)
+            )
     
     def _build_result(self, status, solve_time: float) -> OptimizationResult:
-        """Build result object from solver status"""
+        """Construit l'objet résultat depuis le statut du solver"""
         
-        # Map status
+        # Mapping statuts
         status_map = {
             cp_model.OPTIMAL: 'OPTIMAL',
             cp_model.FEASIBLE: 'FEASIBLE',
@@ -807,75 +1068,176 @@ class ScheduleOptimizer:
         status_str = status_map.get(status, 'UNKNOWN')
         
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-            logger.info(f"✓ Solution trouvée: {self.solver.ObjectiveValue()}")
+            raw_score = self.solver.ObjectiveValue()
             
-            # Extract assignments
+            # Normaliser score
+            normalized_score = 0.0
+            if self.max_theoretical_score > 0:
+                normalized_score = (raw_score / self.max_theoretical_score) * 100
+                normalized_score = min(100.0, max(0.0, normalized_score))
+            
+            logger.info(f"✓ Solution trouvée!")
+            logger.info(f"  Score brut: {raw_score:,.0f}")
+            logger.info(f"  Score max théorique: {self.max_theoretical_score:,.0f}")
+            logger.info(f"  Score normalisé: {normalized_score:.2f}/100")
+            
+            # Extraire affectations
             solution_assignments = {}
             for (e_id, d_id, v_idx), var in self.assignments.items():
                 if self.solver.Value(var) == 1:
-                    solution_assignments[(e_id, d_id, v_idx)] = True
+                    solution_assignments[(e_id, d_id, v_idx)] = 1
             
-            # Compute statistics
+            # Calculer statistiques
             stats = self._compute_statistics(solution_assignments)
             
             return OptimizationResult(
                 status=status_str,
-                objective_value=self.solver.ObjectiveValue(),
+                objective_value=raw_score,
+                normalized_score=normalized_score,
+                max_theoretical_score=self.max_theoretical_score,
                 solve_time=solve_time,
                 assignments=solution_assignments,
                 statistics=stats
             )
         
         else:
-            error_msg = f"Statut: {status_str}"
-            if status == cp_model.INFEASIBLE:
-                error_msg = "Modèle infaisable - aucune solution possible avec les contraintes actuelles"
-            elif status == cp_model.UNKNOWN:
-                error_msg = "Timeout atteint - aucune solution trouvée dans le temps imparti"
-            
-            logger.error(error_msg)
-            
+            logger.error(f"✗ Aucune solution trouvée: {status_str}")
             return OptimizationResult(
                 status=status_str,
                 solve_time=solve_time,
-                error_message=error_msg
+                error_message=f"Solver status: {status_str}"
             )
     
     def _compute_statistics(self, solution_assignments: Dict) -> Dict:
-        """Compute solution statistics"""
+        """Calcule les statistiques de la solution"""
         stats = {
             'total_assignments': len(solution_assignments),
             'assignments_by_discipline': collections.defaultdict(int),
             'assignments_by_student': collections.defaultdict(int),
-            'quota_fulfillment': {}
+            'assignments_by_level': collections.defaultdict(int),
+            'quota_fulfillment': {},
+            'success_count': 0,
+            'grand_slam_disciplines': []
         }
         
-        # Count by discipline and student
+        # Compter par discipline, élève, niveau
         for (e_id, d_id, v_idx) in solution_assignments:
             stats['assignments_by_discipline'][d_id] += 1
             stats['assignments_by_student'][e_id] += 1
+            
+            el = self.eleve_dict[e_id]
+            stats['assignments_by_level'][el.annee.name] += 1
         
-        # Check quota fulfillment
+        # Vérifier quotas
         for disc in self.config.disciplines:
+            disc_stats = {
+                'students_checked': 0,
+                'students_success': 0,
+                'grand_slam': False
+            }
+            
+            success_count = 0
+            total_count = 0
+            
             for el in self.config.eleves:
                 if el.annee.value not in disc.annee:
                     continue
                 
-                try:
-                    adx = disc.annee.index(el.annee.value)
-                    quota = disc.quota[adx]
-                except (ValueError, IndexError):
-                    continue
+                total_count += 1
                 
-                if quota > 0:
-                    count = sum(1 for (e, d, v) in solution_assignments 
-                              if e == el.id_eleve and d == disc.id_discipline)
-                    
-                    key = f"e{el.id_eleve}_d{disc.id_discipline}"
-                    stats['quota_fulfillment'][key] = {
-                        'quota': quota,
-                        'assigned': count,
-                        'fulfilled': count >= quota
-                    }
+                # Compter affectations
+                count = sum(1 for (e_id, d_id, v_idx) in solution_assignments 
+                           if e_id == el.id_eleve and d_id == disc.id_discipline)
+                
+                # Récupérer quota
+                try:
+                    idx_annee = disc.annee.index(el.annee.value)
+                    quota = disc.quotas[idx_annee] if len(disc.quotas) > idx_annee else 0
+                except (ValueError, IndexError):
+                    quota = 0
+                
+                if count >= quota and quota > 0:
+                    success_count += 1
+            
+            disc_stats['students_checked'] = total_count
+            disc_stats['students_success'] = success_count
+            
+            if total_count > 0 and success_count == total_count:
+                disc_stats['grand_slam'] = True
+                stats['grand_slam_disciplines'].append(disc.id_discipline)
+            
+            stats['quota_fulfillment'][disc.id_discipline] = disc_stats
+            stats['success_count'] += success_count
         
         return stats
+    
+    
+    # export solution
+    
+    
+    def export_solution(self, result: OptimizationResult, output_path: str):
+        """
+        Exporte la solution en CSV
+        
+        Args:
+            result: OptimizationResult avec les affectations
+            output_path: Chemin du fichier CSV de sortie
+        """
+        if not result.is_success():
+            logger.error("Impossible d'exporter: pas de solution valide")
+            return
+        
+        logger.info(f"Export de la solution vers {output_path}...")
+        
+        # Créer répertoire si nécessaire
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Préparer données
+        rows = []
+        for (e_id, d_id, v_idx) in sorted(result.assignments.keys()):
+            el = self.eleve_dict[e_id]
+            disc = None
+            for d in self.config.disciplines:
+                if d.id_discipline == d_id:
+                    disc = d
+                    break
+            
+            if not disc:
+                continue
+            
+            vac = self.vacations[v_idx]
+            
+            rows.append({
+                'eleve_id': e_id,
+                'eleve_nom': el.nom,
+                'eleve_prenom': el.prenom,
+                'eleve_annee': el.annee.name,
+                'discipline_id': d_id,
+                'discipline_nom': disc.nom,
+                'semaine': vac.semaine,
+                'jour': vac.jour,
+                'jour_nom': ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][vac.jour],
+                'period': vac.period.name,
+                'vacation_index': v_idx
+            })
+        
+        # Écrire CSV
+        with open(output_path, 'w', newline='', encoding='utf-8') as f:
+            fieldnames = ['eleve_id', 'eleve_nom', 'eleve_prenom', 'eleve_annee',
+                         'discipline_id', 'discipline_nom', 'semaine', 'jour',
+                         'jour_nom', 'period', 'vacation_index']
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        
+        logger.info(f"✓ Solution exportée: {len(rows)} affectations")
+    
+    # utilities
+     
+    def _notify_progress(self, message: str, percent: int):
+        """Notifie la progression si callback configuré"""
+        if self.progress_callback:
+            self.progress_callback(message, percent)
+        logger.info(f"[{percent}%] {message}")
