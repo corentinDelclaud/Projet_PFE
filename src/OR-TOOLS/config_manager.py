@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SolverParams:
     """Solver configuration parameters"""
-    max_time_seconds: int = 10800  # 3 hours
-    num_workers: int = 8
+    max_time_seconds: int = 18000 # 5 hours
+    num_workers: int = 6
     log_progress: bool = True
     solution_limit: int = 1
     

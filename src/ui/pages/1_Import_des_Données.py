@@ -5,6 +5,16 @@ import shutil
 import sys
 from pathlib import Path
 
+def resolve_data_path():
+    """Resolve data directory path for both normal and PyInstaller frozen mode"""
+    if getattr(sys, 'frozen', False):
+        # Mode compilé (PyInstaller) - data est à côté de l'exécutable
+        base_dir = Path(sys.executable).parent
+    else:
+        # Mode script Python normal
+        base_dir = Path(__file__).parent.parent.parent.parent
+    return base_dir / "data"
+
 st.set_page_config(
     page_title="Import des Données",
     page_icon=":material/download:",
@@ -14,7 +24,7 @@ st.set_page_config(
 st.title("Import des Données")
 
 # Définir le dossier de sauvegarde des données
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+DATA_DIR = resolve_data_path()
 DATA_DIR.mkdir(exist_ok=True)
 
 # Section Calendrier

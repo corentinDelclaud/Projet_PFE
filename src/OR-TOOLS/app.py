@@ -21,6 +21,16 @@ from optimizer import ScheduleOptimizer
 from exporter import export_planning, export_statistics
 from loaders import DataLoadError
 
+def resolve_data_path():
+    """Resolve data directory path for both normal and PyInstaller frozen mode"""
+    if getattr(sys, 'frozen', False):
+        # Mode compilé (PyInstaller) - data est à côté de l'exécutable
+        base_dir = Path(sys.executable).parent
+    else:
+        # Mode script Python normal
+        base_dir = Path(__file__).parent.parent.parent
+    return base_dir / "data"
+
 def main():
     """Main execution function"""
     try:
@@ -29,14 +39,11 @@ def main():
         logger.info("=" * 80)
         
         # Load configuration
-        data_dir = Path(__file__).parent.parent.parent / "data"
+        data_dir = resolve_data_path()
         logger.info(f"Répertoire de données: {data_dir}")
         
-        config = ModelConfig.from_csv_directory(
-            data_dir,
-            max_time_seconds=1200, # 20 minutes
-            num_workers=8
-        )
+        # Utilise les valeurs par défaut de SolverParams (3h, 6 workers)
+        config = ModelConfig.from_csv_directory(data_dir)
         
         # Validate configuration
         is_valid, errors = config.validate()

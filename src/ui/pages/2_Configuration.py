@@ -3,6 +3,17 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import sys
+
+def resolve_data_path():
+    """Resolve data directory path for both normal and PyInstaller frozen mode"""
+    if getattr(sys, 'frozen', False):
+        # Mode compilé (PyInstaller) - data est à côté de l'exécutable
+        base_dir = Path(sys.executable).parent
+    else:
+        # Mode script Python normal
+        base_dir = Path(__file__).parent.parent.parent.parent
+    return base_dir / "data"
 
 st.set_page_config(
     page_title="Configuration",
@@ -13,7 +24,7 @@ st.set_page_config(
 st.title("Configuration du Planning")
 
 # Définir le dossier pour stocker les données de configuration
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
+DATA_DIR = resolve_data_path()
 DATA_DIR.mkdir(exist_ok=True)
 STAGES_CSV = DATA_DIR / "stages.csv"
 PERIODES_CSV = DATA_DIR / "periodes.csv"

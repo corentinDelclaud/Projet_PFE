@@ -5,12 +5,32 @@ import sys
 import pandas as pd
 import zipfile
 from io import BytesIO
-import subprocess
 import time
-import re
+import os
+
+def resolve_data_path():
+    """Resolve data directory path for both normal and PyInstaller frozen mode"""
+    if getattr(sys, 'frozen', False):
+        # Mode compilé (PyInstaller) - data est à côté de l'exécutable
+        base_dir = Path(sys.executable).parent
+    else:
+        # Mode script Python normal
+        base_dir = Path(__file__).parent.parent.parent.parent
+    return base_dir / "data"
+
+def resolve_resultat_path():
+    """Resolve resultat directory path for both normal and PyInstaller frozen mode"""
+    if getattr(sys, 'frozen', False):
+        # Mode compilé (PyInstaller) - resultat est à côté de l'exécutable
+        base_dir = Path(sys.executable).parent
+    else:
+        # Mode script Python normal
+        base_dir = Path(__file__).parent.parent.parent.parent
+    return base_dir / "resultat"
 
 # Add OR-TOOLS to path
-sys.path.append(str(Path(__file__).parent.parent.parent / "OR-TOOLS"))
+if not getattr(sys, 'frozen', False):
+    sys.path.append(str(Path(__file__).parent.parent.parent / "OR-TOOLS"))
 
 st.set_page_config(
     page_title="Export du Planning",
@@ -20,8 +40,12 @@ st.set_page_config(
 
 st.title("Export du Planning")
 
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "data"
-RESULTAT_DIR = Path(__file__).parent.parent.parent.parent / "resultat"
+DATA_DIR = resolve_data_path()
+RESULTAT_DIR = resolve_resultat_path()
+
+# Créer les dossiers s'ils n'existent pas
+DATA_DIR.mkdir(exist_ok=True)
+RESULTAT_DIR.mkdir(exist_ok=True)
 
 st.subheader("Vérification des prérequis")
 
@@ -74,11 +98,16 @@ st.subheader("Génération des liste d'éleves")
 # Button to generate student lists with codes generate_student_code.py
 if st.button("Générer les listes d'élèves avec codes", use_container_width=True):
     try:
-
-        data_dir_generation = Path(__file__).parent.parent.parent / "data"
-        sys.path.insert(0, str(data_dir_generation))
-                    
-        from generate_student_code import generate_student_data
+        # Import the module (works in both normal and frozen mode)
+        if getattr(sys, 'frozen', False):
+            # En mode frozen, le module est dans le bundle
+            from data.generate_student_code import generate_student_data
+        else:
+            # En mode normal, ajouter le chemin parent au sys.path
+            data_dir_generation = Path(__file__).parent.parent.parent / "data"
+            if str(data_dir_generation.parent) not in sys.path:
+                sys.path.insert(0, str(data_dir_generation.parent))
+            from data.generate_student_code import generate_student_data
                     
         eleves_csv = DATA_DIR / "eleves.csv"
         eleves_df = pd.read_csv(eleves_csv)
@@ -166,131 +195,131 @@ if st.session_state.get('model_running', False):
     log_expander = st.expander("Logs détaillés", expanded=False)
     log_container = log_expander.empty()
     
-    # Path to optimizer script
-    app_script = Path(__file__).parent.parent.parent / "OR-TOOLS" / "app.py"
-    env_python = sys.executable
+    # Import optimizer modules
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent / "OR-TOOLS"))
     
     try:
-        # Launch subprocess
-        process = subprocess.Popen(
-            [env_python, str(app_script)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            universal_newlines=True
-        )
+        # Import directly instead of using subprocess
+        from config_manager import ModelConfig
+        from optimizer import ScheduleOptimizer
+        from exporter import export_planning, export_statistics
+        import io
+        import contextlib
         
-        # Read output
+        # Capture stdout to show logs
         logs = []
-        solution_count = 0
-        elapsed_time = 0
-        remaining_time = None
-        max_time = 10800  # Default 3 hours
-        objective = 0
         
-        # Force immediate display
-        placeholder = st.empty()
+        # Helper to format time
+        def format_time(seconds):
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+            secs = seconds % 60
+            if hours > 0:
+                return f"{hours}h {minutes}m {secs}s"
+            elif minutes > 0:
+                return f"{minutes}m {secs}s"
+            else:
+                return f"{secs}s"
         
-        for line in iter(process.stdout.readline, ''):
-            if not line:
-                break
-                
-            line = line.strip()
-            if line:
-                logs.append(line)
-                log_container.text("\n".join(logs[-50:]))  # Show last 50 lines
-                
-                # Parse max time from solver start
-                solver_start_match = re.search(r'SOLVER_START\|MaxTime: (\d+)s', line)
-                if solver_start_match:
-                    max_time = int(solver_start_match.group(1))
-                    remaining_display.metric("Temps restant", f"{max_time}s")
-                
-                # Parse solution progress (TWO FORMATS)
-                # Format 1: PROGRESS|Solution #X|Elapsed: Ys|Remaining: Zs|Objective: V
-                # Format 2: PROGRESS|Status check|Elapsed: Ys|Remaining: Zs|Objective: V
-                progress_match = re.search(
-                    r'PROGRESS\|(?:Solution #(\d+)|Status check)\|Elapsed: (\d+)s\|Remaining: (\d+)s\|Objective: ([\d.]+)',
-                    line
-                )
-                
-                if progress_match:
-                    # Group 1 peut être None si c'est "Status check"
-                    if progress_match.group(1):
-                        solution_count = int(progress_match.group(1))
-                    elapsed_time = int(progress_match.group(2))
-                    remaining_time = int(progress_match.group(3))
-                    objective = float(progress_match.group(4))
-                    
-                    # Format time as HH:MM:SS
-                    def format_time(seconds):
-                        hours = seconds // 3600
-                        minutes = (seconds % 3600) // 60
-                        secs = seconds % 60
-                        if hours > 0:
-                            return f"{hours}h {minutes}m {secs}s"
-                        elif minutes > 0:
-                            return f"{minutes}m {secs}s"
-                        else:
-                            return f"{secs}s"
-                    
-                    # Update displays
-                    elapsed_display.metric(
-                        "Temps écoulé",
-                        format_time(elapsed_time)
-                    )
-                    remaining_display.metric(
-                        "Temps restant",
-                        format_time(remaining_time)
-                    )
-                
-                # Check for other progress keywords
-                progress_keywords = {
-                    'Chargement des données': 10,
-                    'Variables créées': 20,
-                    'Index construits': 25,
-                    'Contraintes de capacité': 35,
-                    'Contraintes d\'unicité': 40,
-                    'Contraintes max vacations': 45,
-                    'Contraintes de remplissage': 50,
-                    'Contraintes de binômes': 55,
-                    'Contraintes avancées': 65,
-                    'Objectif configuré': 70,
-                    'RÉSOLUTION': 75,
-                }
-                
-                for keyword, percent in progress_keywords.items():
-                    if keyword in line:
-                        if percent < 75:  # Don't override solving progress
-                            progress_bar.progress(percent / 100)
-                            status_text.text(line)
-                        break
+        # Load configuration
+        data_dir = resolve_data_path()
+        output_dir = resolve_resultat_path()
         
-        # Wait for completion
-        return_code = process.wait()
+        progress_bar.progress(0.1)
+        status_text.text("Chargement de la configuration...")
         
-        if return_code == 0:
+        config = ModelConfig.from_csv_directory(data_dir)
+        config.output_dir = output_dir
+        
+        # Validate configuration
+        progress_bar.progress(0.15)
+        status_text.text("Validation de la configuration...")
+        log_container.text("✓ Configuration chargée")
+        
+        is_valid, errors = config.validate()
+        if not is_valid:
+            error_msg = "Configuration invalide:\n" + "\n".join([f"  - {e}" for e in errors])
+            st.error(error_msg)
+            st.session_state['model_status'] = 'error'
+            st.session_state['model_running'] = False
+            st.stop()
+        
+        log_container.text("✓ Configuration chargée\n✓ Configuration validée")
+        
+        # Save configuration
+        config.save_to_json(config.output_dir / "config_used.json")
+        
+        # Create optimizer
+        progress_bar.progress(0.2)
+        status_text.text("Création de l'optimizer...")
+        optimizer = ScheduleOptimizer(config)
+        log_container.text("✓ Configuration chargée\n✓ Configuration validée\n✓ Optimizer créé")
+        
+        # Prepare data
+        progress_bar.progress(0.25)
+        status_text.text("Chargement des données...")
+        optimizer.prepare_data()
+        log_container.text("✓ Configuration chargée\n✓ Configuration validée\n✓ Optimizer créé\n✓ Données chargées")
+        
+        # Build model
+        progress_bar.progress(0.5)
+        status_text.text("Construction du modèle...")
+        optimizer.build_model()
+        log_container.text("✓ Configuration chargée\n✓ Configuration validée\n✓ Optimizer créé\n✓ Données chargées\n✓ Modèle construit")
+        
+        # Solve
+        progress_bar.progress(0.75)
+        status_text.text("Résolution en cours...")
+        
+        # Track progress with a custom approach
+        import time as time_module
+        start_time = time_module.time()
+        max_time = config.solver_params.max_time_seconds
+        
+        # Show initial time
+        remaining_display.metric("Temps restant", format_time(max_time))
+        
+        # Start solving (this will block)
+        result = optimizer.solve()
+        
+        # Calculate elapsed time
+        elapsed_time = int(time_module.time() - start_time)
+        elapsed_display.metric("Temps écoulé", format_time(elapsed_time))
+        remaining_display.metric("Temps restant", "0s")
+        elapsed_display.metric("Temps écoulé", format_time(elapsed_time))
+        remaining_display.metric("Temps restant", "0s")
+        
+        # Export results
+        if result.is_success():
+            progress_bar.progress(0.9)
+            status_text.text("Export des résultats...")
+            
+            # Export planning
+            export_planning(
+                result,
+                config.output_dir / "planning_solution.csv",
+                config,
+                optimizer
+            )
+            
+            # Export statistics
+            export_statistics(
+                result,
+                config.output_dir / "statistics.json"
+            )
+            
             progress_bar.progress(1.0)
             status_text.success("Génération terminée avec succès!")
-            
-            # Final time display
-            if elapsed_time > 0:
-                elapsed_display.metric(
-                    "Temps total",
-                    format_time(elapsed_time)
-                )
-            remaining_display.metric(
-                "Temps restant",
-                "0s"
-            )
+            log_container.text("✓ Configuration chargée\n✓ Configuration validée\n✓ Optimizer créé\n✓ Données chargées\n✓ Modèle construit\n✓ Résolution terminée\n✓ Résultats exportés")
             
             st.session_state['model_status'] = 'success'
             st.session_state['model_running'] = False
             time.sleep(1)
             st.rerun()
         else:
-            status_text.error(f"Erreur lors de la génération (code: {return_code})")
+            status_text.error(f"Erreur lors de la génération: {result.status}")
+            if result.error_message:
+                log_container.text(f"Erreur: {result.error_message}")
             st.session_state['model_status'] = 'error'
             st.session_state['model_running'] = False
     
